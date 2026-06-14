@@ -54,7 +54,7 @@ implementing; `docs/03-levels.md` has the authoritative per-level build status.
 - Objectives are a discriminated union (`reach-hold` / `hold-control` /
   `waypoint-sequence`); a level may override the body's vehicle `start`. See
   `docs/06-schemas.md`.
-- Visual design direction (refer to directory: Brain Swap — UI Directions)
+- Visual design direction (refer to existing code)
 
 ## Not yet decided (don't assume)
 
