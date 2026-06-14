@@ -165,7 +165,7 @@ export function Help() {
         </section>
 
         <div className="rfoot">
-          <span className="cert">Fidelity Notes (bottom-center on the console) state exactly what is simplified vs ASK 5.0a.</span>
+          <span className="cert">Fidelity Notes (bottom-center on the console) state exactly what is simplified vs ASK 5.0a.<br /><a href="https://github.com/dekmeister/agra-armadillo" target="_blank" rel="noopener noreferrer">github.com/dekmeister/agra-armadillo</a></span>
           <div className="right">
             <button className="btn" onClick={() => { setView("console"); setMode("EDIT"); }}>
               Go to Console
