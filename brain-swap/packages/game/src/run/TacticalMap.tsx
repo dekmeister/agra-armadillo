@@ -4,7 +4,7 @@
 //
 // Camera: screenX = worldX*scale + offX ; screenY = -worldY*scale + offY. The user can
 // pan (drag) and zoom (wheel) within clamped bounds; "Fit" resets to frame everything.
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Application, Graphics } from "pixi.js";
 import { useStore } from "../store.ts";
 import { Panel } from "../ui/Panel.tsx";
@@ -73,6 +73,8 @@ export function TacticalMapPanel() {
   const timeline = useStore((s) => s.timeline);
   const playhead = useStore((s) => s.playhead);
   const world = useStore((s) => s.world());
+
+  const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
 
   const hostRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<Application | null>(null);
@@ -186,8 +188,16 @@ export function TacticalMapPanel() {
       app.canvas.style.cursor = "grabbing";
     };
     const onMove = (e: PointerEvent) => {
-      if (!dragging) return;
       const cam = camRef.current;
+      if (cam) {
+        const rect = app.canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        const wx = (mx - cam.offX) / cam.scale;
+        const wy = (cam.offY - my) / cam.scale;
+        setCursor({ x: wx, y: wy });
+      }
+      if (!dragging) return;
       if (!cam) return;
       cam.offX += e.clientX - lastX;
       cam.offY += e.clientY - lastY;
@@ -197,6 +207,7 @@ export function TacticalMapPanel() {
       clampPan(cam, boundsRef.current, W, H);
       drawRef.current();
     };
+    const onLeave = () => setCursor(null);
     const onUp = (e: PointerEvent) => {
       dragging = false;
       try {
@@ -233,6 +244,7 @@ export function TacticalMapPanel() {
         app.canvas.addEventListener("pointermove", onMove);
         app.canvas.addEventListener("pointerup", onUp);
         app.canvas.addEventListener("pointercancel", onUp);
+        app.canvas.addEventListener("pointerleave", onLeave);
         // Re-fit when the panel resizes so the world stays framed by default.
         ro = new ResizeObserver(() => {
           camRef.current = null;
@@ -295,6 +307,11 @@ export function TacticalMapPanel() {
           )}
           <span className="amark act" style={{ top: altPct(actAlt) }} title={`ACT ${Math.round(actAlt)} m`} />
         </div>
+        {cursor !== null && (
+          <div className="map-coords">
+            LAT {cursor.y.toFixed(0)} · LON {cursor.x.toFixed(0)}
+          </div>
+        )}
         <div className="map-cap">PixiJS · Tactical Map · drag to pan · scroll to zoom</div>
       </div>
     </Panel>
