@@ -4,11 +4,22 @@ import { Panel } from "../ui/Panel.tsx";
 import { Identifier } from "../ui/Identifier.tsx";
 import { capEntries } from "../sim/caps.ts";
 
-export function MissionCard() {
+interface CollapseProps {
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
+}
+
+export function MissionCard({ collapsed, onToggleCollapse }: CollapseProps) {
   const level = useStore((s) => s.level);
   const o = level.objective;
   return (
-    <Panel title="MISSION" titleAccent="CARD" className="grow-0">
+    <Panel
+      title="MISSION"
+      titleAccent="CARD"
+      className="grow-0"
+      collapsed={collapsed}
+      onToggleCollapse={onToggleCollapse}
+    >
       <div className="datalist">
         {level.brief && (
           <div className="obj">
@@ -43,14 +54,20 @@ export function MissionCard() {
   );
 }
 
-export function BodySpecSheet() {
+export function BodySpecSheet({ collapsed, onToggleCollapse }: CollapseProps) {
   const body = useStore((s) => s.body);
   const level = useStore((s) => s.level);
   const cap = body.capabilities.find((c) => c.id === level.capabilityId);
   const rows = capEntries(body, level.capabilityId);
 
   return (
-    <Panel title="BODY" titleAccent="SPEC SHEET" meta="MA_FlightCapabilityMT">
+    <Panel
+      title="BODY"
+      titleAccent="SPEC SHEET"
+      meta="MA_FlightCapabilityMT"
+      collapsed={collapsed}
+      onToggleCollapse={onToggleCollapse}
+    >
       <div className="datalist">
         <div className="row">
           <span className="k">ControlAuthority</span>

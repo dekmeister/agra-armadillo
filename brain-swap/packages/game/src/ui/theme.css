@@ -73,6 +73,9 @@ button { font: inherit; }
 .panel > .ph .t { font-family: var(--cond); font-weight: 700; font-size: 15px; letter-spacing: .13em; text-transform: uppercase; color: var(--k-olive); }
 .panel > .ph .t b { color: var(--k-phos); font-weight: 700; }
 .panel > .ph .meta { margin-left: auto; font-size: 12px; letter-spacing: .1em; color: var(--k-dim); text-transform: uppercase; }
+.panel > .ph .ph-collapse { background: transparent; border: 0; cursor: pointer; color: var(--k-olive); font-size: 12px; line-height: 1; padding: 0 2px; }
+.panel > .ph .ph-collapse.push { margin-left: auto; }
+.panel > .ph .ph-collapse:hover { color: var(--k-phos); }
 .panel > .body { flex: 1 1 auto; min-height: 0; position: relative; }
 .rivet { position: absolute; width: 5px; height: 5px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #3a4330, #0c0f08); box-shadow: 0 0 0 1px #000; z-index: 3; }
 .rivet.tl { top: 5px; left: 5px; } .rivet.tr { top: 5px; right: 5px; }

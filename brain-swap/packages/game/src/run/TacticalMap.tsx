@@ -246,7 +246,11 @@ export function TacticalMapPanel() {
         app.canvas.addEventListener("pointercancel", onUp);
         app.canvas.addEventListener("pointerleave", onLeave);
         // Re-fit when the panel resizes so the world stays framed by default.
+        // Pixi's `resizeTo` only auto-resizes on window resize, so resize the
+        // renderer to the host explicitly when the element's box changes (e.g.
+        // the mission/spec cards collapsing grows this panel).
         ro = new ResizeObserver(() => {
+          app.resize();
           camRef.current = null;
           drawRef.current();
         });
