@@ -25,7 +25,7 @@ export function StateNode({ data }: NodeProps) {
         {d.name}
         <span className="sdot" />
       </div>
-      <div className="sb">{d.initial ? "initial state" : " "}</div>
+      {d.initial && <div className="sb">initial state</div>}
       <Handle type="source" position={Position.Bottom} />
       <Handle type="source" position={Position.Right} />
     </div>
