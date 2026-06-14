@@ -1,0 +1,49 @@
+# Third-Party Notices
+
+This repository includes reproductions of US Government standards documents.
+These files are not covered by the MIT License in LICENSE.
+
+## A-GRA ASK 5.0a (Autonomous Systems Kit)
+
+**Source:** https://github.com/open-arsenal/a-gra
+**Publisher:** Open Architecture Collaborative Working Group (OACWG),
+United States Air Force
+**Described as:** "government-owned, non-proprietary"
+
+Files:
+
+    brain-swap/docs/A-GRA References/A-GRA_MessageDefinitions_v5_0_a.xsd
+    brain-swap/docs/A-GRA References/ASK 5.0a Start Here Guide.doc.pdf
+    brain-swap/docs/A-GRA References/ASK 5.0a Start Here Guide.doc.txt
+    brain-swap/docs/A-GRA References/ASK 5.0a Vehicle Interface Volume.pdf
+    brain-swap/docs/A-GRA References/ASK 5.0a Vehicle Interface Volume.txt
+
+These are works of the United States Government. Under 17 U.S.C. § 105, works
+prepared by officers or employees of the United States Government as part of
+their official duties are not subject to copyright protection in the United
+States. They are reproduced here for build-time validation and offline reference,
+consistent with the OACWG's stated intent that these materials be publicly
+available and non-proprietary.
+
+The XSD schema (A-GRA_MessageDefinitions_v5_0_a.xsd) is used as the authoritative
+ground truth in this project's fidelity-check build step; a byte-identical copy
+is what the upstream repository distributes.
+
+## UCI v2.5 (Universal Command and Control Interface)
+
+**Source:** https://github.com/modular-af/UCI
+**Publisher:** Open Architecture Collaborative Working Group (OACWG),
+United States Air Force
+**Described as:** "government-owned, non-proprietary"
+
+Files:
+
+    normal-form/docs/02_OAC-STD-001_RevI_UCI_StandardDocument_v2_5.pdf
+    normal-form/docs/02_OAC-STD-001_RevI_UCI_StandardDocument_v2_5.txt
+    normal-form/docs/06_OAC-SPC-002_RevA_UCI_NormalizedInterfaceSpecification_v2_5.pdf
+    normal-form/docs/06_OAC-SPC-002_RevA_UCI_NormalizedInterfaceSpecification_v2_5.txt
+    normal-form/docs/UCI_MessageDefinitions_v2_5_0.xsd
+
+These are works of the United States Government, reproduced under the same basis
+as the A-GRA materials above. They are included in normal-form/ as the normative
+reference for UCI message structure and interaction patterns.
