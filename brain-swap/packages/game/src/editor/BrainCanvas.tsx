@@ -64,6 +64,7 @@ export function BrainCanvas() {
         data: {
           messageType: t.trigger.messageType,
           guardText: shortGuard(t.guard),
+          sendMessage: t.actions?.[0]?.message,
           fault: false,
         },
       })),

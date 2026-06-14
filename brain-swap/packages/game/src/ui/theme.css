@@ -211,10 +211,23 @@ button { font: inherit; }
 .statenode .sh .sdot { width: 7px; height: 7px; border-radius: 50%; background: #2a3320; margin-left: auto; }
 .statenode.initial .sh .sdot { background: var(--k-cyan); box-shadow: 0 0 6px var(--k-cyan); }
 .statenode .sb { padding: 5px 7px; font-size: 11.5px; color: var(--k-dim); min-height: 22px; }
-.edgechip { font-size: 11.5px; background: rgba(8,11,6,.9); border: 1px solid var(--k-line2); padding: 1px 4px; }
-.edgechip.warn { border-color: var(--k-warn); }
+/* Transition label: a single card with the trigger (the "when") on top and, when the
+   transition emits a message, the send action (the "then") flush beneath it — same width,
+   no gap, one shared border. The send row is deliberately quieter (smaller, dim SEND tag,
+   inset background, hairline divider) so the trigger reads as the dominant element. */
+.edgechip-stack {
+  display: flex; flex-direction: column; align-items: stretch;
+  background: rgba(8,11,6,.92); border: 1px solid var(--k-line2);
+}
+.edgechip-stack.warn { border-color: var(--k-warn); }
+.edgechip { font-size: 11.5px; padding: 1px 5px; text-align: left; white-space: nowrap; }
 .edgechip .guard { color: var(--k-amber); }
-.edgechip.warn .guard { color: var(--k-warn); }
+.edgechip-stack.warn .guard { color: var(--k-warn); }
+.edgechip.send {
+  font-size: 10px; padding: 2px 5px;
+  border-top: 1px solid var(--k-line); background: rgba(0,0,0,.28);
+}
+.edgechip.send .lbl { color: var(--k-dim); letter-spacing: .08em; }
 
 /* ---- transition form ---- */
 .tform-panel { height: 310px; flex-shrink: 0; }

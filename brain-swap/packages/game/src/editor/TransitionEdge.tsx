@@ -1,12 +1,16 @@
-// A transition rendered as a labeled edge with an EdgeChip floating at its midpoint.
-// The chip shows the trigger message type via Identifier + the guard in amber (red on a
-// fault edge — none in the MVP brain, but the styling is wired for later slices).
+// A transition rendered as a labeled edge with EdgeChips floating at its midpoint.
+// The trigger chip shows the trigger message type via Identifier + the guard in amber
+// (red on a fault edge — none in the MVP brain, but the styling is wired for later
+// slices). When the transition has a send action, a second chip underneath shows the
+// emitted message in the same `SEND · message` format as the transition form (no fields,
+// which would make the edge too busy).
 import { BaseEdge, EdgeLabelRenderer, getBezierPath, type EdgeProps } from "@xyflow/react";
 import { Identifier } from "../ui/Identifier.tsx";
 
 export interface TransitionEdgeData {
   messageType: string;
   guardText?: string;
+  sendMessage?: string;
   fault?: boolean;
   [key: string]: unknown;
 }
@@ -37,15 +41,22 @@ export function TransitionEdge(props: EdgeProps) {
       />
       <EdgeLabelRenderer>
         <div
-          className={`edgechip${d.fault ? " warn" : ""}`}
+          className={`edgechip-stack${d.fault ? " warn" : ""}`}
           style={{
             position: "absolute",
             transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
             pointerEvents: "all",
           }}
         >
-          <Identifier name={d.messageType} />
-          {d.guardText ? <span className="guard"> [{d.guardText}]</span> : null}
+          <div className="edgechip trigger">
+            <Identifier name={d.messageType} />
+            {d.guardText ? <span className="guard"> [{d.guardText}]</span> : null}
+          </div>
+          {d.sendMessage ? (
+            <div className="edgechip send">
+              <span className="lbl">SEND ·</span> <Identifier name={d.sendMessage} />
+            </div>
+          ) : null}
         </div>
       </EdgeLabelRenderer>
     </>
