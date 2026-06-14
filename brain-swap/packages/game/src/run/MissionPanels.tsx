@@ -10,14 +10,34 @@ export function MissionCard() {
   return (
     <Panel title="MISSION" titleAccent="CARD" className="grow-0">
       <div className="datalist">
-        <div className="obj">
-          <span className="k-dim">OBJECTIVE — </span>
-          Fly to the objective zone at ({o.zone.x}, {o.zone.y}) m (radius {o.zone.radius} m) and
-          hold at {o.altitude} m (±{o.altitudeTolerance} m).
-        </div>
-        <div className="win">
-          WIN ▸ in-zone & at altitude for {o.holdTicks} consecutive ticks.
-        </div>
+        {level.brief && (
+          <div className="obj">
+            <span className="k-dim">OBJECTIVE — </span>
+            {level.brief}
+          </div>
+        )}
+        {o.kind === "reach-hold" ? (
+          <>
+            {!level.brief && (
+              <div className="obj">
+                <span className="k-dim">OBJECTIVE — </span>
+                Fly to the objective zone at ({o.zone.x}, {o.zone.y}) m (radius {o.zone.radius} m) and
+                hold at {o.altitude} m (±{o.altitudeTolerance} m).
+              </div>
+            )}
+            <div className="win">
+              WIN ▸ in-zone & at altitude for {o.holdTicks} consecutive ticks.
+            </div>
+          </>
+        ) : o.kind === "hold-control" ? (
+          <div className="win">
+            WIN ▸ hold secondary control of {level.capabilityId} for {o.holdTicks} consecutive ticks.
+          </div>
+        ) : (
+          <div className="win">
+            WIN ▸ pass {o.waypoints.length} waypoints in order, then hold for {o.holdTicks} ticks.
+          </div>
+        )}
       </div>
     </Panel>
   );

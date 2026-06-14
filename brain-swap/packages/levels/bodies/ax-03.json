@@ -1,0 +1,36 @@
+{
+  "id": "ax-03",
+  "name": "Ferret",
+  "_doc": "Agile interceptor (docs/03): high turn rate and fast, but a narrow altitude band (1000-10000 m floor/ceiling) and a higher stall speed (minAirspeed 30). The third airframe of the 4.5 Type Certificate fleet.",
+  "capabilities": [
+    {
+      "id": "CAP-HSA",
+      "type": "HSA_CSA",
+      "profile": {
+        "minAltitude": 1000,
+        "maxAltitude": 10000,
+        "minAirspeed": 30,
+        "maxAirspeed": 120
+      }
+    }
+  ],
+  "flight": {
+    "maxTurnRateDeg": 10,
+    "maxClimbRate": 60,
+    "maxAccel": 25
+  },
+  "control": {
+    "approvalLatencyTicks": 0
+  },
+  "publish": {
+    "positionIntervalTicks": 1,
+    "activityIntervalTicks": 5
+  },
+  "start": {
+    "x": 0,
+    "y": 0,
+    "altitude": 3000,
+    "heading": 270,
+    "speed": 0
+  }
+}

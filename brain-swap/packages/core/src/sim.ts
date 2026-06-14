@@ -79,14 +79,16 @@ export function step(world: World): World {
   // Phase E — level win/fail.
   let outcome: Outcome = world.outcome;
   let holdTicks = world.holdTicks;
+  let waypointIndex = world.waypointIndex;
   if (scenario.level) {
-    const wc = evaluateWin(scenario.level, vehicle, holdTicks);
+    const wc = evaluateWin(scenario.level, vehicle, fa, { holdTicks, waypointIndex });
     holdTicks = wc.holdTicks;
+    waypointIndex = wc.waypointIndex;
     if (wc.won) outcome = "won";
     else if (tick >= scenario.level.maxTicks) outcome = "failed";
   }
 
-  return { scenario, tick, bus, log, fa, vehicle, ma, outcome, holdTicks };
+  return { scenario, tick, bus, log, fa, vehicle, ma, outcome, holdTicks, waypointIndex };
 }
 
 function entry(tick: number, m: Message, disposition: MessageLogEntry["disposition"]): MessageLogEntry {

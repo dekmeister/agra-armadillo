@@ -38,3 +38,21 @@ export function scoreWorld(world: World): Score {
     brainSize: world.scenario.brain ? brainSizeOf(world.scenario.brain) : 0,
   };
 }
+
+/**
+ * Worst-case (per-metric maximum) across several runs of one brain. Used by the
+ * 4.5 Type Certificate, where a single locked brain is graded by its weakest
+ * showing across the airframe fleet. `brainSize` is identical across runs (same
+ * brain) but max is harmless and keeps the reducer uniform.
+ */
+export function aggregateWorst(scores: readonly Score[]): Score {
+  if (scores.length === 0) {
+    return { ticks: 0, busTraffic: 0, rejections: 0, brainSize: 0 };
+  }
+  return scores.reduce((worst, s) => ({
+    ticks: Math.max(worst.ticks, s.ticks),
+    busTraffic: Math.max(worst.busTraffic, s.busTraffic),
+    rejections: Math.max(worst.rejections, s.rejections),
+    brainSize: Math.max(worst.brainSize, s.brainSize),
+  }));
+}

@@ -5,7 +5,15 @@
 // not a fabricated distribution.
 import { useStore } from "../store.ts";
 import { finalFrame } from "../sim/timeline.ts";
+import { WORLDS } from "./levelCatalog.ts";
 import { scoreWorld, type MessageLogEntry } from "@brain-swap/core";
+
+/** The next playable level after `id` in catalog order, or null if this is the last. */
+function nextPlayableId(id: string): string | null {
+  const playable = WORLDS.flatMap((w) => w.levels).filter((l) => l.playable);
+  const i = playable.findIndex((l) => l.id === id);
+  return i >= 0 && i < playable.length - 1 ? playable[i + 1]!.id : null;
+}
 
 interface InteractionRow {
   vi: string;
@@ -74,12 +82,16 @@ export function ComplianceReport() {
   const timeline = useStore((s) => s.timeline);
   const setView = useStore((s) => s.setView);
   const setMode = useStore((s) => s.setMode);
+  const selectLevel = useStore((s) => s.selectLevel);
 
   const w = finalFrame(timeline);
   const score = scoreWorld(w);
   const interactions = deriveInteractions(w.log);
-  const allPass = w.outcome === "won" && interactions.every((i) => i.pass);
+  // The stamp reflects the mission outcome; the table below is an informational record of
+  // which Tier-1 interactions the run exercised (not every level uses all of them).
+  const allPass = w.outcome === "won";
   const pars = level.pars ?? { ticks: 0, busTraffic: 0, rejections: 0, brainSize: 0 };
+  const nextId = nextPlayableId(level.id);
 
   return (
     <div className="screen">
@@ -99,21 +111,25 @@ export function ComplianceReport() {
         </div>
 
         <section>
-          <h2>Interaction Results</h2>
+          <h2>Tier-1 Interactions Exercised</h2>
           <table className="itable">
             <thead>
-              <tr><th style={{ width: 80 }}>VI ID</th><th>Interaction</th><th style={{ width: 60 }}>Result</th></tr>
+              <tr><th style={{ width: 80 }}>VI ID</th><th>Interaction</th><th style={{ width: 70 }}>Exercised</th></tr>
             </thead>
             <tbody>
               {interactions.map((i) => (
                 <tr key={i.vi}>
                   <td className="k-dim">{i.vi}</td>
                   <td>{i.name}</td>
-                  <td><span className={i.pass ? "pass" : "fail"}>{i.pass ? "PASS" : "FAIL"}</span></td>
+                  <td><span className={i.pass ? "pass" : "k-dim"}>{i.pass ? "✓ yes" : "—"}</span></td>
                 </tr>
               ))}
             </tbody>
           </table>
+          <div className="k-dim" style={{ fontSize: 9, marginTop: 6 }}>
+            Not every mission uses all five — e.g. the handshake level (1.1) never issues a flight
+            command. The PASS/FAIL stamp above reflects the mission objective.
+          </div>
         </section>
 
         <section>
@@ -138,7 +154,14 @@ export function ComplianceReport() {
           <div className="right">
             <button className="btn" onClick={() => setView("select")}>Level Select</button>
             <button className="btn" onClick={() => { setView("console"); setMode("EDIT"); }}>Retry · Optimize</button>
-            <button className="btn" disabled title="No further levels in the MVP slice">Next Mission</button>
+            <button
+              className="btn"
+              disabled={!nextId}
+              title={nextId ? `Go to level ${nextId}` : "No further playable levels"}
+              onClick={() => nextId && selectLevel(nextId)}
+            >
+              Next Mission
+            </button>
           </div>
         </div>
       </div>

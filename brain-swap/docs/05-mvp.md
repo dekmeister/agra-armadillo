@@ -1,5 +1,12 @@
 # MVP — First Playable
 
+> **Status: shipped.** The MVP (level 1.2 end-to-end in the browser, all 7 build
+> steps) is complete, and a post-MVP batch added levels **1.1, 1.3, 1.4, 4.1, 4.5**
+> with bodies **AX-02 "Heron"** and **AX-03 "Ferret"**. This doc is kept as the
+> historical build-order record; for current state see `docs/03-levels.md` (level
+> status) and `docs/06-schemas.md` (the firmed-up data shapes), and CLAUDE.md
+> "Adding a level" for the authoring workflow.
+
 **Target: level 1.2 "First Valid HSA Command", playable end-to-end in the browser,
 including the control-acquisition handshake.** The handshake is in scope because
 "FA always retains control" is the game's soul — the MVP must deliver the moment
@@ -41,14 +48,19 @@ day one — the catalog is born policed.
 
 ## Explicitly deferred (next slices, in order)
 
-1. Level 1.1 + 1.3 (split the handshake teaching out; envelope rejection level) —
-   mostly level data once MVP ships.
-2. Heartbeats, timers in the brain model.
-3. Interaction blocks (needed before world 2's upload liturgy).
-4. Variables + expression evaluator (needed for 1.4 partial-update par).
-5. Wind, fuel, best-effort counter-offer (rest of world 1).
-6. Histograms, save slots, brain export/import.
-7. Waypoint/route state machine, then curves, then swap world.
+Status as of the post-MVP batch — ✅ done, ◻ still pending:
+
+1. ✅ Levels 1.1 + 1.3 (split out the handshake; envelope-rejection level). Also
+   shipped: 1.4 racetrack (waypoint-sequence objective) and 4.1 / 4.5 (brain swap).
+2. ◻ Heartbeats, timers in the brain model. (Still the main brain-model gap — the
+   next increment; unlocks World 4.4 and timed racetrack legs.)
+3. ◻ Interaction blocks (needed before world 2's upload liturgy).
+4. ◻ Variables + expression evaluator. (1.4's partial-update lesson shipped without
+   them, via position-threshold guards.)
+5. ◻ Wind, fuel, best-effort counter-offer (rest of world 1).
+6. ✅ Save slots + brain export/import. ◻ Population histograms (score screen shows
+   honest metric-vs-par bars instead).
+7. ◻ Waypoint/route state machine, then curves, then the full swap world.
 
 ## Build order (7 steps, each independently verifiable)
 

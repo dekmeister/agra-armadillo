@@ -1,0 +1,53 @@
+// Dev aid (not CI): run a level + brain headless and print the projected golden
+// log, the MA send sequence, the final vehicle state, and the score — for
+// authoring golden tests and eyeballing new levels.
+//
+// Usage: npx tsx tools/dump-log.ts <levelKey> [brainKey]
+//   levelKey : 11 | 12 | 13 | 14 | 41 | 45
+//   brainKey : ref (default) | naive | locked | none
+import { initWorld, makeScenario, run, scoreWorld, type World } from "@brain-swap/core";
+import * as L from "@brain-swap/levels";
+
+const levels: Record<string, { level: any; ref?: any; naive?: any; locked?: any }> = {
+  "11": { level: L.level11, ref: L.level11ReferenceBrain, naive: L.level11NaiveBrain },
+  "12": { level: L.level12, ref: L.level12ReferenceBrain },
+  "13": { level: L.level13, ref: L.level13ReferenceBrain, naive: L.level13NaiveBrain },
+  "14": { level: L.level14, ref: L.level14ReferenceBrain },
+  "41": { level: L.level41, ref: L.level41ReferenceBrain, naive: L.level41NaiveBrain },
+  "45": { level: L.level45, locked: L.level45LockedBrain },
+};
+
+const levelKey = process.argv[2] ?? "12";
+const brainKey = process.argv[3] ?? "ref";
+const entry = levels[levelKey];
+if (!entry) throw new Error(`unknown level key: ${levelKey}`);
+
+function pickBrain(): any | null {
+  if (brainKey === "none") return null;
+  const b = (entry as any)[brainKey];
+  if (!b) throw new Error(`level ${levelKey} has no '${brainKey}' brain`);
+  return b;
+}
+
+function dumpFor(level: any, body: any, brain: any): void {
+  const scenario = makeScenario(body, { brain, level });
+  const w: World = run(initWorld(scenario), 1000);
+  process.stdout.write(`\n=== ${level.id} on ${body.name} (${brainKey}) ===\n`);
+  for (const e of w.log) {
+    process.stdout.write(`"t${e.tick} ${e.from}->${e.to} ${e.type} [${e.disposition.kind}]",\n`);
+  }
+  const sends = w.log.filter((e) => e.from === "MA").map((e) => ({ tick: e.tick, type: e.type, payload: e.payload }));
+  process.stdout.write(`\nMA sends:\n${JSON.stringify(sends, null, 2)}\n`);
+  const v = w.vehicle;
+  process.stdout.write(
+    `\noutcome=${w.outcome} ticks=${w.tick} holdTicks=${w.holdTicks} wpIndex=${w.waypointIndex} pos=(${v.x.toFixed(1)},${v.y.toFixed(1)}) alt=${v.altitude.toFixed(0)} hdg=${v.heading.toFixed(1)} spd=${v.speed.toFixed(1)}\n`,
+  );
+  process.stdout.write(`score=${JSON.stringify(scoreWorld(w))}\n`);
+}
+
+const brain = pickBrain();
+if (entry.level.bodies) {
+  for (const id of entry.level.bodies as string[]) dumpFor(entry.level, L.bodyById(id), brain);
+} else {
+  dumpFor(entry.level, L.bodyById(entry.level.body), brain);
+}

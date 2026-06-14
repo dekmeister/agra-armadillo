@@ -30,9 +30,14 @@ export function Help() {
             You build a <b>brain</b> — a visual state machine — that talks to an aircraft's{" "}
             <b>Flight Autonomy (FA)</b> over the real A-GRA Vehicle Interface. FA always flies the
             aircraft; it only obeys you once you've properly acquired control, and it rejects
-            anything outside the body's published performance envelope. Your job in the MVP level
-            (<span className="k-cyan">1.2 — First Valid HSA Command</span>) is to fly to the
-            objective zone and hold altitude there for 10 ticks.
+            anything outside the body's published performance envelope. Pick a mission from{" "}
+            <span className="k-cyan">Level Select</span>; each level's <b>Mission Card</b> states
+            its objective and win condition. The opening missions teach the control-acquisition
+            handshake (<span className="k-cyan">1.1</span>) and your first valid flight command
+            (<span className="k-cyan">1.2</span>); later ones add the performance envelope
+            (<span className="k-cyan">1.3</span>), a hand-flown racetrack
+            (<span className="k-cyan">1.4</span>), and re-flying one brain across airframes
+            (<span className="k-cyan">4.1 / 4.5</span>).
           </p>
         </section>
 
@@ -44,7 +49,8 @@ export function Help() {
             </li>
             <li>
               <b>Tactical Map</b> (center) — top-down view: the aircraft, its trail, and the green
-              objective zone. The altitude tape on the right shows commanded vs actual altitude.
+              objective zone(s) (a racetrack shows all of its waypoints). The altitude tape on the
+              right shows commanded vs actual altitude.
             </li>
             <li>
               <b>Message Log</b> (right) — every message on the bus between MA and FA. This is your
@@ -102,9 +108,9 @@ export function Help() {
         </section>
 
         <section>
-          <h2>The lesson (the handshake)</h2>
+          <h2>The core lesson (the handshake)</h2>
           <p className="help-p">
-            FA isn't listening until you hold control. Send a{" "}
+            Every mission starts the same way: FA isn't listening until you hold control. Send a{" "}
             <Identifier name="MA_FlightCommandMT" /> too early and the log shows{" "}
             <span className="k-olive">IGNORED — not secondary controller</span>. The correct
             sequence:

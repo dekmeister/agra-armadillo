@@ -5,6 +5,7 @@
   "capabilityId": "CAP-HSA",
   "objective": {
     "_doc": "Fly heading 270 to the zone and hold at 3000 m. HSA has no completion state — the brain infers arrival from position reports (docs/03).",
+    "kind": "reach-hold",
     "zone": { "x": -900, "y": 0, "radius": 150 },
     "altitude": 3000,
     "altitudeTolerance": 50,
@@ -23,5 +24,5 @@
   ],
   "maxTicks": 200,
   "pars": { "ticks": 26, "busTraffic": 2, "rejections": 0, "brainSize": 7 },
-  "fidelityNotes": [2, 3, 6, 8]
+  "fidelityNotes": [2, 3, 6, 8, 12, 13]
 }

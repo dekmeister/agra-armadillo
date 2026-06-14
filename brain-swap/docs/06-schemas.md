@@ -60,6 +60,7 @@ One airframe + its FA configuration. FA is one engine configured by this data
   "body": "ax-01",            // body id reference
   "capabilityId": "CAP-HSA",  // capability the brain controls (drives cap.* refs)
   "objective": {              // win is world-state, never "message sent" (docs/01)
+    "kind": "reach-hold",     // discriminated union — see "Objective kinds" below
     "zone": { "x": -900, "y": 0, "radius": 150 },
     "altitude": 3000, "altitudeTolerance": 50,
     "holdTicks": 10           // consecutive ticks in-zone & at-altitude
@@ -67,9 +68,37 @@ One airframe + its FA configuration. FA is one engine configured by this data
   "availableMessages": [ "MA_FlightCommandMT", … ],  // editor subset (UI concern)
   "maxTicks": 200,            // hard budget; run fails if exceeded (keeps golden runs finite)
   "pars": { "ticks": 26, "busTraffic": 2, "rejections": 0, "brainSize": 7 },
-  "fidelityNotes": [2, 3, 6, 8]    // indices into docs/02 §3
+  "fidelityNotes": [2, 3, 6, 8],   // indices into docs/02 §3
+  // --- optional fields (post-MVP) ---
+  "brief": "…", "teaches": "…",    // teaching copy surfaced in-game (optional)
+  "start": { "x": 0, … },          // override the body's start for this mission (optional)
+  "bodies": ["ax-01","ax-02","ax-03"]  // multi-body level (4.5); one brain, every body
 }
 ```
+
+### Objective kinds (`Objective` discriminated union, `level/types.ts`)
+
+Win conditions dispatch on `kind`. Every variant carries `holdTicks` (consecutive
+ticks the terminal predicate must hold), so callers may read `objective.holdTicks`
+without narrowing. `evaluateWin` (`level/runtime.ts`) is given the vehicle, the FA
+state, and the carried progress `{ holdTicks, waypointIndex }`.
+
+```jsonc
+// reach-hold (1.2, 1.3, 4.1, 4.5): be in the zone & altitude band for holdTicks
+{ "kind": "reach-hold", "zone": {…}, "altitude": 3000, "altitudeTolerance": 50, "holdTicks": 10 }
+
+// hold-control (1.1): be the secondary controller of capabilityId for holdTicks (no flight)
+{ "kind": "hold-control", "holdTicks": 30 }
+
+// waypoint-sequence (1.4): pass each waypoint in order, then hold the final one
+{ "kind": "waypoint-sequence",
+  "waypoints": [ { "zone": {…}, "altitude?": …, "altitudeTolerance?": … }, … ],
+  "holdTicks": 5 }
+```
+
+The world carries `waypointIndex` (next waypoint to reach) alongside `holdTicks`;
+both init to 0. Multi-body levels (`bodies`) ignore the singular `body` field — see
+`multiBodyScenarios` + `aggregateWorst` (`packages/levels/src/index.ts`, scoring).
 
 ## Brain — `*.reference-brain.json` and player saves (`Brain`)
 
@@ -112,4 +141,6 @@ which keeps brains pure data and the sim deterministic.
 
 `{ ticks, busTraffic, rejections, brainSize }` (docs/01). `busTraffic` = MA→FA
 messages; `rejections` = sends ignored-while-not-controller + FA-rejected commands;
-`brainSize` = states + transitions.
+`brainSize` = states + transitions. `aggregateWorst(scores)` reduces several runs to
+the per-metric worst case — used by multi-body levels (4.5) to grade one brain across
+the whole fleet.

@@ -12,6 +12,30 @@ Bodies introduced along the way (performance profiles are level data):
 - **AX-04 "Boxkite"** — world-4 oddball: VI OMS Isolator modeled as a distinct
   filtering/latency stage; strict heartbeat discipline.
 
+## Build status
+
+Implemented and golden-tested (`packages/levels`): **1.2** (MVP), plus the
+post-MVP batch **1.1, 1.3, 1.4, 4.1, 4.5**. Bodies built: **AX-01 "Mule"**,
+**AX-02 "Heron"** (`approvalLatencyTicks 3`, ceiling 8000, `maxAirspeed 50`,
+slow turn), **AX-03 "Ferret"** (agile `maxTurnRateDeg 10`, narrow altitude band
+1000–10000, higher stall `minAirspeed 30`). Everything else below is design, not
+yet built.
+
+The built versions are deliberately simplified against the design copy (see
+`docs/02-fidelity.md` lies #14–16):
+- **1.3** advertises a *static* envelope — no fuel burn-off / ceiling-rise yet
+  (needs a fuel model + event schedule). The lesson (clamp to `cap.MaxAltitude`)
+  is intact; a level `start` override puts AX-02 near its ceiling so the climb
+  completes during the zone transit.
+- **1.4** is flown by *position-threshold* steering (Direction-only `UPDATE` when
+  a position-report coordinate crosses a corner), not FA-managed timed legs; the
+  waypoint zones sit on the straight legs (no brain timer yet).
+- **4.1** re-flies the **1.2** HSA mission on AX-02 (the design's 1.4-hold /
+  2.3-station are not built); the reference brain reads `cap.MaxAirspeed`/
+  `cap.MinAirspeed` and waits for APPROVED, so it ports unchanged.
+- **4.5** is graded headless (worst-of-three via the test harness); no in-game
+  score-screen UI yet.
+
 ## World 0 — Listen Before You Speak (2 levels)
 
 - **0.1 First Contact.** No commands available. Goal: light a panel lamp when
@@ -23,7 +47,7 @@ Bodies introduced along the way (performance profiles are level data):
 
 ## World 1 — HSA/CSA (7 levels, body AX-01 then AX-02)
 
-- **1.1 Handshake.** Acquire HSA capability control: wait for
+- **1.1 Handshake. [Built]** Acquire HSA capability control: wait for
   `MA_FlightCapabilityStatusMT` AVAILABLE → `MA_ControlRequestMT` (ACQUIRE, correct
   CapabilityID) → handle APPROVED → confirm via next `ControlStatusMT` showing you
   as SecondaryController. Win: hold secondary control 30 ticks. The level's bait:
@@ -33,14 +57,15 @@ Bodies introduced along the way (performance profiles are level data):
   cycle: command → ACCEPTED → consume `MA_FlightActivityMT` and
   `MA_PositionReportDetailedMT` to detect arrival (HSA has no completion state —
   real semantics; *you* must notice you've arrived). **← MVP level.**
-- **1.3 Envelope.** Objective zone sits above this body's MaxAltitude... or does
+- **1.3 Envelope. [Built]** Objective zone sits above this body's MaxAltitude... or does
   it? The profile republishes as fuel burns off and the ceiling rises. Naive
   command → `PERFORMANCE_LIMIT_EXCEEDED`. Par (0 rejections) requires reading
   `HSA_CSA_PerformanceProfile` and clamping/waiting. Teaches: rejection enum +
-  envelope-as-data.
-- **1.4 Racetrack by Hand.** Fly a hold pattern using only HSA. Teaches partial
+  envelope-as-data. *(Built: static envelope — no fuel/ceiling-rise yet.)*
+- **1.4 Racetrack by Hand. [Built]** Fly a hold pattern using only HSA. Teaches partial
   commands: update *only* `Direction` each leg (bus-traffic par is unreachable if
-  you resend full commands), `CommandState` UPDATE vs NEW.
+  you resend full commands), `CommandState` UPDATE vs NEW. *(Built: four-corner
+  waypoint sequence steered by position thresholds — no timed legs yet.)*
 - **1.5 Winds Aloft.** Reach a narrow corridor in a stiff crosswind read from
   `WeatherObservationMT`. Heading (HSA) vs course (CSA, `Course` field) — command
   course or compute your own crab angle. Teaches: H vs C is not pedantry.
@@ -105,10 +130,13 @@ this variant; its sister variant in world 4 doesn't)
 
 ## World 4 — Brain Swap (5 levels)
 
-- **4.1 Second Body.** Re-fly 1.4's hold + 2.3's station with your existing brains
+- **4.1 Second Body. [Built]** Re-fly 1.4's hold + 2.3's station with your existing brains
   on AX-02: lower ceiling, PENDING before APPROVED, slower turn rate. A brain that
   hardcoded altitudes/speeds gets `PERFORMANCE_LIMIT_EXCEEDED`; one that read the
   profile mostly just works. Edits allowed but counted ("diff size" bonus metric).
+  *(Built: re-flies the 1.2 HSA mission on AX-02; the profile-driven reference brain
+  reads `cap.MaxAirspeed`/`cap.MinAirspeed` and ports with zero edits, while a brain
+  that hardcoded the Mule's `Speed:60` is rejected.)*
 - **4.2 The Flinch.** AX-03 with an anxious FA: frequent collision-avoidance
   interrupts (`CONSTRAINT_COLLISION_AVOIDANCE`, capabilities TEMPORARILY_UNAVAILABLE,
   resume signaled by fresh `MA_FlightCapabilityMT`). Brain must hold state, not
@@ -124,9 +152,11 @@ this variant; its sister variant in world 4 doesn't)
   `SubsystemStatusDataRequestMT` before assuming failure (real comms-failure
   interaction). Mishandling earns revocation: `MA_ControlRequestStatusMT` CANCELED
   + `MA_ControlAssignmentMT` listing your remaining capabilities (none).
-- **4.5 Type Certificate (capstone).** One brain, locked: it flies the same
+- **4.5 Type Certificate (capstone). [Built]** One brain, locked: it flies the same
   mission on AX-01, AX-02, AX-03 back-to-back with zero edits. Score = worst of
-  the three runs. Score screen styled as a compliance test report.
+  the three runs. Score screen styled as a compliance test report. *(Built headless:
+  the golden test runs the locked brain on all three bodies and records
+  `aggregateWorst`; no score-screen UI yet.)*
 
 ## Stretch levels (post-1.0 candidates)
 

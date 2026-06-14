@@ -19,27 +19,33 @@ Grounded in the public A-GRA 5.0a release in `../References/A-GRA/`:
 | [docs/02-fidelity.md](docs/02-fidelity.md) | Which real messages/sequences appear, simplifications, and the "lies we tell" list |
 | [docs/03-levels.md](docs/03-levels.md) | Level progression: first HSA command → third airframe |
 | [docs/04-architecture.md](docs/04-architecture.md) | Technology and architecture for the browser implementation |
-| [docs/05-mvp.md](docs/05-mvp.md) | Scoped MVP: first playable level |
-| [docs/06-schemas.md](docs/06-schemas.md) | Catalog / body / level / brain JSON schemas (firmed up in build steps 1–4) |
+| [docs/05-mvp.md](docs/05-mvp.md) | Scoped MVP build order (shipped) — historical record |
+| [docs/06-schemas.md](docs/06-schemas.md) | Catalog / body / level / brain JSON schemas |
 
-## Development (headless core — build-order steps 1–4)
+## Development
 
-Pure-TypeScript, deterministic, headless simulation core + data, no UI yet
-(React/Pixi run view is a later slice). npm workspaces: `packages/core`,
-`packages/levels`.
+TypeScript monorepo (npm workspaces): a pure, deterministic, headless simulation
+`core`; `levels` data; and a React 18 + PixiJS `game` (the playable run view +
+brain editor). The core stays DOM-free and RNG-free — same brain + same level ⇒
+identical message log every run.
 
 ```bash
 npm install
-npm run typecheck    # tsc --noEmit, strict
+npm run dev          # run the game (Vite dev server) — play the levels
+npm run typecheck    # tsc --noEmit, strict (core + levels)
+npm run typecheck:game
 npm run gen:catalog  # regenerate packages/core/src/messages/generated.ts from the catalog YAML
 npm run fidelity     # CI gate: every catalog name must exist in the A-GRA XSD
-npm test             # vitest: handshake, vehicle, validator, fidelity, determinism, and the 1.2 golden run
-npm run run:1.2      # dev aid: print the reference brain's run log + scores
+npm test             # vitest: core (handshake/vehicle/validator/determinism), fidelity, and the per-level golden runs
+npm run build:game   # production bundle
 ```
 
-The milestone: `packages/levels/test/level-1.2.golden.test.ts` proves level 1.2 is
-solvable by a hand-written reference brain in a deterministic, byte-stable golden run
-— before any UI exists.
+Each playable level has a byte-stable **golden-run test** (e.g.
+`packages/levels/test/level-1.2.golden.test.ts`) proving a hand-written reference
+brain solves it deterministically. Playable today: **1.1, 1.2, 1.3, 1.4, 4.1, 4.5**
+(see `docs/03-levels.md`). For authoring more, see "Adding a level" in
+[CLAUDE.md](CLAUDE.md); `npx tsx tools/dump-log.ts <levelKey> <brainKey>` prints a
+run's log/sends/score for tuning golden tests.
 
 ## Standing rules for this project
 

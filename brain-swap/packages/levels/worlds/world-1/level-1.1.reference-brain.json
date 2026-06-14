@@ -1,0 +1,21 @@
+{
+  "id": "ref-1.1",
+  "_doc": "Minimal handshake: on the capability advertising AVAILABLE, ACQUIRE control and hold. FA approves (instant on AX-01) and MA stays the secondary controller for the rest of the run.",
+  "initial": "await-capability",
+  "states": ["await-capability", "holding"],
+  "transitions": [
+    {
+      "from": "await-capability",
+      "trigger": { "messageType": "MA_FlightCapabilityStatusMT" },
+      "guard": { "field": "Availability", "op": "==", "value": "AVAILABLE" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "MA_ControlRequestMT",
+          "fields": { "RequestType": "ACQUIRE", "CapabilityID": { "cap": "CapabilityID" } }
+        }
+      ],
+      "target": "holding"
+    }
+  ]
+}

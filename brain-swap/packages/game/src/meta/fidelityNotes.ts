@@ -21,6 +21,9 @@ export const FIDELITY_NOTES: FidelityNote[] = [
   { index: 11, title: "Compliance scoring is per-level", body: "Judged by our FA referee in the style of the official harness; passing Brain Swap is not A-GRA compliance." },
   { index: 12, title: "Holding a zone = flying slowly through it", body: "A fixed-wing body can't hover (MinAirspeed > 0). The 1.2 \"enter-and-hold\" win is satisfied by slowing near min airspeed and transiting the zone; the brain consumes position reports to decide when to slow." },
   { index: 13, title: "Control correlation by CapabilityID", body: "The real handshake links control via Controllee/ControlType and identifies controllers by SystemID; the game correlates by CapabilityID. Every field name shown is real." },
+  { index: 14, title: "The performance envelope is static", body: "Real FA republishes the profile as flight conditions change (e.g. the ceiling rises as fuel burns off). Level 1.3 advertises the envelope once at boot; the lesson is only \"read the profile, don't hardcode.\" A fuel-coupled envelope needs a burn model + event schedule (a later world)." },
+  { index: 15, title: "The racetrack is flown by position thresholds", body: "Real loiter (Racetrack/Circle, §1.2.2.3) has FA-managed timed legs. Level 1.4 hand-steers a four-corner circuit, issuing a Direction-only UPDATE when a position report crosses a corner threshold. No brain timer yet, so legs are geometric, not timed; waypoint zones sit on the straights where position is stable." },
+  { index: 16, title: "The Type Certificate is graded headless", body: "The 4.5 \"one locked brain across the whole fleet\" proof runs in the test harness (worst-of-three via aggregateWorst). In-game the level runs on its primary body only; there is no multi-body score-screen UI yet." },
 ];
 
 export function notesFor(indices: readonly number[] | undefined): FidelityNote[] {

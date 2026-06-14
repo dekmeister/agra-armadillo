@@ -1,0 +1,65 @@
+{
+  "id": "ref-1.3",
+  "_doc": "Profile-driven: clamps the commanded altitude to cap.MaxAltitude and the speeds to the advertised airspeed band, so it never exceeds the envelope. Same handshake -> NEW -> slow-to-loiter shape as 1.2.",
+  "initial": "await-capability",
+  "states": ["await-capability", "awaiting-approval", "confirming-control", "cruising", "arrived"],
+  "transitions": [
+    {
+      "from": "await-capability",
+      "trigger": { "messageType": "MA_FlightCapabilityStatusMT" },
+      "guard": { "field": "Availability", "op": "==", "value": "AVAILABLE" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "MA_ControlRequestMT",
+          "fields": { "RequestType": "ACQUIRE", "CapabilityID": { "cap": "CapabilityID" } }
+        }
+      ],
+      "target": "awaiting-approval"
+    },
+    {
+      "from": "awaiting-approval",
+      "trigger": { "messageType": "MA_ControlRequestStatusMT" },
+      "guard": { "field": "ApprovalRequestProcessingState", "op": "==", "value": "APPROVED" },
+      "target": "confirming-control"
+    },
+    {
+      "from": "confirming-control",
+      "trigger": { "messageType": "ControlStatusMT" },
+      "guard": { "field": "SecondaryController", "op": "==", "value": "MA" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "MA_FlightCommandMT",
+          "fields": {
+            "CommandID": "CMD-1",
+            "CommandState": "NEW",
+            "CapabilityID": { "cap": "CapabilityID" },
+            "Heading": 270,
+            "Altitude": { "cap": "MaxAltitude" },
+            "Speed": { "cap": "MaxAirspeed" }
+          }
+        }
+      ],
+      "target": "cruising"
+    },
+    {
+      "from": "cruising",
+      "trigger": { "messageType": "MA_PositionReportDetailedMT" },
+      "guard": { "field": "Longitude", "op": "<=", "value": -600 },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "MA_FlightCommandMT",
+          "fields": {
+            "CommandID": "CMD-1",
+            "CommandState": "UPDATE",
+            "CapabilityID": { "cap": "CapabilityID" },
+            "Speed": { "cap": "MinAirspeed" }
+          }
+        }
+      ],
+      "target": "arrived"
+    }
+  ]
+}

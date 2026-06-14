@@ -9,19 +9,32 @@ import { Application, Graphics } from "pixi.js";
 import { useStore } from "../store.ts";
 import { Panel } from "../ui/Panel.tsx";
 import { color, colorNum } from "../ui/tokens.ts";
-import type { LevelDef, World } from "@brain-swap/core";
+import type { LevelDef, World, Zone } from "@brain-swap/core";
 
 interface Bounds { minX: number; maxX: number; minY: number; maxY: number; }
 interface Cam { scale: number; offX: number; offY: number; }
 
+/** Zones to draw/frame for any objective kind (none for hold-control). */
+function objectiveZones(level: LevelDef): readonly Zone[] {
+  const o = level.objective;
+  if (o.kind === "reach-hold") return [o.zone];
+  if (o.kind === "waypoint-sequence") return o.waypoints.map((w) => w.zone);
+  return [];
+}
+
 function worldBounds(level: LevelDef, startX: number, startY: number): Bounds {
-  const z = level.objective.zone;
   const margin = 250;
+  const xs = [startX];
+  const ys = [startY];
+  for (const z of objectiveZones(level)) {
+    xs.push(z.x - z.radius, z.x + z.radius);
+    ys.push(z.y - z.radius, z.y + z.radius);
+  }
   return {
-    minX: Math.min(z.x - z.radius, startX) - margin,
-    maxX: Math.max(z.x + z.radius, startX) + margin,
-    minY: Math.min(z.y - z.radius, startY) - margin,
-    maxY: Math.max(z.y + z.radius, startY) + margin,
+    minX: Math.min(...xs) - margin,
+    maxX: Math.max(...xs) + margin,
+    minY: Math.min(...ys) - margin,
+    maxY: Math.max(...ys) + margin,
   };
 }
 
@@ -99,12 +112,13 @@ export function TacticalMapPanel() {
     }
     g.stroke({ width: 1, color: colorNum(color.line), alpha: 0.35 });
 
-    // objective zone (dashed green circle) + center cross
-    const z = level.objective.zone;
-    dashedCircle(g, sx(z.x), sy(z.y), z.radius * cam.scale, colorNum(color.green));
-    g.moveTo(sx(z.x) - 5, sy(z.y)).lineTo(sx(z.x) + 5, sy(z.y));
-    g.moveTo(sx(z.x), sy(z.y) - 5).lineTo(sx(z.x), sy(z.y) + 5);
-    g.stroke({ width: 1, color: colorNum(color.green), alpha: 0.7 });
+    // objective zone(s) (dashed green circle) + center cross
+    for (const z of objectiveZones(level)) {
+      dashedCircle(g, sx(z.x), sy(z.y), z.radius * cam.scale, colorNum(color.green));
+      g.moveTo(sx(z.x) - 5, sy(z.y)).lineTo(sx(z.x) + 5, sy(z.y));
+      g.moveTo(sx(z.x), sy(z.y) - 5).lineTo(sx(z.x), sy(z.y) + 5);
+      g.stroke({ width: 1, color: colorNum(color.green), alpha: 0.7 });
+    }
 
     // trail: dotted cyan dots at each frame up to playhead
     const upto = Math.min(playhead, timeline.length - 1);

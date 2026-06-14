@@ -1,7 +1,9 @@
-// Level Select — five world columns (W0–W4). Only 1.2 is playable in this slice; medals
-// (T/B/S = Ticks / Bus / Size) bind to persisted best scores vs the level par.
+// Level Select — five world columns (W0–W4). Playable levels (catalog `playable` flag, backed
+// by the @brain-swap/levels registry) load on click via selectLevel; the rest are locked.
+// Medals (T/B/S = Ticks / Bus / Size) bind to persisted best scores vs each level's par.
 import { useStore } from "../store.ts";
 import { WORLDS, type LevelEntry } from "./levelCatalog.ts";
+import { levelById } from "@brain-swap/levels";
 import type { LevelPars, Score } from "@brain-swap/core";
 
 type Medal = "gold" | "silver" | "none";
@@ -23,16 +25,13 @@ function medals(score: Score | undefined, pars: LevelPars | undefined): { t: Med
 }
 
 export function LevelSelect() {
-  const setView = useStore((s) => s.setView);
-  const setMode = useStore((s) => s.setMode);
+  const selectLevel = useStore((s) => s.selectLevel);
   const currentLevelId = useStore((s) => s.level.id);
-  const pars = useStore((s) => s.level.pars);
   const best = useStore((s) => s.bestScores);
 
   const openLevel = (lv: LevelEntry) => {
     if (!lv.playable) return;
-    setView("console");
-    setMode("EDIT");
+    selectLevel(lv.id);
   };
 
   return (
@@ -49,7 +48,7 @@ export function LevelSelect() {
               </div>
               {w.levels.map((lv) => {
                 const slot = best[lv.id];
-                const m = lv.id === currentLevelId ? medals(slot?.score, pars) : { t: "none", b: "none", s: "none" } as const;
+                const m = medals(slot?.score, levelById(lv.id)?.level.pars);
                 const status = !lv.playable
                   ? "locked"
                   : slot?.won

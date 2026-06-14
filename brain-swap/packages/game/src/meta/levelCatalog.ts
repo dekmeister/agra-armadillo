@@ -1,6 +1,7 @@
-// Static world/level roster for the Level Select screen (titles from docs/03). Only 1.2 is
-// playable in this MVP slice; the rest are locked placeholders. Future levels are DATA
-// (packages/levels), not code — adding them here + a level JSON is all it should take.
+// Static world/level roster for the Level Select screen (titles from docs/03). Levels with
+// `playable: true` are wired to the @brain-swap/levels registry (see LEVELS / levelById there);
+// the rest are locked placeholders. Adding a level is DATA, not code: author the level JSON +
+// reference brain, register it in LEVELS, then flip `playable` here. See CLAUDE.md "Adding a level".
 export interface LevelEntry {
   id: string;
   name: string;
@@ -26,10 +27,10 @@ export const WORLDS: WorldEntry[] = [
     no: "W1",
     name: "HSA / CSA",
     levels: [
-      { id: "1.1", name: "Handshake" },
+      { id: "1.1", name: "Handshake", playable: true },
       { id: "1.2", name: "First Valid HSA Command", playable: true },
-      { id: "1.3", name: "Envelope" },
-      { id: "1.4", name: "Racetrack by Hand" },
+      { id: "1.3", name: "Envelope", playable: true },
+      { id: "1.4", name: "Racetrack by Hand", playable: true },
       { id: "1.5", name: "Winds Aloft" },
       { id: "1.6", name: "Bingo" },
       { id: "1.7", name: "Counter-Offer" },
@@ -61,11 +62,11 @@ export const WORLDS: WorldEntry[] = [
     no: "W4",
     name: "Brain Swap",
     levels: [
-      { id: "4.1", name: "Second Body" },
+      { id: "4.1", name: "Second Body", playable: true },
       { id: "4.2", name: "The Flinch" },
       { id: "4.3", name: "Degraded" },
       { id: "4.4", name: "Heartbeat Discipline" },
-      { id: "4.5", name: "Type Certificate", capstone: true },
+      { id: "4.5", name: "Type Certificate", playable: true, capstone: true },
     ],
   },
 ];

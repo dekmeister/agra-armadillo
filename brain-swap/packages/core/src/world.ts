@@ -34,6 +34,8 @@ export interface World {
   readonly outcome: Outcome;
   /** Consecutive ticks the level win-predicate has held (toward objective.holdTicks). */
   readonly holdTicks: number;
+  /** Index of the next waypoint to reach (waypoint-sequence objectives; 0 otherwise). */
+  readonly waypointIndex: number;
 }
 
 export function makeScenario(
@@ -52,9 +54,10 @@ export function initWorld(scenario: Scenario): World {
     bus,
     log: [],
     fa: initFaState(),
-    vehicle: initVehicle(scenario.body.start),
+    vehicle: initVehicle(scenario.level?.start ?? scenario.body.start),
     ma: { brainState: scenario.brain ? scenario.brain.initial : null },
     outcome: "running",
     holdTicks: 0,
+    waypointIndex: 0,
   };
 }

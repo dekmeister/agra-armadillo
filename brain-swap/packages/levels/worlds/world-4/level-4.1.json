@@ -1,0 +1,30 @@
+{
+  "id": "4.1",
+  "title": "Second Body",
+  "body": "ax-02",
+  "capabilityId": "CAP-HSA",
+  "brief": "Re-fly the HSA mission on the Heron. The numbers that worked on the Mule do not.",
+  "teaches": "Portability: a brain that reads the profile (cap.MaxAirspeed / cap.MinAirspeed) and waits for APPROVED ports to a new airframe unchanged. A brain that hardcoded the Mule's Speed:60 is rejected by the Heron's slower envelope.",
+  "objective": {
+    "_doc": "Same reach-hold mission as 1.2, flown on AX-02 (lower airspeed ceiling, 3-tick approval latency).",
+    "kind": "reach-hold",
+    "zone": { "x": -900, "y": 0, "radius": 150 },
+    "altitude": 3000,
+    "altitudeTolerance": 50,
+    "holdTicks": 10
+  },
+  "availableMessages": [
+    "MA_FlightCapabilityMT",
+    "MA_FlightCapabilityStatusMT",
+    "MA_ControlRequestMT",
+    "MA_ControlRequestStatusMT",
+    "ControlStatusMT",
+    "MA_FlightCommandMT",
+    "MA_FlightCommandStatusMT",
+    "MA_FlightActivityMT",
+    "MA_PositionReportDetailedMT"
+  ],
+  "maxTicks": 200,
+  "pars": { "ticks": 33, "busTraffic": 3, "rejections": 0, "brainSize": 9 },
+  "fidelityNotes": [6, 8, 12, 13]
+}

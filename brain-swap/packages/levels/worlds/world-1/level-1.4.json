@@ -1,0 +1,33 @@
+{
+  "id": "1.4",
+  "title": "Racetrack by Hand",
+  "body": "ax-01",
+  "capabilityId": "CAP-HSA",
+  "brief": "Fly a four-corner circuit. Turn each corner with a Direction-only UPDATE.",
+  "teaches": "NEW sets a full command; UPDATE amends one field of the active command. Steering the circuit with single-field (Heading) UPDATEs keeps bus traffic to a minimum — the racetrack par only falls to partial updates.",
+  "objective": {
+    "_doc": "waypoint-sequence: pass the four corner zones in order, then hold the last. Flown by position-threshold steering (no brain timer yet) — fidelity lie.",
+    "kind": "waypoint-sequence",
+    "waypoints": [
+      { "zone": { "x": -600, "y": 0, "radius": 250 } },
+      { "zone": { "x": -1500, "y": -700, "radius": 250 } },
+      { "zone": { "x": -700, "y": -1500, "radius": 250 } },
+      { "zone": { "x": 300, "y": 0, "radius": 250 } }
+    ],
+    "holdTicks": 5
+  },
+  "availableMessages": [
+    "MA_FlightCapabilityMT",
+    "MA_FlightCapabilityStatusMT",
+    "MA_ControlRequestMT",
+    "MA_ControlRequestStatusMT",
+    "ControlStatusMT",
+    "MA_FlightCommandMT",
+    "MA_FlightCommandStatusMT",
+    "MA_FlightActivityMT",
+    "MA_PositionReportDetailedMT"
+  ],
+  "maxTicks": 400,
+  "pars": { "ticks": 235, "busTraffic": 5, "rejections": 0, "brainSize": 13 },
+  "fidelityNotes": [6, 8, 12, 15]
+}

@@ -109,10 +109,32 @@ the XSD: `INVALID_CURVE`, `INVALID_WAYPOINT`, `PERFORMANCE_LIMIT_EXCEEDED`,
     whole acquisition handshake by `CapabilityID` (an extension of lie #4). Every
     field name shown — `RequestType`, `CapabilityID`, `ApprovalRequestProcessingState`,
     `PrimaryController`/`SecondaryController` — is real.
+14. **The performance envelope is static (level 1.3).** Real FA *republishes* the
+    profile as flight conditions change (Receive Vehicle Performance Values, 1.2.6.7
+    — e.g. ceiling rises as fuel burns off). Level 1.3 advertises the envelope once at
+    boot and validates against that fixed envelope. A dynamic, fuel-coupled envelope
+    needs a fuel-burn model + an event schedule (a later world); the lesson here is
+    only "read the profile, don't hardcode."
+15. **The racetrack is flown by position thresholds, not timed legs (level 1.4).**
+    Real loiter (Racetrack/Circle, §1.2.2.3) has FA-managed legs with real defaults
+    (right turns; 60 s legs ≤14,000 ft MSL). Level 1.4 has the brain hand-steer a
+    four-corner circuit, issuing a Direction-only `UPDATE` when a
+    `MA_PositionReportDetailedMT` coordinate crosses a corner threshold. There is no
+    brain timer yet, so legs are geometric, not timed; the waypoint zones sit on the
+    straights (where position is stable) rather than on the turn arcs.
+16. **The Type Certificate is graded by the test harness, not in-game (level 4.5).**
+    The 4.5 "fly one locked brain across the whole airframe fleet" proof runs headless:
+    the golden test runs the brain on every body in the level's `bodies` list and
+    records the worst-of-three score (`aggregateWorst`). There is no in-game
+    score-screen UI for the multi-body comparison yet.
 
 > **Exercised by the MVP (level 1.2):** lies #2 (single in-order bus), #3 (discrete
 > ticks), #4/#13 (short ids + CapabilityID correlation), #6 (2D + altitude scalar),
 > #8 (silent ignore when not controller), #12 (hold = slow transit).
+>
+> **Added by the post-MVP batch (1.1/1.3/1.4/4.1/4.5):** #14 (static envelope, 1.3),
+> #15 (geometric racetrack, 1.4), #16 (headless type certificate, 4.5). 1.1 exercises
+> the handshake (lie #8 bait); 4.1/4.5 lean on #6/#13 for portable, profile-driven brains.
 
 ## 4. Honesty mechanisms
 

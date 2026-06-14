@@ -1,0 +1,31 @@
+{
+  "id": "4.5",
+  "title": "Type Certificate",
+  "body": "ax-01",
+  "bodies": ["ax-01", "ax-02", "ax-03"],
+  "capabilityId": "CAP-HSA",
+  "brief": "One locked brain. Three airframes. Certify it flies the mission on all of them.",
+  "teaches": "The brain-swap thesis: a brain written against the interface, not the airframe, ports across the fleet. Commanded values sit inside every body's envelope; the handshake absorbs each body's approval latency.",
+  "objective": {
+    "_doc": "Same reach-hold mission run on every body in `bodies`. The locked brain must win on all three; the level score is the worst-of-three (aggregateWorst).",
+    "kind": "reach-hold",
+    "zone": { "x": -900, "y": 0, "radius": 200 },
+    "altitude": 3000,
+    "altitudeTolerance": 50,
+    "holdTicks": 10
+  },
+  "availableMessages": [
+    "MA_FlightCapabilityMT",
+    "MA_FlightCapabilityStatusMT",
+    "MA_ControlRequestMT",
+    "MA_ControlRequestStatusMT",
+    "ControlStatusMT",
+    "MA_FlightCommandMT",
+    "MA_FlightCommandStatusMT",
+    "MA_FlightActivityMT",
+    "MA_PositionReportDetailedMT"
+  ],
+  "maxTicks": 200,
+  "pars": { "ticks": 34, "busTraffic": 3, "rejections": 0, "brainSize": 9 },
+  "fidelityNotes": [6, 8, 12, 13, 16]
+}

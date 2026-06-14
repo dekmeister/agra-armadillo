@@ -14,8 +14,10 @@ import {
   type Transition,
   type World,
 } from "@brain-swap/core";
-import { ax01, level12, level12ReferenceBrain } from "@brain-swap/levels";
+import { bodyById, levelById } from "@brain-swap/levels";
 import { buildTimeline, finalFrame } from "./sim/timeline.ts";
+
+const DEFAULT_LEVEL_ID = "1.2";
 
 export type View = "console" | "report" | "select" | "help" | "codex";
 export type Mode = "EDIT" | "RUN";
@@ -98,6 +100,7 @@ interface StoreState {
   // navigation
   setView: (v: View) => void;
   setMode: (m: Mode) => void;
+  selectLevel: (levelId: string) => void;
 
   // transport
   play: () => void;
@@ -135,10 +138,12 @@ function scenarioOf(s: Pick<StoreState, "body" | "brain" | "level">) {
 }
 
 export const useStore = create<StoreState>((set, get) => {
-  const saved = loadSlot(level12.id);
+  const initialLevel = levelById(DEFAULT_LEVEL_ID)!.level;
+  const initialBody = bodyById(initialLevel.body);
+  const saved = loadSlot(initialLevel.id);
   const initialBrain = saved?.brain ?? starterBrain();
   const initialLayout = autoLayout(initialBrain.states, saved?.layout ?? {});
-  const initialTimeline = buildTimeline(makeScenario(ax01, { brain: initialBrain, level: level12 }));
+  const initialTimeline = buildTimeline(makeScenario(initialBody, { brain: initialBrain, level: initialLevel }));
 
   /** Recompute timeline from the current brain, reset playhead, persist the slot. */
   function rebuild(brain: Brain, layout: Layout) {
@@ -154,8 +159,8 @@ export const useStore = create<StoreState>((set, get) => {
 
   return {
     view: "console",
-    level: level12,
-    body: ax01,
+    level: initialLevel,
+    body: initialBody,
     brain: initialBrain,
     layout: initialLayout,
     timeline: initialTimeline,
@@ -183,6 +188,30 @@ export const useStore = create<StoreState>((set, get) => {
       } else {
         set({ mode: "EDIT", running: false, playhead: 0 });
       }
+    },
+    selectLevel: (levelId) => {
+      const bundle = levelById(levelId);
+      if (!bundle) return;
+      const { level } = bundle;
+      const body = bodyById(level.body);
+      const slot = loadSlot(level.id);
+      const brain = slot?.brain ?? starterBrain();
+      const layout = autoLayout(brain.states, slot?.layout ?? {});
+      const timeline = buildTimeline(makeScenario(body, { brain, level }));
+      set({
+        level,
+        body,
+        brain,
+        layout,
+        timeline,
+        playhead: 0,
+        running: false,
+        mode: "EDIT",
+        view: "console",
+        selectedLogIndex: null,
+        selectedStateId: null,
+        selectedTransitionIndex: null,
+      });
     },
 
     play: () => {
@@ -290,7 +319,8 @@ export const useStore = create<StoreState>((set, get) => {
     },
 
     loadReference: () => {
-      rebuild(level12ReferenceBrain, {});
+      const ref = levelById(get().level.id)?.referenceBrain ?? starterBrain();
+      rebuild(ref, {});
     },
     resetBrain: () => {
       rebuild(starterBrain(), {});
