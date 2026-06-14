@@ -294,7 +294,7 @@ export function TacticalMapPanel() {
   const ticks = [aMax, aMax * 0.75, aMax * 0.5, aMax * 0.25].map(Math.round);
 
   return (
-    <Panel title="TACTICAL" titleAccent="MAP" meta="TOP-DOWN · GEO + OBJ" className="grow">
+    <Panel title="TACTICAL" titleAccent="MAP" className="grow">
       <div className="map-wrap">
         <div className="map-canvas" ref={hostRef} />
         <button className="btn sm map-fit" onClick={fitView} title="Frame the whole mission area">
@@ -316,7 +316,7 @@ export function TacticalMapPanel() {
             LAT {cursor.y.toFixed(0)} · LON {cursor.x.toFixed(0)}
           </div>
         )}
-        <div className="map-cap">PixiJS · Tactical Map · drag to pan · scroll to zoom</div>
+        
       </div>
     </Panel>
   );

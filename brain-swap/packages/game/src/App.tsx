@@ -126,7 +126,7 @@ export function App() {
           </button>
         ))}
         <div className="strip-space" />
-        <div className="strip-meta">A-GRA VI · ASK 5.0a · MIL-SPEC GROUND STATION</div>
+        
       </div>
       {view === "console" && <Console />}
       {view === "report" && <ComplianceReport />}

@@ -1,14 +1,13 @@
-// Mobile gate. The console is a dense desktop avionics workspace (React Flow drag-wiring,
-// three heavyweight panels) and isn't usable on a phone/tablet. Detect a small or
-// coarse-pointer viewport and show a blocking notice (with a "continue anyway" escape).
+// Mobile gate. The console is a dense avionics workspace (React Flow wiring, three
+// side-by-side panels) and needs ~1180px of width to lay out without squashing the map.
+// It supports landscape tablets (e.g. iPad Pro 11" at 1180×820), so we gate purely on
+// width — not pointer type — and show a blocking notice (with a "continue anyway" escape).
 import { useEffect, useState } from "react";
 
-/** Treat as "mobile" when the viewport is narrow OR the primary pointer is coarse (touch). */
+/** Treat as "too small" when the viewport is narrower than the 1180px layout floor. */
 function detectMobile(): boolean {
   if (typeof window === "undefined") return false;
-  const narrow = window.matchMedia("(max-width: 1024px)").matches;
-  const coarse = window.matchMedia("(pointer: coarse)").matches;
-  return narrow || coarse;
+  return window.matchMedia("(max-width: 1179px)").matches;
 }
 
 export function MobileGate() {
@@ -17,7 +16,7 @@ export function MobileGate() {
 
   useEffect(() => {
     const update = () => setIsMobile(detectMobile());
-    const mq = window.matchMedia("(max-width: 1024px)");
+    const mq = window.matchMedia("(max-width: 1179px)");
     mq.addEventListener("change", update);
     window.addEventListener("resize", update);
     return () => {
@@ -31,14 +30,11 @@ export function MobileGate() {
   return (
     <div className="mobile-gate">
       <div className="mobile-card">
-        <div className="mg-brand">BRAIN SWAP · GS-1</div>
-        <h2>Desktop required</h2>
+        <h2>Screen too narrow</h2>
         <p>
-          This is a dense MIL-spec ground-station console — you wire a state machine by dragging
-          on a graph canvas across three side-by-side panels. It needs a mouse/trackpad and a wide
-          screen, so it isn't playable on a phone or small tablet.
+          Brain Swap needs a wide screen for its editor. Open it on a landscape tablet or
+          any desktop browser.
         </p>
-        <p className="mg-dim">Open it on a desktop browser at 1280px wide or more.</p>
         <button className="btn" onClick={() => setDismissed(true)}>
           Continue anyway
         </button>

@@ -11,7 +11,7 @@ export function FidelityNotesModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="modal-scrim" onClick={onClose}>
       <div className="modal narrow" onClick={(e) => e.stopPropagation()}>
-        <Panel title="FIDELITY" titleAccent="NOTES" meta="vs ASK 5.0a">
+        <Panel title="FIDELITY" titleAccent="NOTES">
           <div className="datalist" style={{ gap: 6 }}>
             {notes.map((n) => (
               <div key={n.index} style={{ lineHeight: 1.4 }}>
