@@ -232,6 +232,7 @@ select, input.field {
 /* ---- modal ---- */
 .modal-scrim { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; z-index: 100; }
 .modal { width: 760px; max-width: 94vw; max-height: 88vh; display: flex; flex-direction: column; }
+.modal.narrow { width: 560px; }
 .modal .mbody { display: grid; grid-template-columns: 1fr 220px; gap: 8px; padding: 9px; overflow: hidden; min-height: 0; }
 .fieldlist { display: flex; flex-direction: column; gap: 5px; overflow-y: auto; min-height: 0; }
 .fieldlist .fl-row { display: grid; grid-template-columns: 1fr auto auto; gap: 6px; align-items: center; padding: 4px 6px; border: 1px solid var(--k-line); background: var(--k-panel2); }

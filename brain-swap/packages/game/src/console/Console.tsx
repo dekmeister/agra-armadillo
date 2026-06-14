@@ -7,7 +7,6 @@ import { TransitionForm } from "../editor/TransitionForm.tsx";
 import { TacticalMapPanel } from "../run/TacticalMap.tsx";
 import { MissionCard, BodySpecSheet } from "../run/MissionPanels.tsx";
 import { MessageLogPanel } from "../run/MessageLog.tsx";
-import { FidelityNotesPanel } from "../meta/FidelityNotesPanel.tsx";
 
 export function Console() {
   return (
@@ -25,7 +24,6 @@ export function Console() {
             <MissionCard />
             <BodySpecSheet />
           </div>
-          <FidelityNotesPanel />
         </div>
         <div className="col">
           <MessageLogPanel />
