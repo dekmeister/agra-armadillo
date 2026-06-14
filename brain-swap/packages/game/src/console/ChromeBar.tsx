@@ -4,7 +4,7 @@ import { useStore, type Speed } from "../store.ts";
 import { FidelityNotesModal } from "../meta/FidelityNotesPanel.tsx";
 import { notesFor } from "../meta/fidelityNotes.ts";
 
-const SPEEDS: Speed[] = [1, 2, 8];
+const SPEEDS: [Speed, string][] = [[1, "1"], [2, "2"], [8, "3"]];
 
 export function ChromeBar() {
   const level = useStore((s) => s.level);
@@ -14,6 +14,7 @@ export function ChromeBar() {
   const mode = useStore((s) => s.mode);
   const playhead = useStore((s) => s.playhead);
   const togglePlay = useStore((s) => s.togglePlay);
+  const stop = useStore((s) => s.stop);
   const stepOne = useStore((s) => s.stepOne);
   const setSpeed = useStore((s) => s.setSpeed);
   const setMode = useStore((s) => s.setMode);
@@ -39,16 +40,24 @@ export function ChromeBar() {
             className={`iconbtn${running ? " playing" : ""}`}
             onClick={togglePlay}
             disabled={mode === "EDIT"}
-            title={running ? "Pause" : "Play"}
+            title={running ? "Pause [Space]" : "Play [Space]"}
           >
             {running ? "❚❚" : "▶"}
           </button>
-          <button className="iconbtn" onClick={stepOne} disabled={mode === "EDIT"} title="Step">
+          <button
+            className="iconbtn"
+            onClick={stop}
+            disabled={mode === "EDIT"}
+            title="Stop [S]"
+          >
+            ■
+          </button>
+          <button className="iconbtn" onClick={stepOne} disabled={mode === "EDIT"} title="Step [→]">
             ⏭
           </button>
           <div className="seg">
-            {SPEEDS.map((s) => (
-              <button key={s} className={speed === s ? "on" : ""} onClick={() => setSpeed(s)}>
+            {SPEEDS.map(([s, key]) => (
+              <button key={s} className={speed === s ? "on" : ""} onClick={() => setSpeed(s)} title={`${s}× speed [${key}]`}>
                 {s}×
               </button>
             ))}
@@ -71,10 +80,15 @@ export function ChromeBar() {
             <button
               className={`edit${mode === "EDIT" ? " on" : ""}`}
               onClick={() => setMode("EDIT")}
+              title="Edit mode [E]"
             >
               EDIT
             </button>
-            <button className={`run${mode === "RUN" ? " on" : ""}`} onClick={() => setMode("RUN")}>
+            <button
+              className={`run${mode === "RUN" ? " on" : ""}`}
+              onClick={() => setMode("RUN")}
+              title="Run mode [R]"
+            >
               RUN
             </button>
           </div>

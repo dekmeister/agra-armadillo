@@ -321,6 +321,10 @@ select, input.field {
 .help-ul, .help-ol { font-size: 14px; line-height: 1.6; color: var(--k-phos); margin: 8px 0; padding-left: 20px; }
 .help-ul li, .help-ol li { margin: 4px 0; }
 .help-ul li b, .help-ol li b { color: var(--k-phos); font-weight: 600; }
+.help-keys { font-size: 14px; border-collapse: collapse; margin: 8px 0; }
+.help-keys td { padding: 3px 12px 3px 0; color: var(--k-phos); vertical-align: top; }
+.help-keys td:first-child { padding-right: 16px; white-space: nowrap; }
+kbd { display: inline-block; font-family: var(--mono); font-size: 12px; background: var(--k-panel); border: 1px solid var(--k-line2); border-bottom-width: 2px; padding: 1px 6px; border-radius: 3px; color: var(--k-phos); }
 
 /* ---- message codex ---- */
 .codex { width: 980px; max-width: 100%; }

@@ -14,6 +14,55 @@ import { MobileGate } from "./ui/MobileGate.tsx";
 /** Ticks advanced per real second at 1× speed. 2×/8× scale this. */
 const TICKS_PER_SECOND = 4;
 
+function useKeyboardShortcuts() {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      // Don't fire when the user is typing in a form field.
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+
+      const st = useStore.getState();
+      switch (e.key) {
+        case " ":
+          e.preventDefault();
+          if (st.mode === "EDIT") {
+            st.setMode("RUN"); // switches to RUN and auto-starts
+          } else {
+            st.togglePlay();
+          }
+          break;
+        case "ArrowRight":
+          e.preventDefault();
+          if (st.mode === "RUN") st.stepOne();
+          break;
+        case "1":
+          st.setSpeed(1);
+          break;
+        case "2":
+          st.setSpeed(2);
+          break;
+        case "3":
+          st.setSpeed(8);
+          break;
+        case "e":
+        case "E":
+          st.setMode("EDIT");
+          break;
+        case "r":
+        case "R":
+          st.setMode("RUN");
+          break;
+        case "s":
+        case "S":
+          if (st.mode === "RUN") st.stop();
+          break;
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+}
+
 function usePlaybackClock() {
   const running = useStore((s) => s.running);
   const speed = useStore((s) => s.speed);
@@ -61,6 +110,7 @@ export function App() {
   const view = useStore((s) => s.view);
   const setView = useStore((s) => s.setView);
   usePlaybackClock();
+  useKeyboardShortcuts();
 
   return (
     <div className="app">

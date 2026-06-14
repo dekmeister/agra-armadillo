@@ -105,6 +105,7 @@ interface StoreState {
   // transport
   play: () => void;
   pause: () => void;
+  stop: () => void;
   togglePlay: () => void;
   stepOne: () => void;
   setSpeed: (s: Speed) => void;
@@ -220,6 +221,7 @@ export const useStore = create<StoreState>((set, get) => {
       else set({ running: true });
     },
     pause: () => set({ running: false }),
+    stop: () => set({ playhead: 0, running: false }),
     togglePlay: () => (get().running ? get().pause() : get().play()),
     stepOne: () => {
       const { playhead, timeline } = get();

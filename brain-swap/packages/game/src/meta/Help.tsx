@@ -108,6 +108,23 @@ export function Help() {
         </section>
 
         <section>
+          <h2>Keyboard shortcuts</h2>
+          <table className="help-keys">
+            <tbody>
+              <tr><td><kbd>Space</kbd></td><td>Play / Pause — if in Edit mode, switches to Run and starts</td></tr>
+              <tr><td><kbd>S</kbd></td><td>Stop — rewind to tick 0 and pause (Run mode)</td></tr>
+              <tr><td><kbd>→</kbd></td><td>Step forward one tick (Run mode)</td></tr>
+              <tr><td><kbd>1</kbd></td><td>1× speed</td></tr>
+              <tr><td><kbd>2</kbd></td><td>2× speed</td></tr>
+              <tr><td><kbd>3</kbd></td><td>8× speed</td></tr>
+              <tr><td><kbd>E</kbd></td><td>Switch to Edit mode</td></tr>
+              <tr><td><kbd>R</kbd></td><td>Switch to Run mode</td></tr>
+            </tbody>
+          </table>
+          <p className="help-p k-dim">Shortcuts are disabled while the cursor is in a text field.</p>
+        </section>
+
+        <section>
           <h2>The core lesson (the handshake)</h2>
           <p className="help-p">
             Every mission starts the same way: FA isn't listening until you hold control. Send a{" "}
