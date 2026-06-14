@@ -13,6 +13,10 @@ Grounded in the public A-GRA 5.0a release in `../References/A-GRA/`:
 
 ## Design documents
 
+Trial it out at: [https://stuff.aerowalsh.com/games/brainswap/](https://stuff.aerowalsh.com/games/brainswap/)
+
+## Design documents
+
 | Doc | Contents |
 |---|---|
 | [docs/01-game-design.md](docs/01-game-design.md) | One-page game design document |

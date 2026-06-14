@@ -7,6 +7,7 @@ import { defineConfig } from "vite";
 const r = (p: string) => resolve(__dirname, p);
 
 export default defineConfig({
+  base: "/games/brainswap/",
   plugins: [react()],
   resolve: {
     alias: {

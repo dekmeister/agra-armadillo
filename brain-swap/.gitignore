@@ -21,3 +21,6 @@ tools/deploy.sh
 # OS
 .DS_Store
 Thumbs.db
+
+# dev
+PLAN*.md
