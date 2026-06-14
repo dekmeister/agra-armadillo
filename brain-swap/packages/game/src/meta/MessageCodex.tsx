@@ -2,10 +2,26 @@
 // on or send. Bound directly to MESSAGE_CATALOG (the generated, fidelity-policed catalog),
 // so it can never drift from what the player actually wires. Lets players learn the VI
 // messages without leaving the game.
-import { MESSAGE_TYPE_NAMES } from "@brain-swap/core";
+import {
+  catalogEntry,
+  MESSAGE_TYPE_NAMES,
+  type Direction,
+  type MessageTypeName,
+} from "@brain-swap/core";
 import { MessageReference } from "./MessageReference.tsx";
 
+function scrollTo(name: string) {
+  document.getElementById(`msg-${name}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 export function MessageCodex() {
+  const byDir = new Map<Direction, MessageTypeName[]>();
+  for (const name of MESSAGE_TYPE_NAMES) {
+    const d = catalogEntry(name).direction;
+    if (!byDir.has(d)) byDir.set(d, []);
+    byDir.get(d)!.push(name);
+  }
+
   return (
     <div className="screen">
       <div className="report codex">
@@ -26,6 +42,32 @@ export function MessageCodex() {
           </div>
         </div>
 
+        <h2>MESSAGE INDEX</h2>
+        <nav className="codex-idx">
+          {(["MA->FA", "FA->MA"] as const).map((dir) => {
+            const msgs = byDir.get(dir);
+            if (!msgs || msgs.length === 0) return null;
+            return (
+              <div key={dir} className="codex-idx-group">
+                <div className={`codex-dir ${dir === "FA->MA" ? "fa" : "ma"}`}>
+                  {dir === "FA->MA" ? "FA → MA" : "MA → FA"}
+                </div>
+                {msgs.map((n) => (
+                  <a
+                    key={n}
+                    href={`#msg-${n}`}
+                    className="codex-idx-link"
+                    onClick={(e) => { e.preventDefault(); scrollTo(n); }}
+                  >
+                    {catalogEntry(n).name}
+                  </a>
+                ))}
+              </div>
+            );
+          })}
+        </nav>
+
+        <h2>MESSAGES DETAIL</h2>
         {MESSAGE_TYPE_NAMES.map((name) => <MessageReference key={name} name={name} />)}
       </div>
     </div>

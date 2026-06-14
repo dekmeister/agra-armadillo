@@ -8,7 +8,7 @@ export function MessageReference({ name }: { name: MessageTypeName }) {
   const m = catalogEntry(name);
   const toMA = m.direction === "FA->MA";
   return (
-    <section className="codex-msg">
+    <section className="codex-msg" id={`msg-${name}`}>
       <h2 className="codex-h">
         <Identifier name={name} />
         <span className={`codex-dir ${toMA ? "fa" : "ma"}`}>{toMA ? "FA → MA" : "MA → FA"}</span>
