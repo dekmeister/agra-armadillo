@@ -15,6 +15,7 @@ import { Identifier } from "../ui/Identifier.tsx";
 import { formatValueExpr, parseLiteral } from "../sim/format.ts";
 import { SendActionForm } from "./SendActionForm.tsx";
 import { MessageReference } from "../meta/MessageReference.tsx";
+import { numericKeyDown, numericPaste } from "./inputFilters.ts";
 
 const OPS: CompareOp[] = ["==", "!=", "<", "<=", ">", ">="];
 const NO_MESSAGES: readonly MessageTypeName[] = [];
@@ -46,6 +47,7 @@ export function TransitionForm() {
   const triggerType = transition.trigger.messageType;
   const triggerFields = isKnownMessageType(triggerType) ? catalogEntry(triggerType).fields : [];
   const guard = transition.guard;
+  const guardFieldMeta = guard ? triggerFields.find((f) => f.name === guard.field) : undefined;
   const action = transition.actions?.[0];
   // Effective cheatsheet tab — fall back to trigger when the action tab is selected
   // but no action exists (e.g. it was just cleared).
@@ -57,7 +59,7 @@ export function TransitionForm() {
     update(index, { trigger: { messageType: mt }, guard: undefined });
 
   const setGuardField = (field: string) =>
-    update(index, { guard: { field, op: guard?.op ?? "==", value: guard?.value ?? "" } });
+    update(index, { guard: { field, op: guard?.op ?? "==", value: "" } });
   const setGuardOp = (op: CompareOp) =>
     guard && update(index, { guard: { ...guard, op } });
   const setGuardValue = (text: string) =>
@@ -114,14 +116,44 @@ export function TransitionForm() {
                       </option>
                     ))}
                   </select>
-                  <input
-                    className="field"
-                    style={{ width: 110 }}
-                    defaultValue={formatValueExpr(guard.value)}
-                    disabled={!editing}
-                    onBlur={(e) => setGuardValue(e.target.value)}
-                    placeholder="value"
-                  />
+                  {guardFieldMeta?.type === "enum" && guardFieldMeta.values ? (
+                    <select
+                      key={guard.field}
+                      value={formatValueExpr(guard.value)}
+                      disabled={!editing}
+                      onChange={(e) => setGuardValue(e.target.value)}
+                    >
+                      <option value="">—</option>
+                      {guardFieldMeta.values.map((v) => (
+                        <option key={v} value={v}>
+                          {v}
+                        </option>
+                      ))}
+                    </select>
+                  ) : guardFieldMeta?.type === "boolean" ? (
+                    <select
+                      key={guard.field}
+                      value={formatValueExpr(guard.value)}
+                      disabled={!editing}
+                      onChange={(e) => setGuardValue(e.target.value)}
+                    >
+                      <option value="">—</option>
+                      <option value="true">true</option>
+                      <option value="false">false</option>
+                    </select>
+                  ) : (
+                    <input
+                      key={guard.field}
+                      className="field"
+                      style={{ width: 110 }}
+                      defaultValue={formatValueExpr(guard.value)}
+                      disabled={!editing}
+                      onKeyDown={guardFieldMeta?.type === "number" ? numericKeyDown : undefined}
+                      onPaste={guardFieldMeta?.type === "number" ? numericPaste : undefined}
+                      onBlur={(e) => setGuardValue(e.target.value)}
+                      placeholder={guardFieldMeta?.type === "number" ? "number" : "value"}
+                    />
+                  )}
                 </>
               )}
             </div>

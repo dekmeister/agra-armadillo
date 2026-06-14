@@ -18,6 +18,7 @@ import { Panel } from "../ui/Panel.tsx";
 import { Identifier } from "../ui/Identifier.tsx";
 import { capEntries } from "../sim/caps.ts";
 import { parseLiteral } from "../sim/format.ts";
+import { numericKeyDown, numericPaste } from "./inputFilters.ts";
 
 const NO_MESSAGES: readonly MessageTypeName[] = [];
 
@@ -194,6 +195,22 @@ export function SendActionForm({
                             </option>
                           ))}
                         </select>
+                      ) : fs.source === "LIT" && f.type === "boolean" ? (
+                        <select value={fs.value} onChange={(e) => setField(f.name, { value: e.target.value })}>
+                          <option value="">—</option>
+                          <option value="true">true</option>
+                          <option value="false">false</option>
+                        </select>
+                      ) : fs.source === "LIT" && f.type === "number" ? (
+                        <input
+                          className="field"
+                          style={{ width: 130 }}
+                          value={fs.value}
+                          placeholder="number"
+                          onChange={(e) => setField(f.name, { value: e.target.value })}
+                          onKeyDown={numericKeyDown}
+                          onPaste={numericPaste}
+                        />
                       ) : (
                         <input
                           className="field"
