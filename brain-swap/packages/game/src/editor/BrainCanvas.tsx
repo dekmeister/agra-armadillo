@@ -2,7 +2,7 @@
 // the store's Brain (core data) + UI layout; this is "the editor is just a view" (docs/04).
 // Editing (positions, connections, selection) flows back through store actions, each of
 // which rebuilds the deterministic timeline.
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Background,
   BackgroundVariant,
@@ -16,6 +16,7 @@ import {
 import { useStore } from "../store.ts";
 import { StateNode } from "./StateNode.tsx";
 import { TransitionEdge } from "./TransitionEdge.tsx";
+import { DeleteStateModal } from "./DeleteStateModal.tsx";
 import { shortGuard } from "../sim/format.ts";
 
 const nodeTypes = { state: StateNode };
@@ -36,6 +37,8 @@ export function BrainCanvas() {
   const updateTransition = useStore((s) => s.updateTransition);
   const deleteState = useStore((s) => s.deleteState);
   const deleteTransition = useStore((s) => s.deleteTransition);
+
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const derivedNodes = useMemo<Node[]>(
     () =>
@@ -77,6 +80,32 @@ export function BrainCanvas() {
   // Keep React Flow in sync when the brain / selection / active-state changes.
   useEffect(() => setNodes(derivedNodes), [derivedNodes, setNodes]);
   useEffect(() => setEdges(derivedEdges), [derivedEdges, setEdges]);
+
+  // Keyboard delete for states (nodes). React Flow's built-in onNodesDelete only fires
+  // for nodes in its internal selection, which the app never populates — selection lives
+  // in the Zustand store. This handler bridges the gap, with a confirmation modal when
+  // the state has connected transitions.
+  useEffect(() => {
+    if (mode !== "EDIT") return;
+    const handler = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if (e.key !== "Delete" && e.key !== "Backspace") return;
+      const st = useStore.getState();
+      if (!st.selectedStateId || st.selectedTransitionIndex !== null) return;
+      if (st.brain.states.length <= 1) return;
+      const connected = st.brain.transitions.filter(
+        (t) => t.from === st.selectedStateId || t.target === st.selectedStateId,
+      ).length;
+      if (connected > 0) {
+        setConfirmDeleteId(st.selectedStateId);
+      } else {
+        st.deleteState(st.selectedStateId);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [mode]);
 
   const onConnect = useCallback(
     (c: Connection) => {
@@ -148,6 +177,21 @@ export function BrainCanvas() {
       >
         <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#2c3325" />
       </ReactFlow>
+      {confirmDeleteId && (
+        <DeleteStateModal
+          stateName={confirmDeleteId}
+          transitionCount={
+            brain.transitions.filter(
+              (t) => t.from === confirmDeleteId || t.target === confirmDeleteId,
+            ).length
+          }
+          onCancel={() => setConfirmDeleteId(null)}
+          onConfirm={() => {
+            deleteState(confirmDeleteId);
+            setConfirmDeleteId(null);
+          }}
+        />
+      )}
     </div>
   );
 }

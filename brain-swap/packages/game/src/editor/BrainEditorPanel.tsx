@@ -1,10 +1,11 @@
 // BRAIN EDITOR panel: the React Flow canvas + a thin toolbar for state-level edits
 // (add / rename / delete / mark-initial) and brain IO (reference / reset / export / import).
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { ReactFlowProvider } from "@xyflow/react";
 import { useStore } from "../store.ts";
 import { Panel } from "../ui/Panel.tsx";
 import { BrainCanvas } from "./BrainCanvas.tsx";
+import { DeleteStateModal } from "./DeleteStateModal.tsx";
 
 export function BrainEditorPanel() {
   const brain = useStore((s) => s.brain);
@@ -21,6 +22,8 @@ export function BrainEditorPanel() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const editing = mode === "EDIT";
+
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const onAdd = () => {
     let n = brain.states.length + 1;
@@ -80,7 +83,14 @@ export function BrainEditorPanel() {
           </button>
           <button
             className="btn sm"
-            onClick={() => selectedStateId && deleteState(selectedStateId)}
+            onClick={() => {
+              if (!selectedStateId) return;
+              const connected = brain.transitions.filter(
+                (t) => t.from === selectedStateId || t.target === selectedStateId,
+              ).length;
+              if (connected > 0) setConfirmDeleteId(selectedStateId);
+              else deleteState(selectedStateId);
+            }}
             disabled={!editing || !selectedStateId || brain.states.length <= 1}
           >
             Delete
@@ -123,6 +133,21 @@ export function BrainEditorPanel() {
           </ReactFlowProvider>
         </div>
       </div>
+      {confirmDeleteId && (
+        <DeleteStateModal
+          stateName={confirmDeleteId}
+          transitionCount={
+            brain.transitions.filter(
+              (t) => t.from === confirmDeleteId || t.target === confirmDeleteId,
+            ).length
+          }
+          onCancel={() => setConfirmDeleteId(null)}
+          onConfirm={() => {
+            deleteState(confirmDeleteId);
+            setConfirmDeleteId(null);
+          }}
+        />
+      )}
     </Panel>
   );
 }
