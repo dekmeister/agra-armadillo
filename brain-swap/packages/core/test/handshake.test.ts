@@ -1,0 +1,98 @@
+import { describe, expect, it } from "vitest";
+import {
+  type BodyProfile,
+  type MessageLogEntry,
+  injectMA,
+  initWorld,
+  isSecondaryController,
+  makeScenario,
+  msg,
+  step,
+  type World,
+} from "@brain-swap/core";
+
+// AX-01-flavoured test body: instant approval, publication disabled so the golden
+// handshake log is just the control-acquisition flow (VI §1.2.2.4 + §1.2.2.7).
+const body: BodyProfile = {
+  id: "test",
+  name: "Test Mule",
+  capabilities: [
+    {
+      id: "CAP-HSA",
+      type: "HSA_CSA",
+      profile: { minAltitude: 0, maxAltitude: 12000, minAirspeed: 20, maxAirspeed: 140 },
+    },
+  ],
+  flight: { maxTurnRateDeg: 5, maxClimbRate: 50, maxAccel: 20 },
+  control: { approvalLatencyTicks: 0 },
+  publish: { positionIntervalTicks: 0, activityIntervalTicks: 0 },
+  start: { x: 0, y: 0, altitude: 3000, heading: 270, speed: 0 },
+};
+
+const acquire = msg("MA_ControlRequestMT", "MA", "FA", {
+  RequestType: "ACQUIRE",
+  CapabilityID: "CAP-HSA",
+});
+
+const project = (log: readonly MessageLogEntry[]): string[] =>
+  log.map((e) => `t${e.tick} ${e.from}->${e.to} ${e.type} [${e.disposition.kind}]`);
+
+function runHandshake(): World {
+  let w = initWorld(makeScenario(body));
+  w = step(w); // t1: FA boot advert + AVAILABLE delivered to MA
+  w = injectMA(w, acquire); // MA requests control (enqueued t1, delivered t2)
+  w = step(w); // t2: FA receives ACQUIRE, emits APPROVED + ControlStatus
+  w = step(w); // t3: APPROVED + ControlStatus delivered to MA
+  return w;
+}
+
+describe("control-acquisition handshake (golden log)", () => {
+  it("reproduces Control Mode Authorization + Receive Control Request exactly", () => {
+    const w = runHandshake();
+    expect(project(w.log)).toEqual([
+      "t1 FA->MA MA_FlightCapabilityMT [delivered]",
+      "t1 FA->MA MA_FlightCapabilityStatusMT [delivered]",
+      "t2 MA->FA MA_ControlRequestMT [delivered]",
+      "t3 FA->MA MA_ControlRequestStatusMT [delivered]",
+      "t3 FA->MA ControlStatusMT [delivered]",
+    ]);
+  });
+
+  it("FA grants MA secondary control of the capability", () => {
+    const w = runHandshake();
+    expect(isSecondaryController(w.fa, "CAP-HSA")).toBe(true);
+
+    const status = w.log.find((e) => e.type === "MA_ControlRequestStatusMT");
+    expect((status?.payload as { ApprovalRequestProcessingState: string }).ApprovalRequestProcessingState).toBe(
+      "APPROVED",
+    );
+    const ctrl = w.log.find((e) => e.type === "ControlStatusMT");
+    expect((ctrl?.payload as { SecondaryController?: string }).SecondaryController).toBe("MA");
+  });
+
+  it("a flight command sent before control is silently ignored (fidelity lie #8)", () => {
+    let w = initWorld(makeScenario(body));
+    w = step(w); // t1: boot delivered
+    w = injectMA(
+      w,
+      msg("MA_FlightCommandMT", "MA", "FA", {
+        CommandID: "CMD-1",
+        CommandState: "NEW",
+        CapabilityID: "CAP-HSA",
+        Heading: 270,
+        Altitude: 3000,
+        Speed: 60,
+      }),
+    );
+    w = step(w); // t2: FA receives the command while MA is not the controller
+    w = step(w); // t3: confirm FA never answered
+
+    const cmd = w.log.find((e) => e.type === "MA_FlightCommandMT");
+    expect(cmd?.disposition.kind).toBe("ignored-not-controller");
+    expect(w.log.some((e) => e.type === "MA_FlightCommandStatusMT")).toBe(false);
+  });
+
+  it("is deterministic: identical log across two independent runs", () => {
+    expect(project(runHandshake().log)).toEqual(project(runHandshake().log));
+  });
+});

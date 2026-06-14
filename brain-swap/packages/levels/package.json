@@ -1,0 +1,12 @@
+{
+  "name": "@brain-swap/levels",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Brain Swap level data: message catalog source, bodies, worlds, reference brains.",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "@brain-swap/core": "*"
+  }
+}

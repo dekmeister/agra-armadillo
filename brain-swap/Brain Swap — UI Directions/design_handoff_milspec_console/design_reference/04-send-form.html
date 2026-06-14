@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Send-Message Form — Brain Swap</title>
+<link rel="stylesheet" href="milspec.css" />
+<style>
+  .board{display:flex;flex-direction:column;}
+  .sf-back{flex:1;position:relative;overflow:hidden;
+    background:
+      repeating-linear-gradient(0deg,transparent 0 22px,rgba(60,70,50,.05) 22px 23px),
+      repeating-linear-gradient(90deg,transparent 0 22px,rgba(60,70,50,.05) 22px 23px),
+      var(--k-black);}
+  .sf-back::after{content:'SEND ACTION · COMPOSE MESSAGE';position:absolute;inset:0;display:flex;align-items:flex-start;justify-content:flex-start;padding:14px 18px;font-family:var(--cond);letter-spacing:.2em;color:var(--k-olive-dim);font-size:11px;font-weight:600;}
+  .dim{position:absolute;inset:0;background:rgba(4,6,3,.55);}
+  .dialog{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:1060px;height:660px;background:var(--k-panel);border:1px solid var(--k-line2);box-shadow:0 30px 80px rgba(0,0,0,.7),0 0 0 1px #000;display:flex;flex-direction:column;}
+  .dh{height:42px;display:flex;align-items:center;gap:10px;padding:0 14px;background:linear-gradient(180deg,#1a2014,#11150f);border-bottom:1px solid var(--k-line);}
+  .dh .dt{font-family:var(--cond);font-weight:700;letter-spacing:.1em;font-size:14px;text-transform:uppercase;color:var(--k-phos);}
+  .dh .dt b{color:var(--k-amber);}
+  .dh .dx{margin-left:auto;color:var(--k-dim);cursor:pointer;font-size:14px;}
+  .dbody{flex:1;display:grid;grid-template-columns:1fr 318px;min-height:0;}
+  .form-side{padding:14px 16px;display:flex;flex-direction:column;gap:11px;overflow:hidden;border-right:1px solid var(--k-line);}
+  .pal-side{background:#0c0f08;display:flex;flex-direction:column;min-height:0;}
+
+  /* message type picker */
+  .mtype{display:flex;align-items:center;gap:9px;}
+  .mtype .ml{font-family:var(--cond);font-weight:600;letter-spacing:.1em;font-size:10px;color:var(--k-dim);text-transform:uppercase;}
+  .mtype .mpick{flex:1;display:flex;align-items:center;gap:6px;background:#0c0f08;border:1px solid var(--k-cyan);padding:7px 10px;color:var(--k-cyan);font-size:12px;}
+  .mtype .mpick .car{margin-left:auto;color:var(--k-dim);}
+  .mtype .mpick .pfx{color:var(--k-dim);}
+
+  .reqsum{font-size:9px;color:var(--k-dim);letter-spacing:.06em;text-transform:uppercase;font-family:var(--cond);font-weight:600;}
+  .reqsum b{color:var(--k-ok);}
+
+  .fields{display:flex;flex-direction:column;gap:7px;overflow-y:auto;flex:1;padding-right:2px;}
+  .frow{border:1px solid var(--k-line);background:#0e1209;padding:7px 9px;}
+  .frow .fr-top{display:flex;align-items:center;gap:7px;}
+  .frow .fname{font-size:11px;color:var(--k-phos);}
+  .frow .fname .pfx{color:var(--k-dim);}
+  .frow .req{color:var(--k-caution);font-size:8px;letter-spacing:.08em;border:1px solid rgba(242,194,0,.4);padding:0 3px;}
+  .frow .ftype{margin-left:auto;font-size:8.5px;color:var(--k-dim);letter-spacing:.05em;}
+  .frow .fr-val{display:flex;align-items:stretch;gap:6px;margin-top:6px;}
+  .srcseg{display:flex;border:1px solid var(--k-line2);}
+  .srcseg .so{padding:4px 8px;font-family:var(--cond);font-weight:700;font-size:9px;letter-spacing:.08em;color:var(--k-dim);cursor:pointer;text-transform:uppercase;}
+  .srcseg .so + .so{border-left:1px solid var(--k-line2);}
+  .srcseg .so.on{color:#0a0d0a;}
+  .srcseg .so.on[data-s="LIT"]{background:var(--k-phos);}
+  .srcseg .so.on[data-s="CAP"]{background:var(--k-cyan);}
+  .srcseg .so.on[data-s="MSG"]{background:var(--k-amber);}
+  .valbox{flex:1;display:flex;align-items:center;gap:6px;background:#0c0f08;border:1px solid var(--k-line2);padding:4px 8px;font-size:11px;min-width:0;}
+  .valbox .vsrc{font-size:9px;letter-spacing:.03em;}
+  .valbox .vsrc.cap{color:var(--k-cyan);}
+  .valbox .vsrc.msg{color:var(--k-amber);}
+  .valbox .vv{color:var(--k-phos);margin-left:auto;}
+  .valbox.warnval{border-color:var(--k-caution);}
+
+  /* palettes */
+  .pal{flex:1;display:flex;flex-direction:column;min-height:0;border-bottom:1px solid var(--k-line);}
+  .pal .palh{padding:7px 11px;border-bottom:1px solid var(--k-line);display:flex;align-items:center;gap:7px;}
+  .pal .palh .pi{width:8px;height:8px;border-radius:2px;}
+  .pal .palh .pt{font-family:var(--cond);font-weight:700;letter-spacing:.1em;font-size:10px;text-transform:uppercase;color:var(--k-phos);}
+  .pal .palh .ps{margin-left:auto;font-size:8.5px;color:var(--k-dim);letter-spacing:.04em;}
+  .pal .palist{flex:1;overflow-y:auto;padding:7px 9px;display:flex;flex-direction:column;gap:5px;}
+  .chip{display:flex;align-items:center;gap:7px;border:1px solid var(--k-line2);background:#11150f;padding:5px 8px;font-size:10px;cursor:grab;}
+  .chip:hover{border-color:var(--k-olive);}
+  .chip .ck{color:var(--k-phos);}
+  .chip .cv{margin-left:auto;}
+  .pal.cap .chip .cv{color:var(--k-cyan);}
+  .pal.msg .chip .cv{color:var(--k-amber);}
+  .pal .palhint{padding:6px 9px;font-family:var(--hand);font-size:12px;color:var(--k-dim);border-top:1px solid var(--k-line);}
+
+  .dfoot{height:48px;display:flex;align-items:center;gap:12px;padding:0 16px;border-top:1px solid var(--k-line);background:var(--k-bezel);}
+  .dfoot .fvalid{font-size:10px;color:var(--k-dim);letter-spacing:.05em;}
+  .dfoot .fvalid b{color:var(--k-ok);}
+  .dfoot .fs{flex:1;}
+  .ibtn{font-family:var(--cond);font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:12px;padding:8px 18px;cursor:pointer;border:1px solid var(--k-line2);background:transparent;color:var(--k-phos);}
+  .ibtn.primary{background:var(--k-cyan);color:#0a0d0a;border-color:var(--k-cyan);}
+</style>
+</head>
+<body>
+<div class="fit"><div class="board">
+  <div class="sel-strip">
+    <div class="brand">BRAIN SWAP · GS-1</div>
+    <a href="01-milspec.html">Console</a>
+    <a href="01-milspec-report.html">Test Report</a>
+    <a href="01-milspec-levels.html">Level Select</a>
+    <a class="on" href="01-milspec-send.html">Send Form</a>
+    <div class="strip-space"></div>
+    <div class="strip-meta">SECONDARY SCREEN C · SEND-ACTION COMPOSER</div>
+  </div>
+
+  <div class="sf-back">
+    <div class="dim"></div>
+    <div class="dialog">
+      <div class="dh">
+        <span class="dt">SEND ACTION · <b>COMPOSE MESSAGE</b></span>
+        <span class="reqsum" style="margin-left:14px;">REQUIRED FIELDS <b>4</b> / 4 SATISFIED</span>
+        <span class="dx" onclick="location.href='01-milspec.html'">✕</span>
+      </div>
+      <div class="dbody">
+        <!-- form -->
+        <div class="form-side">
+          <div class="mtype">
+            <span class="ml">Message Type</span>
+            <div class="mpick"><span class="pfx">MA_</span>FlightCommand<span style="color:var(--k-dim)">MT</span> <span class="car">▾</span></div>
+            <span style="font-size:9px;color:var(--k-dim);letter-spacing:.05em;">HSA_CSA payload</span>
+          </div>
+
+          <div class="fields" id="fields"></div>
+        </div>
+
+        <!-- palettes -->
+        <div class="pal-side">
+          <div class="pal cap">
+            <div class="palh"><span class="pi" style="background:var(--k-cyan)"></span><span class="pt">Body Capabilities</span><span class="ps">cap.*</span></div>
+            <div class="palist">
+              <div class="chip"><span class="ck">cap.MaxAltitude</span><span class="cv">12000 ft</span></div>
+              <div class="chip"><span class="ck">cap.MaxSpeed</span><span class="cv">110 kt</span></div>
+              <div class="chip"><span class="ck">cap.MaxClimbRate</span><span class="cv">900 ft/min</span></div>
+              <div class="chip"><span class="ck">cap.HSA.CapabilityID</span><span class="cv">0x21</span></div>
+            </div>
+          </div>
+          <div class="pal msg">
+            <div class="palh"><span class="pi" style="background:var(--k-amber)"></span><span class="pt">Captured Fields</span><span class="ps">from trigger msg</span></div>
+            <div class="palist">
+              <div class="chip"><span class="ck">msg.NavigationReportMT.BearingToZone</span><span class="cv">095°</span></div>
+              <div class="chip"><span class="ck">msg.ControlStatusMT.ControllerID</span><span class="cv">MA-04</span></div>
+              <div class="chip"><span class="ck">msg.…Status.GrantedCapability</span><span class="cv">HSA</span></div>
+            </div>
+            <div class="palhint">↤ drag a value onto a field, or type a literal</div>
+          </div>
+        </div>
+      </div>
+      <div class="dfoot">
+        <span class="fvalid">VALIDATION · <b>all required fields satisfied</b> · values within advertised envelope</span>
+        <span class="fs"></span>
+        <button class="ibtn" onclick="location.href='01-milspec.html'">CANCEL</button>
+        <button class="ibtn primary" onclick="location.href='01-milspec.html'">INSERT ACTION ▸</button>
+      </div>
+    </div>
+  </div>
+
+</div></div>
+<script>
+  const board=document.querySelector('.board');
+  function fit(){const s=Math.min(innerWidth/1440,innerHeight/900);board.style.transform=`scale(${s})`;}
+  addEventListener('resize',fit);fit();
+
+  const FIELDS=[
+    {name:'Header.DestinationID',pfx:'',req:1,type:'EntityID',src:'LIT',val:'FA',vsrc:''},
+    {name:'CapabilityID',pfx:'',req:1,type:'enum',src:'CAP',val:'cap.HSA.CapabilityID',vsrc:'cap',disp:'0x21'},
+    {name:'HSA_CSA.Altitude.Commanded',pfx:'',req:1,type:'float · ft',src:'LIT',val:'11500',vsrc:''},
+    {name:'HSA_CSA.Speed.Commanded',pfx:'',req:0,type:'float · kt',src:'CAP',val:'cap.MaxSpeed',vsrc:'cap',disp:'110 kt'},
+    {name:'HSA_CSA.Direction.Heading',pfx:'',req:1,type:'float · deg',src:'MSG',val:'msg.NavigationReportMT.BearingToZone',vsrc:'msg',disp:'095°'},
+  ];
+  function seg(active){
+    return ['LIT','CAP','MSG'].map(s=>`<div class="so ${s===active?'on':''}" data-s="${s}">${s}</div>`).join('');
+  }
+  function valbox(f){
+    if(f.src==='LIT') return `<div class="valbox"><span class="vv" style="color:var(--k-amber)">${f.val}</span></div>`;
+    if(f.src==='CAP') return `<div class="valbox"><span class="vsrc cap">${f.val}</span><span class="vv">${f.disp}</span></div>`;
+    return `<div class="valbox"><span class="vsrc msg">${f.val}</span><span class="vv">${f.disp}</span></div>`;
+  }
+  document.getElementById('fields').innerHTML=FIELDS.map(f=>`
+    <div class="frow">
+      <div class="fr-top">
+        <span class="fname">${f.pfx?`<span class="pfx">${f.pfx}</span>`:''}${f.name}</span>
+        ${f.req?'<span class="req">REQ</span>':''}
+        <span class="ftype">${f.type}</span>
+      </div>
+      <div class="fr-val">
+        <div class="srcseg" data-name="${f.name}">${seg(f.src)}</div>
+        ${valbox(f)}
+      </div>
+    </div>`).join('');
+
+  // light interaction: toggle value source segment
+  document.querySelectorAll('.srcseg').forEach(seg=>{
+    seg.addEventListener('click',e=>{
+      const so=e.target.closest('.so'); if(!so) return;
+      seg.querySelectorAll('.so').forEach(x=>x.classList.remove('on'));
+      so.classList.add('on');
+    });
+  });
+</script>
+</body>
+</html>

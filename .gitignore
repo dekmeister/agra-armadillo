@@ -1,0 +1,10 @@
+# References are separate git repos and contain large binaries.
+# Essential files (XSD, PDFs) are vendored in brain-swap/docs/A-GRA References/.
+References/
+
+# Node
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db

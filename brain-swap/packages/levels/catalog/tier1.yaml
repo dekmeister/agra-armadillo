@@ -1,0 +1,133 @@
+# Brain Swap — Tier 1 message catalog (the 9 MVP message types).
+#
+# CLAUDE.md hard rule #1: never invent standard names. Every `name:` below and
+# every enum `values:` literal is grep-able in the A-GRA XSD; tools/check-fidelity.ts
+# enforces this (build-order step 1, the catalog is born policed).
+#
+# `path` is *indicative* — the real message structures are deeply nested UCI
+# (e.g. MA_FlightCommandMT -> MessageData.Command.Capability.FlightControlMode.HSA_CSA).
+# The game prunes to required fields + discriminators and presents them near-flat
+# (fidelity lie #5, docs/02). The fidelity gate verifies `name`s and enum literals,
+# not full structural paths. `citation` points at the VI Volume interaction.
+#
+# Verified field/enum names against:
+#   ../References/A-GRA/standard/Schema/A-GRA_MessageDefinitions_v5_0_a.xsd
+# (byte-identical in-repo copy at docs/A-GRA References/, the fidelity default).
+
+version: 1
+xsd: A-GRA_MessageDefinitions_v5_0_a.xsd
+
+messages:
+  # --- Control Mode Authorization (VI §1.2.2.4) -----------------------------
+  - name: MA_FlightCapabilityMT
+    tier: 1
+    direction: FA->MA
+    citation: "VI Vol §1.2.2.4 Control Mode Authorization"
+    summary: >-
+      FA advertises a commandable flight capability and its per-mode performance
+      envelope. The envelope FA advertises here is exactly what its validator
+      enforces later — the pedagogical contract (docs/04).
+    fields:
+      - { name: CapabilityID, path: MessageData.Capability.CapabilityID, type: string, required: true }
+      - { name: CapabilityType, path: MessageData.Capability.CapabilityType, type: enum, values: [HSA_CSA], required: true }
+      - { name: MinAltitude, path: MessageData.Capability.FlightCapabilityPerformanceProfile.HSA_CSA_PerformanceProfile.MinAltitude, type: number, required: false }
+      - { name: MaxAltitude, path: MessageData.Capability.FlightCapabilityPerformanceProfile.HSA_CSA_PerformanceProfile.MaxAltitude, type: number, required: false }
+      - { name: MinAirspeed, path: MessageData.Capability.FlightCapabilityPerformanceProfile.HSA_CSA_PerformanceProfile.MinAirspeed, type: number, required: false }
+      - { name: MaxAirspeed, path: MessageData.Capability.FlightCapabilityPerformanceProfile.HSA_CSA_PerformanceProfile.MaxAirspeed, type: number, required: false }
+
+  - name: MA_FlightCapabilityStatusMT
+    tier: 1
+    direction: FA->MA
+    citation: "VI Vol §1.2.2.4 Control Mode Authorization (readiness)"
+    summary: "FA signals whether an advertised capability is ready to be controlled."
+    fields:
+      - { name: CapabilityID, path: MessageData.CapabilityStatus.CapabilityID, type: string, required: true }
+      - { name: Availability, path: MessageData.CapabilityStatus.AvailabilityInfo.Availability, type: enum, values: [AVAILABLE, UNAVAILABLE, TEMPORARILY_UNAVAILABLE], required: true }
+
+  # --- Receive Control Request (VI §1.2.2.7) --------------------------------
+  - name: MA_ControlRequestMT
+    tier: 1
+    direction: MA->FA
+    citation: "VI Vol §1.2.2.7 Receive Control Request"
+    summary: >-
+      MA requests control of a capability. The game correlates the request to a
+      capability by CapabilityID (fidelity lie #4: the real assignment links via
+      Controllee/ControlType; correlation semantics preserved, format shortened).
+    fields:
+      - { name: RequestType, path: MessageData.RequestType, type: enum, values: [ACQUIRE, RELEASE], required: true }
+      - { name: CapabilityID, path: MessageData.ControlAssignment.CapabilityID, type: string, required: true }
+
+  - name: MA_ControlRequestStatusMT
+    tier: 1
+    direction: FA->MA
+    citation: "VI Vol §1.2.2.7 Receive Control Request (status)"
+    summary: "FA approves, defers (PENDING), or rejects a control request."
+    fields:
+      - { name: CapabilityID, path: MessageData.ControlAssignment.CapabilityID, type: string, required: true }
+      - { name: ApprovalRequestProcessingState, path: MessageData.ApprovalRequestProcessingState, type: enum, values: [APPROVED, PENDING, REJECTED, CANCELED], required: true }
+
+  # --- Publish Control Status (VI §1.2.6.2) ---------------------------------
+  - name: ControlStatusMT
+    tier: 1
+    direction: FA->MA
+    citation: "VI Vol §1.2.6.2 Publish Control Status"
+    summary: >-
+      Who FA is listening to per capability. FA is always PrimaryController; MA is
+      at most SecondaryController. Commands are honored only while MA appears as
+      the SecondaryController for that capability (fidelity lie #8).
+    fields:
+      - { name: CapabilityID, path: MessageData.ControlType.CapabilityControl.CapabilityID, type: string, required: true }
+      - { name: PrimaryController, path: MessageData.ControlType.CapabilityControl.PrimaryController, type: string, required: false }
+      - { name: SecondaryController, path: MessageData.ControlType.CapabilityControl.SecondaryController.SystemID, type: string, required: false }
+
+  # --- Control by HSA/CSA Command (VI §1.2.2.2) -----------------------------
+  - name: MA_FlightCommandMT
+    tier: 1
+    direction: MA->FA
+    citation: "VI Vol §1.2.2.2 Control by HSA/CSA Command"
+    summary: >-
+      Persistent HSA/CSA flight vector command. HSA has no completion state — the
+      brain infers arrival from position reports (the 1.2 lesson).
+    fields:
+      - { name: CommandID, path: MessageData.Command.Capability.CommandID, type: string, required: true }
+      - { name: CommandState, path: MessageData.Command.Capability.CommandState, type: enum, values: [NEW, UPDATE, CANCEL], required: true }
+      - { name: CapabilityID, path: MessageData.Command.Capability.CapabilityID, type: string, required: true }
+      - { name: Altitude, path: MessageData.Command.Capability.FlightControlMode.HSA_CSA.Altitude, type: number, required: false }
+      - { name: Speed, path: MessageData.Command.Capability.FlightControlMode.HSA_CSA.Speed, type: number, required: false }
+      - { name: Heading, path: MessageData.Command.Capability.FlightControlMode.HSA_CSA.Direction.Heading, type: number, required: false }
+      - { name: Course, path: MessageData.Command.Capability.FlightControlMode.HSA_CSA.Direction.Course, type: number, required: false }
+
+  - name: MA_FlightCommandStatusMT
+    tier: 1
+    direction: FA->MA
+    citation: "VI Vol §1.2.2.2 Control by HSA/CSA Command (status)"
+    summary: "FA accepts or rejects a flight command; rejection carries a ValidationResult reason."
+    fields:
+      - { name: CommandID, path: MessageData.CommandID, type: string, required: true }
+      - { name: CommandProcessingState, path: MessageData.CommandProcessingState, type: enum, values: [RECEIVED, ACCEPTED, REJECTED, CANCELED], required: true }
+      - { name: ValidationResult, path: MessageData.CannotComplyDetails.ValidationResult, type: enum, values: [FLIGHT_COMMAND_VALID, PERFORMANCE_LIMIT_EXCEEDED, CAPABILITY_NOT_SUPPORTED, VIOLATION_ENDURANCE, VIOLATION_GEOFENCE, VIOLATION_AIR_TRAFFIC, VIOLATION_TERRAIN, INVALID_WAYPOINT, INVALID_CURVE], required: false }
+
+  # --- Receive Vehicle State Data (VI §1.2.6.8) -----------------------------
+  - name: MA_FlightActivityMT
+    tier: 1
+    direction: FA->MA
+    citation: "VI Vol §1.2.6.8 Receive Vehicle State Data (activity)"
+    summary: "FA reports the active flight activity resulting from an accepted command."
+    fields:
+      - { name: ActivityID, path: MessageData.Activity.ActivityID, type: string, required: true }
+      - { name: Altitude, path: MessageData.Activity.VehicleCommandState.Altitude, type: number, required: false }
+      - { name: Heading, path: MessageData.Activity.VehicleCommandState.Heading, type: number, required: false }
+      - { name: Speed, path: MessageData.Activity.VehicleCommandState.Speed, type: number, required: false }
+
+  - name: MA_PositionReportDetailedMT
+    tier: 1
+    direction: FA->MA
+    citation: "VI Vol §1.2.6.8 Receive Vehicle State Data (position)"
+    summary: >-
+      Periodic ownship state. The brain consumes this to know where it is and
+      whether it has arrived (win conditions are world-state, never message-sent).
+    fields:
+      - { name: Latitude, path: MessageData.PositionReportData.Kinematics.Position.Latitude, type: number, required: false }
+      - { name: Longitude, path: MessageData.PositionReportData.Kinematics.Position.Longitude, type: number, required: false }
+      - { name: Altitude, path: MessageData.PositionReportData.Kinematics.Position.Altitude, type: number, required: false }
+      - { name: NavigationSolutionState, path: MessageData.PositionReportData.NavigationSolutionState, type: enum, values: [ALIGNING, FREE_INERTIAL, GPS, BLENDED], required: false }

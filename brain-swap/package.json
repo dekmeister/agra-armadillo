@@ -1,0 +1,30 @@
+{
+  "name": "brain-swap",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "description": "Brain Swap — Zachtronics-style A-GRA Vehicle Interface puzzle (headless MVP core)",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck:game": "tsc -p packages/game/tsconfig.json --noEmit",
+    "gen:catalog": "tsx tools/gen-catalog.ts",
+    "fidelity": "tsx tools/check-fidelity.ts",
+    "run:1.2": "tsx tools/run-level.ts",
+    "test": "vitest run",
+    "dev": "npm run dev -w @brain-swap/game",
+    "build:game": "npm run build -w @brain-swap/game"
+  },
+  "overrides": {
+    "esbuild": "^0.28.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.0",
+    "vitest": "^3.2.6",
+    "yaml": "^2.4.0"
+  }
+}

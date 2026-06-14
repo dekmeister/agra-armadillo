@@ -1,0 +1,13 @@
+{
+  "name": "@brain-swap/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Brain Swap deterministic, headless simulation core (no DOM, no RNG, no wall-clock).",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*"
+  }
+}

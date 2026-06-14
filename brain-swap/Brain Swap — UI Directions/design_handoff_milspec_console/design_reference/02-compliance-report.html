@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Compliance Test Report — Brain Swap</title>
+<link rel="stylesheet" href="milspec.css" />
+<style>
+  .board{display:flex;flex-direction:column;}
+  .doc{flex:1;padding:24px 30px;display:flex;flex-direction:column;gap:16px;overflow:hidden;position:relative;}
+  /* title block */
+  .titleblock{border:1px solid var(--k-line2);background:var(--k-panel);display:grid;grid-template-columns:1fr 200px;}
+  .tb-main{padding:14px 18px;}
+  .tb-main .rno{font-family:var(--cond);font-weight:600;letter-spacing:.16em;font-size:11px;color:var(--k-dim);text-transform:uppercase;}
+  .tb-main h1{font-family:var(--cond);font-weight:700;letter-spacing:.06em;font-size:22px;margin:4px 0 12px;color:var(--k-phos);text-transform:uppercase;}
+  .tb-fields{display:grid;grid-template-columns:repeat(4,1fr);gap:0 18px;font-size:10px;}
+  .tb-fields .f .fl{font-family:var(--cond);font-weight:600;letter-spacing:.1em;color:var(--k-dim);text-transform:uppercase;font-size:9px;}
+  .tb-fields .f .fv{color:var(--k-phos);border-bottom:1px solid var(--k-line);padding-bottom:2px;}
+  .stampcell{border-left:1px solid var(--k-line2);display:flex;align-items:center;justify-content:center;}
+  .stamp-pass{border:3px solid var(--k-ok);color:var(--k-ok);font-family:var(--cond);font-weight:700;letter-spacing:.1em;font-size:30px;padding:8px 20px;transform:rotate(-9deg);text-transform:uppercase;box-shadow:0 0 0 1px rgba(111,206,138,.3);text-shadow:0 0 12px rgba(111,206,138,.4);position:relative;}
+  .stamp-pass small{display:block;font-size:9px;letter-spacing:.18em;color:var(--k-ok);opacity:.8;text-align:center;margin-top:2px;}
+
+  .twocol{flex:1;display:grid;grid-template-columns:1.35fr 1fr;gap:16px;min-height:0;}
+
+  /* interaction results */
+  .results .body{padding:0;}
+  .res-row{display:grid;grid-template-columns:88px 1fr 92px;align-items:center;border-bottom:1px solid #161b13;font-size:11px;}
+  .res-row .vid{padding:7px 9px;color:var(--k-cyan);font-size:10px;letter-spacing:.02em;}
+  .res-row .vname{padding:7px 9px;color:var(--k-phos);}
+  .res-row .vname .pfx{color:var(--k-dim);}
+  .res-row .vname .sub{color:var(--k-dim);font-size:9px;}
+  .res-row .vres{padding:7px 9px;text-align:right;}
+  .res-row.head{background:#0e1209;}
+  .res-row.head div{font-family:var(--cond);font-weight:700;letter-spacing:.1em;font-size:9px;color:var(--k-dim);text-transform:uppercase;}
+
+  /* metrics histograms */
+  .hist{padding:11px 13px;border-bottom:1px solid #161b13;}
+  .hist .hh{display:flex;align-items:baseline;gap:8px;margin-bottom:7px;}
+  .hist .hh .hl{font-family:var(--cond);font-weight:700;letter-spacing:.1em;font-size:11px;color:var(--k-phos);text-transform:uppercase;}
+  .hist .hh .hv{margin-left:auto;font-size:13px;color:var(--k-amber);font-weight:600;}
+  .hist .hh .hpar{font-size:9px;color:var(--k-olive);}
+  .bars{display:flex;align-items:flex-end;gap:2px;height:38px;position:relative;}
+  .bars .bar{flex:1;background:var(--k-olive-dim);}
+  .bars .bar.you{background:var(--k-amber);box-shadow:0 0 8px rgba(224,163,34,.5);}
+  .hist .pct{font-size:9px;color:var(--k-dim);margin-top:4px;letter-spacing:.03em;}
+  .hist .pct b{color:var(--k-ok);}
+  .hist.alert .bars .bar.you{background:var(--k-caution);box-shadow:0 0 8px rgba(242,194,0,.5);}
+  .hist.alert .hh .hv{color:var(--k-caution);}
+
+  .docfoot{display:flex;align-items:center;gap:14px;}
+  .sigblock{font-size:9px;color:var(--k-dim);letter-spacing:.04em;}
+  .sigblock b{color:var(--k-phos);}
+  .footspace{flex:1;}
+  .bigbtn{font-family:var(--cond);font-weight:700;letter-spacing:.14em;text-transform:uppercase;font-size:13px;background:var(--k-amber);color:#0a0d0a;border:0;padding:10px 26px;cursor:pointer;}
+  .bigbtn.ghost{background:transparent;color:var(--k-phos);border:1px solid var(--k-line2);}
+  .bigbtn.ghost:hover{border-color:var(--k-olive);}
+</style>
+</head>
+<body>
+<div class="fit"><div class="board">
+  <div class="sel-strip">
+    <div class="brand">BRAIN SWAP · GS-1</div>
+    <a href="01-milspec.html">Console</a>
+    <a class="on" href="01-milspec-report.html">Test Report</a>
+    <a href="01-milspec-levels.html">Level Select</a>
+    <a href="01-milspec-send.html">Send Form</a>
+    <div class="strip-space"></div>
+    <div class="strip-meta">SECONDARY SCREEN A · COMPLIANCE TEST REPORT</div>
+  </div>
+
+  <div class="doc">
+    <!-- title block -->
+    <div class="titleblock">
+      <div class="tb-main">
+        <div class="rno">A-GRA VEHICLE INTERFACE · INTEROPERABILITY TEST RECORD · FORM VI-CTR/2</div>
+        <h1>Compliance Test Report</h1>
+        <div class="tb-fields">
+          <div class="f"><div class="fl">Mission</div><div class="fv">1.2 First Valid HSA Command</div></div>
+          <div class="f"><div class="fl">Body Under Test</div><div class="fv">RQ-7B-SIM “Shadow”</div></div>
+          <div class="f"><div class="fl">Standard</div><div class="fv">ASK 5.0a · HSA Volume</div></div>
+          <div class="f"><div class="fl">Run / Date</div><div class="fv">#0042 · 2026-06-13</div></div>
+        </div>
+      </div>
+      <div class="stampcell">
+        <div class="stamp-pass">PASS<small>ALL INTERACTIONS</small></div>
+      </div>
+    </div>
+
+    <div class="twocol">
+      <!-- interaction results -->
+      <div class="panel results">
+        <span class="rivet tl"></span><span class="rivet tr"></span>
+        <div class="ph"><span class="t"><b>INTERACTION</b> RESULTS</span><span class="meta">6 / 6 PASS</span></div>
+        <div class="body">
+          <div class="res-row head"><div>VI ID</div><div>Interaction</div><div style="text-align:right;">Result</div></div>
+          <div class="res-row"><div class="vid">VI.CMA.1</div><div class="vname">Control Mode Authorization — ACQUIRE<div class="sub">handshake completes, control granted</div></div><div class="vres"><span class="badge approved">PASS</span></div></div>
+          <div class="res-row"><div class="vid">VI.RCR.1</div><div class="vname">Receive Control Request — APPROVED gate<div class="sub">guard reads CommandProcessingState</div></div><div class="vres"><span class="badge approved">PASS</span></div></div>
+          <div class="res-row"><div class="vid">VI.FC.1</div><div class="vname"><span class="pfx">MA_</span>FlightCommand — envelope validation<div class="sub">1 rejection (over MaxAltitude) then corrected</div></div><div class="vres"><span class="badge approved">PASS</span></div></div>
+          <div class="res-row"><div class="vid">VI.FC.2</div><div class="vname"><span class="pfx">MA_</span>FlightCommand — ignored-while-uncontrolled<div class="sub">expected silent ignore observed</div></div><div class="vres"><span class="badge approved">PASS</span></div></div>
+          <div class="res-row"><div class="vid">VI.PR.1</div><div class="vname"><span class="pfx">MA_</span>PositionReportDetailed — zone detect<div class="sub">brain consumes state, detects arrival</div></div><div class="vres"><span class="badge approved">PASS</span></div></div>
+          <div class="res-row"><div class="vid">VI.WIN</div><div class="vname">Hold @ commanded altitude · 10 ticks<div class="sub">win condition sustained</div></div><div class="vres"><span class="badge approved">PASS</span></div></div>
+        </div>
+      </div>
+
+      <!-- metric histograms -->
+      <div class="panel">
+        <span class="rivet tl"></span><span class="rivet tr"></span>
+        <div class="ph"><span class="t"><b>METRICS</b> vs GLOBAL</span><span class="meta">YOU ▮ vs population</span></div>
+        <div class="body" style="overflow:hidden;">
+          <div class="hist">
+            <div class="hh"><span class="hl">Ticks</span><span class="hpar">par 14</span><span class="hv">17</span></div>
+            <div class="bars" id="h1"></div>
+            <div class="pct">faster than <b>38%</b> of solutions</div>
+          </div>
+          <div class="hist">
+            <div class="hh"><span class="hl">Bus Traffic</span><span class="hpar">par 7</span><span class="hv">9</span></div>
+            <div class="bars" id="h2"></div>
+            <div class="pct">leaner than <b>52%</b> of solutions</div>
+          </div>
+          <div class="hist alert">
+            <div class="hh"><span class="hl">Rejections</span><span class="hpar">par 0</span><span class="hv">1</span></div>
+            <div class="bars" id="h3"></div>
+            <div class="pct">cleaner than <b>61%</b> · read the spec sheet to reach 0</div>
+          </div>
+          <div class="hist" style="border-bottom:0;">
+            <div class="hh"><span class="hl">Brain Size</span><span class="hpar">4 states · 4 transitions</span><span class="hv">8</span></div>
+            <div class="bars" id="h4"></div>
+            <div class="pct">smaller than <b>44%</b> of solutions</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="docfoot">
+      <div class="sigblock">CERTIFIED BY <b>Brain Swap Fidelity CI</b> · check-fidelity.ts green against References XSD · golden-run verified</div>
+      <div class="footspace"></div>
+      <button class="bigbtn ghost" onclick="location.href='01-milspec-levels.html'">◂ LEVEL SELECT</button>
+      <button class="bigbtn ghost" onclick="location.href='01-milspec.html'">↻ RETRY · OPTIMIZE</button>
+      <button class="bigbtn" onclick="location.href='01-milspec-levels.html'">NEXT MISSION ▸</button>
+    </div>
+  </div>
+
+</div></div>
+<script>
+  const board=document.querySelector('.board');
+  function fit(){const s=Math.min(innerWidth/1440,innerHeight/900);board.style.transform=`scale(${s})`;}
+  addEventListener('resize',fit);fit();
+  // histograms — bell-ish distributions with a YOU bar
+  function hist(id,n,youIdx){
+    const el=document.getElementById(id);
+    let h='';
+    for(let i=0;i<n;i++){
+      const x=(i-(n-1)/2)/(n/3.2);
+      const v=Math.exp(-x*x)*100;
+      h+=`<div class="bar ${i===youIdx?'you':''}" style="height:${12+v*0.78}%"></div>`;
+    }
+    el.innerHTML=h;
+  }
+  hist('h1',22,13);hist('h2',22,11);hist('h3',22,9);hist('h4',22,12);
+</script>
+</body>
+</html>

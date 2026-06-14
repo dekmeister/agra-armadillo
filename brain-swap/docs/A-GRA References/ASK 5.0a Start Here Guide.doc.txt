@@ -1,0 +1,278 @@
+Start Here Guide (v. 5.0a)
+
+Start Here Guide
+For
+
+A-GRA
+5.0a
+21 APR 2026
+
+DISCLAIMER: The discussion of non-federal entities, methods, products, or services does not imply
+any endorsement by the United States Government, the Department of Defense, or the Department of
+the Air Force.
+
+1
+
+Start Here Guide (v. 5.0a)
+Revision History
+
+Version
+5.0a
+
+Description
+
+Generation Date
+
+Initial Public ASK 5.0a Release
+
+21 APR 2026
+
+2
+
+Start Here Guide (v. 5.0a)
+
+Mission Autonomy Introduction
+Mission Autonomy (MA) is the name of the software solution Autonomous Collaborative
+Platforms (ACPs) require to manage the mission-level execution, planning, prioritization, and
+interaction with other systems that humans manage in crewed platforms. MA interfaces are
+standardized to support rapid capability development while enabling interoperability with MA
+peers and human controlled systems. MA solutions are sourced via competitive selection of bestin-breed capabilities.
+This package defines the Autonomy Government Reference Architecture (A-GRA) which
+captures the MA interface standards and supporting documentation. Adherence to this
+architecture enables implementers to develop MA solutions that can be more easily integrated
+into existing platforms, quickly upgraded, and ported between modular compatible MA
+solutions. It also enables integrators to rapidly deploy custom, performant MA solutions to
+accomplish diverse and evolving mission use cases.
+Operational View-1
+This Operational View-1 (OV-1) figure depicts a high-level notional mission use case for a
+Defensive Counter Air (DCA) mission. ACPs take-off from an airbase under oversight from a
+Launch and Recovery Element (LRE) and fly a hold pattern where they await the arrival of a
+Quarterback (QB). The ACPs are assigned to a team and tasked with transit in formation to the
+Mission Area. Once they arrive, ACPs allocate coverage of the zone and fly Combat Air Patrol
+(CAP) patterns. When a threat emerges, MA forwards a request to engage the threat to the QB.
+The QB can simply approve the MA generated strike request while maintaining a safe standoff
+distance. The ACP team will self-nominate a shooter, engage the threat, and return to CAP.
+
+A high level OV-1 used
+to guide interface development for the A-GRA
+3
+
+Start Here Guide (v. 5.0a)
+Potential alternate QBs are depicted around the periphery of the battlespace and may interact
+with ACPs according to permissions associated with their roles. When an ACP reaches the Bingo
+Fuel state, it requests Return to Base (RTB) to the primary or alternate launch and recovery site.
+The sense-and-avoid traffic deconfliction maneuver depicted as part of the primary RTB route
+illustrates the robustness of the ACP to uncertainties in the operational environment. Finally, the
+ACP lands at the designated airfield.
+L1 Interface Diagram
+
+High level view of MA
+and its six L1 interfaces including four distinct C2 nodes
+
+The scalability and adaptability required of MA solutions to accomplish complex, large-scale
+mission operations are enabled by rigorous definition of the interface specifications between MA
+and the other systems in the operational vignette. This ecosystem is broken down into multiple
+architecture levels to track the interface requirements for the MA and other systems. Level 1 (L1)
+is the system level, which defines the external interfaces of the MA to the other systems. The L1
+interfaces are Command and Control (C2), Vehicle Interface (VI), Mission Systems (MS),
+Mission Planning (MP), Mission Debrief (MD) and Peer to Peer (P2P). All of these
+interfaces are described in detail in the A-GRA Interface Control Document (ICD).
+Level 2 (L2) is the component level, which defines the interfaces within MA. MA L2 interface
+definitions will be included in future releases of the A-GRA.
+
+4
+
+Start Here Guide (v. 5.0a)
+A-GRA Organization
+The A-GRA provides the necessary definitions and requirements by which autonomy
+components and systems may be developed but does not exhaustively detail all specific
+implementation options. This is a high level description of interactions organized by interface:
+•
+
+C2
+Describes three categories of C2 interactions – Direct, Indirect, and Responsive
+Defines interactions to form and task a team
+Defines Role Based Access Control (RBAC) for ACPs
+Describes command flows for employing weapons
+Vehicle Interface (VI)
+o Describes the responsibilities of MA and Flight Autonomy (FA) with regard to
+safety-criticality and management of the platform data
+o Identifies control mode messages and sequences for communication with FA.
+Control modes include Heading, Speed, Altitude (HSA), Waypoint Following,
+and Curve Following
+o Defines the required subsystem status reporting and vehicle state data to be
+provided by FA to MA
+o Defines an interface for FA to communicate command validation (accept/reject)
+back to MA. FA always retains control but 'listens' to MA based on mission state
+Mission Systems (MS) Interface
+o Exchange of messages between A-GRA compliant platforms. Includes
+communications systems such as the Decentralized Message Service (DMS)
+o Providing status data to MA such as Position, Navigation, and Timing (PNT) data
+and system status of the local and remote platforms
+o Provides interfaces for sensor and comms system interactions
+o Defines interfaces for Weapons related interactions
+Mission Planning (MP) Interface
+o Defines the Mission Data Package which many MA interactions depend upon
+being loaded pre-mission
+o Defines a system of plans and sub-plans
+o Defines the Rules of Engagement (ROE) settings and other crucial configuration
+settings for ACPs
+Mission Debrief (MD) Interface
+o Defines the use cases for mission debrief and replay of MA data
+o Defines requirements for on-board debrief systems and support for in-flight
+mission debrief
+Peer-to-Peer (P2P) Interface
+o Defines the process for team formation and leader election
+o Defines interactions to distribute the package Common Operating Picture (COP)
+o Defines peer contingencies and state data sharing requirements
+o
+o
+o
+o
+
+•
+
+•
+
+•
+
+•
+
+•
+
+A-GRA interactions are built with messages from the Universal Command and Control Interface
+(UCI) plus extensions for MA. The source schema for Autonomy implementors includes all of
+5
+
+Start Here Guide (v. 5.0a)
+the base UCI messages and MA extensions in the form of Extensible Markup Language (XML)
+Schema Definition (XSD) files.
+Compliance with the A-GRA is currently based on properly implementing interactions for
+desired outcomes. Interactions, or sequences, must use the correct messages and populate
+required fields with valid data. An automated compliance test harness is available for MA
+developers to evaluate L1 interface compliance. It currently performs sequence/message level
+validation and will be enhanced in future releases of the A-GRA.
+
+Acronyms and Abbreviations
+Abbreviation Definition
+ACP
+
+Autonomous Collaborative Platform
+
+A-GRA
+
+Autonomy Government Reference Architecture
+
+ASB
+
+Abstract Service Bus
+
+C2
+
+Command and Control
+
+CAP
+
+Combat Air Patrol
+
+COP
+
+Common Operating Picture
+
+DCA
+
+Defensive Counter Air
+
+FA
+
+Flight Autonomy
+
+HSA
+
+Heading, Speed, Altitude
+
+ICD
+
+Interface Control Document
+
+L1
+
+Level 1 (MA ↔ External Interface)
+
+L2
+
+Level 2 (Intra MA Interface)
+
+LRE
+
+Launch and Recovery Element
+
+MA
+
+Mission Autonomy
+
+MD
+
+Mission Debrief
+
+MP
+
+Mission Planner
+
+MS
+
+Mission System(s)
+
+OV-1
+
+High Level Operational Concept Operational View
+
+P2P
+
+Peer-to-Peer
+6
+
+Start Here Guide (v. 5.0a)
+PNT
+
+Position, Navigation, Timing
+
+QB
+
+Quarterback
+
+ROE
+
+Rules of Engagement
+
+RTB
+
+Return to Base
+
+UCI
+
+Universal Command and Control Interface
+
+VI
+
+Vehicle Interface
+
+WEZ
+
+Weapon(s) Engagement Zone
+
+XML
+
+Extensible Markup Language
+
+XSD
+
+XML Schema Definition
+
+Contact Information
+For any questions, feedback, issues, or more information about A-GRA releases, email
+aflcmc.aflcmc.agra@us.af.mil.
+
+7
+
+

@@ -1,0 +1,36 @@
+{
+  "id": "ax-01",
+  "name": "Mule",
+  "_doc": "Forgiving trainer (docs/03): wide HSA envelope, instant approvals, no quirks.",
+  "capabilities": [
+    {
+      "id": "CAP-HSA",
+      "type": "HSA_CSA",
+      "profile": {
+        "minAltitude": 0,
+        "maxAltitude": 12000,
+        "minAirspeed": 20,
+        "maxAirspeed": 140
+      }
+    }
+  ],
+  "flight": {
+    "maxTurnRateDeg": 6,
+    "maxClimbRate": 50,
+    "maxAccel": 20
+  },
+  "control": {
+    "approvalLatencyTicks": 0
+  },
+  "publish": {
+    "positionIntervalTicks": 1,
+    "activityIntervalTicks": 5
+  },
+  "start": {
+    "x": 0,
+    "y": 0,
+    "altitude": 3000,
+    "heading": 270,
+    "speed": 0
+  }
+}

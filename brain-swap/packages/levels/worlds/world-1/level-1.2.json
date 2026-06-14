@@ -1,0 +1,27 @@
+{
+  "id": "1.2",
+  "title": "First Valid HSA Command",
+  "body": "ax-01",
+  "capabilityId": "CAP-HSA",
+  "objective": {
+    "_doc": "Fly heading 270 to the zone and hold at 3000 m. HSA has no completion state — the brain infers arrival from position reports (docs/03).",
+    "zone": { "x": -900, "y": 0, "radius": 150 },
+    "altitude": 3000,
+    "altitudeTolerance": 50,
+    "holdTicks": 10
+  },
+  "availableMessages": [
+    "MA_FlightCapabilityMT",
+    "MA_FlightCapabilityStatusMT",
+    "MA_ControlRequestMT",
+    "MA_ControlRequestStatusMT",
+    "ControlStatusMT",
+    "MA_FlightCommandMT",
+    "MA_FlightCommandStatusMT",
+    "MA_FlightActivityMT",
+    "MA_PositionReportDetailedMT"
+  ],
+  "maxTicks": 200,
+  "pars": { "ticks": 26, "busTraffic": 2, "rejections": 0, "brainSize": 7 },
+  "fidelityNotes": [2, 3, 6, 8]
+}

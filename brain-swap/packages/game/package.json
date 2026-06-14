@@ -1,0 +1,27 @@
+{
+  "name": "@brain-swap/game",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Brain Swap React + PixiJS app: the MIL-SPEC Ground Station console (run view, brain editor, score screens).",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@brain-swap/core": "*",
+    "@brain-swap/levels": "*",
+    "@xyflow/react": "^12.3.5",
+    "pixi.js": "^8.6.6",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zustand": "^5.0.2"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^5.2.0",
+    "vite": "^7.3.5"
+  }
+}
