@@ -14,6 +14,7 @@ import { Panel } from "../ui/Panel.tsx";
 import { Identifier } from "../ui/Identifier.tsx";
 import { formatValueExpr, parseLiteral } from "../sim/format.ts";
 import { SendActionForm } from "./SendActionForm.tsx";
+import { MessageReference } from "../meta/MessageReference.tsx";
 
 const OPS: CompareOp[] = ["==", "!=", "<", "<=", ">", ">="];
 const NO_MESSAGES: readonly MessageTypeName[] = [];
@@ -27,6 +28,9 @@ export function TransitionForm() {
   const remove = useStore((s) => s.deleteTransition);
   const editing = useStore((s) => s.mode === "EDIT");
   const [sendOpen, setSendOpen] = useState(false);
+  // Which message the cheatsheet pane shows. Tabs set it manually; focusing the
+  // trigger/guard rows vs the action row auto-follows (onFocusCapture below).
+  const [refTab, setRefTab] = useState<"trigger" | "action">("trigger");
 
   if (index === null || !transition) {
     return (
@@ -43,6 +47,10 @@ export function TransitionForm() {
   const triggerFields = isKnownMessageType(triggerType) ? catalogEntry(triggerType).fields : [];
   const guard = transition.guard;
   const action = transition.actions?.[0];
+  // Effective cheatsheet tab — fall back to trigger when the action tab is selected
+  // but no action exists (e.g. it was just cleared).
+  const effTab = refTab === "action" && action ? "action" : "trigger";
+  const refType = effTab === "action" ? action!.message : triggerType;
 
   const setTrigger = (mt: MessageTypeName) =>
     // Trigger change invalidates the guard (fields differ) — drop it.
@@ -57,110 +65,117 @@ export function TransitionForm() {
 
   return (
     <Panel title="TRANSITION" meta={`${transition.from} → ${transition.target ?? transition.from}`} className="tform-panel">
+      <div className="tform-split">
       <div className="tform">
-        {/* Trigger */}
-        <div className="frow">
-          <span className="flbl">Trigger · on message</span>
-          <div className="controls">
-            <select
-              value={triggerType}
-              disabled={!editing}
-              onChange={(e) => setTrigger(e.target.value as MessageTypeName)}
-            >
-              {available.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
+        {/* Trigger + Guard reference the trigger message — focusing either shows it. */}
+        <div className="frow-group" onFocusCapture={() => setRefTab("trigger")}>
+          {/* Trigger */}
+          <div className="frow">
+            <span className="flbl">Trigger · on message</span>
+            <div className="controls">
+              <select
+                value={triggerType}
+                disabled={!editing}
+                onChange={(e) => setTrigger(e.target.value as MessageTypeName)}
+              >
+                {available.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Guard */}
+          <div className="frow">
+            <span className="flbl">Guard · field condition</span>
+            <div className="controls">
+              <select
+                value={guard?.field ?? ""}
+                disabled={!editing}
+                onChange={(e) =>
+                  e.target.value ? setGuardField(e.target.value) : update(index, { guard: undefined })
+                }
+              >
+                <option value="">(none)</option>
+                {triggerFields.map((f) => (
+                  <option key={f.name} value={f.name}>
+                    {f.name}
+                  </option>
+                ))}
+              </select>
+              {guard && (
+                <>
+                  <select value={guard.op} disabled={!editing} onChange={(e) => setGuardOp(e.target.value as CompareOp)}>
+                    {OPS.map((o) => (
+                      <option key={o} value={o}>
+                        {o}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    className="field"
+                    style={{ width: 110 }}
+                    defaultValue={formatValueExpr(guard.value)}
+                    disabled={!editing}
+                    onBlur={(e) => setGuardValue(e.target.value)}
+                    placeholder="value"
+                  />
+                </>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Guard */}
-        <div className="frow">
-          <span className="flbl">Guard · field condition</span>
-          <div className="controls">
-            <select
-              value={guard?.field ?? ""}
-              disabled={!editing}
-              onChange={(e) =>
-                e.target.value ? setGuardField(e.target.value) : update(index, { guard: undefined })
-              }
-            >
-              <option value="">(none)</option>
-              {triggerFields.map((f) => (
-                <option key={f.name} value={f.name}>
-                  {f.name}
-                </option>
-              ))}
-            </select>
-            {guard && (
-              <>
-                <select value={guard.op} disabled={!editing} onChange={(e) => setGuardOp(e.target.value as CompareOp)}>
-                  {OPS.map((o) => (
-                    <option key={o} value={o}>
-                      {o}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  className="field"
-                  style={{ width: 110 }}
-                  defaultValue={formatValueExpr(guard.value)}
-                  disabled={!editing}
-                  onBlur={(e) => setGuardValue(e.target.value)}
-                  placeholder="value"
-                />
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Action */}
-        <div className="frow">
-          <span className="flbl">Action · send</span>
-          <div className="controls">
-            {action ? (
-              <>
-                <span className="chip">
-                  SEND · <Identifier name={action.message} />
-                </span>
-                <button className="btn sm" disabled={!editing} onClick={() => setSendOpen(true)}>
-                  Edit Fields ▸
-                </button>
-                <button className="btn sm" disabled={!editing} onClick={() => update(index, { actions: [] })}>
-                  Clear
-                </button>
-              </>
-            ) : (
-              <button className="btn sm" disabled={!editing} onClick={() => setSendOpen(true)}>
-                + Send Action
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Send field preview */}
-        {action && (
-          <div className="preview">
-            {catalogEntry(action.message).fields.map((f) => {
-              const v = action.fields[f.name];
-              if (v === undefined) {
-                return f.required ? (
-                  <span key={f.name} className="req">
-                    ✱ {f.name} (missing)
+        {/* Action references the send message — focusing it shows that. */}
+        <div className="frow-group" onFocusCapture={() => action && setRefTab("action")}>
+          {/* Action */}
+          <div className="frow">
+            <span className="flbl">Action · send</span>
+            <div className="controls">
+              {action ? (
+                <>
+                  <span className="chip">
+                    SEND · <Identifier name={action.message} />
                   </span>
-                ) : null;
-              }
-              return (
-                <span key={f.name}>
-                  {f.required ? <span className="req">✱ </span> : null}
-                  {f.name} <span className="pf">{formatValueExpr(v)}</span>
-                </span>
-              );
-            })}
+                  <button className="btn sm" disabled={!editing} onClick={() => setSendOpen(true)}>
+                    Edit Fields ▸
+                  </button>
+                  <button className="btn sm" disabled={!editing} onClick={() => update(index, { actions: [] })}>
+                    Clear
+                  </button>
+                </>
+              ) : (
+                <button className="btn sm" disabled={!editing} onClick={() => setSendOpen(true)}>
+                  + Send Action
+                </button>
+              )}
+            </div>
           </div>
-        )}
+
+          {/* Send field preview */}
+          {action && (
+            <div className="preview">
+              {catalogEntry(action.message).fields.map((f) => {
+                const v = action.fields[f.name];
+                if (v === undefined) {
+                  return f.required ? (
+                    <span key={f.name} className="req">
+                      ✱ {f.name} (missing)
+                    </span>
+                  ) : null;
+                }
+                return (
+                  <span key={f.name}>
+                    {f.required ? <span className="req">✱ </span> : null}
+                    {f.name} <span className="pf">{formatValueExpr(v)}</span>
+                  </span>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
         {/* Goto */}
         <div className="frow">
@@ -186,6 +201,36 @@ export function TransitionForm() {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Cheatsheet: reference for the trigger or action message, no page switch. */}
+      <div className="tref">
+        <div className="tref-tabs">
+          <button
+            className={`btn sm${effTab === "trigger" ? " on" : ""}`}
+            onClick={() => setRefTab("trigger")}
+          >
+            Trigger
+          </button>
+          {action && (
+            <button
+              className={`btn sm${effTab === "action" ? " on" : ""}`}
+              onClick={() => setRefTab("action")}
+            >
+              Action
+            </button>
+          )}
+        </div>
+        <div className="tref-body">
+          {isKnownMessageType(refType) ? (
+            <MessageReference name={refType} />
+          ) : (
+            <div style={{ padding: 4, fontSize: 12, color: "var(--k-dim)" }}>
+              No message reference available.
+            </div>
+          )}
+        </div>
+      </div>
       </div>
 
       {sendOpen && (
