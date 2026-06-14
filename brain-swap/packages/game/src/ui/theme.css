@@ -149,7 +149,10 @@ button { font: inherit; }
 .metric .par { font-size: 12px; color: var(--k-olive); }
 .metric.alert .val { color: var(--k-caution); }
 
-.grid { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: 560px 1fr 386px; gap: 8px; padding: 9px; }
+/* Side columns are fluid (clamp) so the console fits tablets/landscape iPads down to
+   1180px while keeping today's 560/386 widths on full desktop. Below 1180px the MobileGate
+   takes over. The Pixi map re-fits via its ResizeObserver and React Flow self-resizes. */
+.grid { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: clamp(380px, 28vw, 560px) 1fr clamp(310px, 24vw, 386px); gap: 8px; padding: 9px; }
 .col { display: flex; flex-direction: column; gap: 8px; min-height: 0; min-width: 0; }
 .col .grow { flex: 1 1 auto; min-height: 0; }
 

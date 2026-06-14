@@ -59,13 +59,16 @@ function loadBest(): Record<string, { score: Score; won: boolean }> {
   }
 }
 
-/** Auto-layout for states without a saved position: a simple vertical-ish stagger. */
+/** Auto-layout for states without a saved position: a single vertical column. Stacking
+ * the states keeps the brain narrow so it reads well in a tight (tablet) editor column;
+ * the row pitch leaves a gap for the edge's guard/send label to sit between nodes.
+ * fitView frames it identically on desktop. */
 function autoLayout(states: readonly string[], existing: Layout): Layout {
   const out: Layout = { ...existing };
   let i = 0;
   for (const s of states) {
     if (!out[s]) {
-      out[s] = { x: 40 + (i % 2) * 200, y: 30 + i * 110 };
+      out[s] = { x: 50, y: 30 + i * 130 };
     }
     i += 1;
   }
