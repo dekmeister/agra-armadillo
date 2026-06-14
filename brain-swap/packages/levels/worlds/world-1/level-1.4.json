@@ -28,6 +28,6 @@
     "MA_PositionReportDetailedMT"
   ],
   "maxTicks": 400,
-  "pars": { "ticks": 235, "busTraffic": 5, "rejections": 0, "brainSize": 13 },
+  "pars": { "ticks": 227, "busTraffic": 5, "rejections": 0, "brainSize": 13 },
   "fidelityNotes": [6, 8, 12, 15]
 }

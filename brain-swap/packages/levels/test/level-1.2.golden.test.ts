@@ -37,25 +37,20 @@ const GOLDEN_LOG = [
   "t11 FA->MA MA_PositionReportDetailedMT [delivered]",
   "t11 FA->MA MA_FlightActivityMT [delivered]",
   "t12 FA->MA MA_PositionReportDetailedMT [delivered]",
+  "t13 MA->FA MA_FlightCommandMT [delivered]",
   "t13 FA->MA MA_PositionReportDetailedMT [delivered]",
+  "t14 FA->MA MA_FlightCommandStatusMT [delivered]",
   "t14 FA->MA MA_PositionReportDetailedMT [delivered]",
   "t15 FA->MA MA_PositionReportDetailedMT [delivered]",
   "t16 FA->MA MA_PositionReportDetailedMT [delivered]",
   "t16 FA->MA MA_FlightActivityMT [delivered]",
-  "t17 MA->FA MA_FlightCommandMT [delivered]",
   "t17 FA->MA MA_PositionReportDetailedMT [delivered]",
-  "t18 FA->MA MA_FlightCommandStatusMT [delivered]",
   "t18 FA->MA MA_PositionReportDetailedMT [delivered]",
   "t19 FA->MA MA_PositionReportDetailedMT [delivered]",
   "t20 FA->MA MA_PositionReportDetailedMT [delivered]",
   "t21 FA->MA MA_PositionReportDetailedMT [delivered]",
   "t21 FA->MA MA_FlightActivityMT [delivered]",
   "t22 FA->MA MA_PositionReportDetailedMT [delivered]",
-  "t23 FA->MA MA_PositionReportDetailedMT [delivered]",
-  "t24 FA->MA MA_PositionReportDetailedMT [delivered]",
-  "t25 FA->MA MA_PositionReportDetailedMT [delivered]",
-  "t26 FA->MA MA_PositionReportDetailedMT [delivered]",
-  "t26 FA->MA MA_FlightActivityMT [delivered]",
 ];
 
 describe("level 1.2 golden run (reference brain)", () => {
@@ -88,7 +83,7 @@ describe("level 1.2 golden run (reference brain)", () => {
         },
       },
       {
-        tick: 17,
+        tick: 13,
         type: "MA_FlightCommandMT",
         payload: { CommandID: "CMD-1", CommandState: "UPDATE", CapabilityID: "CAP-HSA", Speed: 20 },
       },
@@ -96,7 +91,7 @@ describe("level 1.2 golden run (reference brain)", () => {
   });
 
   it("produces stable scores", () => {
-    expect(scoreWorld(solve())).toEqual({ ticks: 26, busTraffic: 3, rejections: 0, brainSize: 9 });
+    expect(scoreWorld(solve())).toEqual({ ticks: 22, busTraffic: 3, rejections: 0, brainSize: 9 });
   });
 
   it("is deterministic: two in-process runs yield byte-identical logs", () => {

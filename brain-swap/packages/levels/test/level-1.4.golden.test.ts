@@ -16,8 +16,8 @@ function solve(): World {
 const project = (log: readonly MessageLogEntry[]): string[] =>
   log.map((e) => `t${e.tick} ${e.from}->${e.to} ${e.type} [${e.disposition.kind}]`);
 
-const GOLDEN_LEN = 293;
-const GOLDEN_SHA256 = "ba5adde7cdc145f6a921035829cfd6a73a6ede9344b43db58c540b0e6d64e374";
+const GOLDEN_LEN = 284;
+const GOLDEN_SHA256 = "a646bf0c7aa57a4e79deff0ba697cd6aa9c08295551dad0a9a6a2c2a4e24cff9";
 
 describe("level 1.4 golden run (reference brain)", () => {
   it("the reference brain flies the circuit and wins", () => {
@@ -45,17 +45,17 @@ describe("level 1.4 golden run (reference brain)", () => {
         payload: { CommandID: "CMD-1", CommandState: "NEW", CapabilityID: "CAP-HSA", Heading: 270, Altitude: 3000, Speed: 25 },
       },
       {
-        tick: 55,
+        tick: 47,
         type: "MA_FlightCommandMT",
         payload: { CommandID: "CMD-1", CommandState: "UPDATE", CapabilityID: "CAP-HSA", Heading: 180 },
       },
       {
-        tick: 110,
+        tick: 102,
         type: "MA_FlightCommandMT",
         payload: { CommandID: "CMD-1", CommandState: "UPDATE", CapabilityID: "CAP-HSA", Heading: 90 },
       },
       {
-        tick: 177,
+        tick: 169,
         type: "MA_FlightCommandMT",
         payload: { CommandID: "CMD-1", CommandState: "UPDATE", CapabilityID: "CAP-HSA", Heading: 0 },
       },

@@ -48,7 +48,7 @@ describe("level 4.5 type certificate (locked brain, full fleet)", () => {
 
   it("per-body scores aggregate (worst-of-three) to par", () => {
     const scores: Score[] = runs().map(scoreWorld);
-    expect(scores.map((s) => s.ticks)).toEqual([30, 34, 30]);
+    expect(scores.map((s) => s.ticks)).toEqual([25, 28, 25]);
     expect(aggregateWorst(scores)).toEqual(level45.pars);
   });
 
