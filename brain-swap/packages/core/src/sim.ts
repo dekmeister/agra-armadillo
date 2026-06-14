@@ -16,9 +16,10 @@ import type { Outcome, Scenario, World } from "./world.ts";
 
 /** Capability fields exposed to brain `cap.*` references. */
 function capContext(scenario: Scenario): Record<string, unknown> {
-  const capId = scenario.level?.capabilityId ?? scenario.body.capabilities[0]?.id;
-  const cap = scenario.body.capabilities.find((c) => c.id === capId);
-  const profile = cap?.profile;
+  const levelCapId = scenario.level?.capabilityId;
+  const bodyCap = scenario.body.capabilities.find((c) => c.id === levelCapId) ?? scenario.body.capabilities[0];
+  const capId = bodyCap?.id ?? levelCapId ?? '';
+  const profile = bodyCap?.profile;
   return {
     CapabilityID: capId,
     ...(profile?.minAltitude !== undefined ? { MinAltitude: profile.minAltitude } : {}),

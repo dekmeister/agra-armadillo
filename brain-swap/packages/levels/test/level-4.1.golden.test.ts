@@ -74,14 +74,14 @@ describe("level 4.1 golden run (portable reference brain)", () => {
       .log.filter((e) => e.from === "MA")
       .map((e) => ({ tick: e.tick, type: e.type, payload: e.payload }));
     expect(sends).toEqual([
-      { tick: 2, type: "MA_ControlRequestMT", payload: { RequestType: "ACQUIRE", CapabilityID: "CAP-HSA" } },
+      { tick: 2, type: "MA_ControlRequestMT", payload: { RequestType: "ACQUIRE", CapabilityID: "HERON-02" } },
       {
         tick: 7,
         type: "MA_FlightCommandMT",
         payload: {
           CommandID: "CMD-1",
           CommandState: "NEW",
-          CapabilityID: "CAP-HSA",
+          CapabilityID: "HERON-02",
           Heading: 270,
           Altitude: 3000,
           Speed: 50,
@@ -90,7 +90,7 @@ describe("level 4.1 golden run (portable reference brain)", () => {
       {
         tick: 17,
         type: "MA_FlightCommandMT",
-        payload: { CommandID: "CMD-1", CommandState: "UPDATE", CapabilityID: "CAP-HSA", Speed: 25 },
+        payload: { CommandID: "CMD-1", CommandState: "UPDATE", CapabilityID: "HERON-02", Speed: 25 },
       },
     ]);
   });

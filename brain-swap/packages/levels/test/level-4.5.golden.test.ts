@@ -15,16 +15,24 @@ function runs(): World[] {
 const sendPayloads = (w: World) =>
   w.log.filter((e) => e.from === "MA").map((e) => ({ type: e.type, payload: e.payload }));
 
-const LOCKED_SENDS = [
-  { type: "MA_ControlRequestMT", payload: { RequestType: "ACQUIRE", CapabilityID: "CAP-HSA" } },
-  {
-    type: "MA_FlightCommandMT",
-    payload: { CommandID: "CMD-1", CommandState: "NEW", CapabilityID: "CAP-HSA", Heading: 270, Altitude: 3000, Speed: 40 },
-  },
-  {
-    type: "MA_FlightCommandMT",
-    payload: { CommandID: "CMD-1", CommandState: "UPDATE", CapabilityID: "CAP-HSA", Speed: 30 },
-  },
+function lockedSendsFor(capId: string) {
+  return [
+    { type: "MA_ControlRequestMT", payload: { RequestType: "ACQUIRE", CapabilityID: capId } },
+    {
+      type: "MA_FlightCommandMT",
+      payload: { CommandID: "CMD-1", CommandState: "NEW", CapabilityID: capId, Heading: 270, Altitude: 3000, Speed: 40 },
+    },
+    {
+      type: "MA_FlightCommandMT",
+      payload: { CommandID: "CMD-1", CommandState: "UPDATE", CapabilityID: capId, Speed: 30 },
+    },
+  ];
+}
+
+const EXPECTED_SENDS_PER_BODY = [
+  lockedSendsFor("MULE-01"),
+  lockedSendsFor("HERON-02"),
+  lockedSendsFor("FERRET-03"),
 ];
 
 describe("level 4.5 type certificate (locked brain, full fleet)", () => {
@@ -40,10 +48,8 @@ describe("level 4.5 type certificate (locked brain, full fleet)", () => {
     }
   });
 
-  it("flies the identical command sequence on every airframe (no edits)", () => {
-    for (const w of runs()) {
-      expect(sendPayloads(w)).toEqual(LOCKED_SENDS);
-    }
+  it("flies the identical command sequence on every airframe (CapabilityID varies per body)", () => {
+    expect(runs().map(sendPayloads)).toEqual(EXPECTED_SENDS_PER_BODY);
   });
 
   it("per-body scores aggregate (worst-of-three) to par", () => {

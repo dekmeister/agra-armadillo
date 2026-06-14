@@ -41,7 +41,7 @@ One airframe + its FA configuration. FA is one engine configured by this data
 {
   "id": "ax-01", "name": "Mule",
   "capabilities": [
-    { "id": "CAP-HSA", "type": "HSA_CSA",
+    { "id": "MULE-01", "type": "HSA_CSA",
       "profile": { "minAltitude": 0, "maxAltitude": 12000,
                    "minAirspeed": 20, "maxAirspeed": 140 } }   // same data FA validates against
   ],
@@ -58,7 +58,7 @@ One airframe + its FA configuration. FA is one engine configured by this data
 {
   "id": "1.2", "title": "First Valid HSA Command",
   "body": "ax-01",            // body id reference
-  "capabilityId": "CAP-HSA",  // capability the brain controls (drives cap.* refs)
+  "capabilityId": "MULE-01",  // capability the brain controls (drives cap.* refs)
   "objective": {              // win is world-state, never "message sent" (docs/01)
     "kind": "reach-hold",     // discriminated union — see "Objective kinds" below
     "zone": { "x": -900, "y": 0, "radius": 150 },

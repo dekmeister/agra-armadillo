@@ -69,14 +69,14 @@ describe("level 1.2 golden run (reference brain)", () => {
       .log.filter((e) => e.from === "MA")
       .map((e) => ({ tick: e.tick, type: e.type, payload: e.payload }));
     expect(sends).toEqual([
-      { tick: 2, type: "MA_ControlRequestMT", payload: { RequestType: "ACQUIRE", CapabilityID: "CAP-HSA" } },
+      { tick: 2, type: "MA_ControlRequestMT", payload: { RequestType: "ACQUIRE", CapabilityID: "MULE-01" } },
       {
         tick: 4,
         type: "MA_FlightCommandMT",
         payload: {
           CommandID: "CMD-1",
           CommandState: "NEW",
-          CapabilityID: "CAP-HSA",
+          CapabilityID: "MULE-01",
           Heading: 270,
           Altitude: 3000,
           Speed: 60,
@@ -85,7 +85,7 @@ describe("level 1.2 golden run (reference brain)", () => {
       {
         tick: 13,
         type: "MA_FlightCommandMT",
-        payload: { CommandID: "CMD-1", CommandState: "UPDATE", CapabilityID: "CAP-HSA", Speed: 20 },
+        payload: { CommandID: "CMD-1", CommandState: "UPDATE", CapabilityID: "MULE-01", Speed: 20 },
       },
     ]);
   });

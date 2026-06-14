@@ -3,7 +3,7 @@
   "title": "Type Certificate",
   "body": "ax-01",
   "bodies": ["ax-01", "ax-02", "ax-03"],
-  "capabilityId": "CAP-HSA",
+  "capabilityId": "MULE-01",
   "brief": "One locked brain. Three airframes. Certify it flies the mission on all of them.",
   "teaches": "The brain-swap thesis: a brain written against the interface, not the airframe, ports across the fleet. Commanded values sit inside every body's envelope; the handshake absorbs each body's approval latency.",
   "objective": {

@@ -3,7 +3,7 @@ import { initWorld, type MessageLogEntry, run, scoreWorld, type World } from "@b
 import { level11, level11NaiveBrain, level11ReferenceBrain, scenarioFor } from "@brain-swap/levels";
 
 // Level 1.1 "Handshake": the control-acquisition handshake in isolation (no flight).
-// Win = MA is the secondary controller of CAP-HSA for 30 consecutive ticks.
+// Win = MA is the secondary controller of MULE-01 for 30 consecutive ticks.
 
 const MAX_STEPS = 500;
 
@@ -68,7 +68,7 @@ describe("level 1.1 golden run (reference brain)", () => {
       .log.filter((e) => e.from === "MA")
       .map((e) => ({ tick: e.tick, type: e.type, payload: e.payload }));
     expect(sends).toEqual([
-      { tick: 2, type: "MA_ControlRequestMT", payload: { RequestType: "ACQUIRE", CapabilityID: "CAP-HSA" } },
+      { tick: 2, type: "MA_ControlRequestMT", payload: { RequestType: "ACQUIRE", CapabilityID: "MULE-01" } },
     ]);
   });
 

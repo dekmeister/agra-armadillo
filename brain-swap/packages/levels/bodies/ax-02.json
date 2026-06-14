@@ -4,7 +4,7 @@
   "_doc": "Endurance ISR airframe (docs/03): low ceiling, slow, deliberate approvals. Forces profile-reading (its 50 m/s ceiling rejects a brain that hardcoded AX-01's Speed:60) and exercises the PENDING->APPROVED control flow (approvalLatencyTicks 3).",
   "capabilities": [
     {
-      "id": "CAP-HSA",
+      "id": "HERON-02",
       "type": "HSA_CSA",
       "profile": {
         "minAltitude": 0,

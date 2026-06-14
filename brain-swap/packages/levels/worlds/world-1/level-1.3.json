@@ -2,7 +2,7 @@
   "id": "1.3",
   "title": "Envelope",
   "body": "ax-02",
-  "capabilityId": "CAP-HSA",
+  "capabilityId": "HERON-02",
   "brief": "Reach the station at the Heron's ceiling and hold. The envelope is data — read it.",
   "teaches": "FA validates every command against the envelope it advertised in MA_FlightCapabilityMT. Command above MaxAltitude and FA rejects with PERFORMANCE_LIMIT_EXCEEDED. Clamp to cap.MaxAltitude to fly clean with zero rejections.",
   "objective": {

@@ -2,7 +2,7 @@
   "id": "4.1",
   "title": "Second Body",
   "body": "ax-02",
-  "capabilityId": "CAP-HSA",
+  "capabilityId": "HERON-02",
   "brief": "Re-fly the HSA mission on the Heron. The numbers that worked on the Mule do not.",
   "teaches": "Portability: a brain that reads the profile (cap.MaxAirspeed / cap.MinAirspeed) and waits for APPROVED ports to a new airframe unchanged. A brain that hardcoded the Mule's Speed:60 is rejected by the Heron's slower envelope.",
   "objective": {

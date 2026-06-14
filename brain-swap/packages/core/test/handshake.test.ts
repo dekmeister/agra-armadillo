@@ -18,7 +18,7 @@ const body: BodyProfile = {
   name: "Test Mule",
   capabilities: [
     {
-      id: "CAP-HSA",
+      id: "MULE-01",
       type: "HSA_CSA",
       profile: { minAltitude: 0, maxAltitude: 12000, minAirspeed: 20, maxAirspeed: 140 },
     },
@@ -31,7 +31,7 @@ const body: BodyProfile = {
 
 const acquire = msg("MA_ControlRequestMT", "MA", "FA", {
   RequestType: "ACQUIRE",
-  CapabilityID: "CAP-HSA",
+  CapabilityID: "MULE-01",
 });
 
 const project = (log: readonly MessageLogEntry[]): string[] =>
@@ -60,7 +60,7 @@ describe("control-acquisition handshake (golden log)", () => {
 
   it("FA grants MA secondary control of the capability", () => {
     const w = runHandshake();
-    expect(isSecondaryController(w.fa, "CAP-HSA")).toBe(true);
+    expect(isSecondaryController(w.fa, "MULE-01")).toBe(true);
 
     const status = w.log.find((e) => e.type === "MA_ControlRequestStatusMT");
     expect((status?.payload as { ApprovalRequestProcessingState: string }).ApprovalRequestProcessingState).toBe(
@@ -78,7 +78,7 @@ describe("control-acquisition handshake (golden log)", () => {
       msg("MA_FlightCommandMT", "MA", "FA", {
         CommandID: "CMD-1",
         CommandState: "NEW",
-        CapabilityID: "CAP-HSA",
+        CapabilityID: "MULE-01",
         Heading: 270,
         Altitude: 3000,
         Speed: 60,

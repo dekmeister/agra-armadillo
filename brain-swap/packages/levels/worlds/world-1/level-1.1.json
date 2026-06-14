@@ -2,11 +2,11 @@
   "id": "1.1",
   "title": "Handshake",
   "body": "ax-01",
-  "capabilityId": "CAP-HSA",
+  "capabilityId": "MULE-01",
   "brief": "Acquire secondary control of the HSA capability and hold it.",
   "teaches": "The control-acquisition handshake: wait for the capability to advertise AVAILABLE, then ACQUIRE. FA silently ignores flight commands until you are the secondary controller (VI Vol §1.2.2.2).",
   "objective": {
-    "_doc": "No flight. Win = MA is the secondary controller of CAP-HSA for 30 consecutive ticks (hold-control).",
+    "_doc": "No flight. Win = MA is the secondary controller of MULE-01 for 30 consecutive ticks (hold-control).",
     "kind": "hold-control",
     "holdTicks": 30
   },

@@ -12,7 +12,7 @@ export interface CapabilityProfile {
 }
 
 export interface BodyCapability {
-  readonly id: string; // CapabilityID, e.g. "CAP-HSA" (short id — fidelity lie #4)
+  readonly id: string; // CapabilityID (short id — fidelity lie #4)
   readonly type: "HSA_CSA";
   readonly profile: CapabilityProfile;
 }

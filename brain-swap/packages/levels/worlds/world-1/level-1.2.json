@@ -2,7 +2,7 @@
   "id": "1.2",
   "title": "First Valid HSA Command",
   "body": "ax-01",
-  "capabilityId": "CAP-HSA",
+  "capabilityId": "MULE-01",
   "objective": {
     "_doc": "Fly heading 270 to the zone and hold at 3000 m. HSA has no completion state — the brain infers arrival from position reports (docs/03).",
     "kind": "reach-hold",

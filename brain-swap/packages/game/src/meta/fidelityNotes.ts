@@ -11,7 +11,7 @@ export const FIDELITY_NOTES: FidelityNote[] = [
   { index: 1, title: "FA collapses the safety-critical side", body: "Real architecture has a VI OMS Isolator at the Airworthiness Boundary; the game collapses isolator + VMS + FA into one character, \"FA\"." },
   { index: 2, title: "One MA, one vehicle, perfect bus", body: "Real A-GRA is pub/sub over an Abstract Service Bus with QoS and out-of-order delivery. The game uses a single in-order bus with 1-tick delivery." },
   { index: 3, title: "Discrete ticks", body: "\"Periodic\" rates map to every-N-ticks; everything is deterministic and replayable. Real systems are asynchronous." },
-  { index: 4, title: "Short IDs", body: "CMD-1, CAP-HSA instead of UUIDs. Correlation semantics (CommandID ↔ status, CapabilityID ↔ control) are preserved; only the format is shortened." },
+  { index: 4, title: "Short IDs", body: "CMD-1, MULE-01 instead of UUIDs. Correlation semantics (CommandID ↔ status, CapabilityID ↔ control) are preserved; only the format is shortened." },
   { index: 5, title: "Pruned field sets", body: "Each message shows the interaction-required fields plus discriminators. Security markings, timestamps, and most optional fields are omitted. Kept fields are never renamed." },
   { index: 6, title: "2D world + altitude scalar", body: "Point-mass aircraft with turn/climb/accel limits; position maps Longitude→x, Latitude→y. Real kinematics are full 3D. The shape of the performance profile is real." },
   { index: 7, title: "Objectives arrive by magic", body: "Real missions arrive via C2/Mission Planning. Those are different L1 interfaces, out of this game's boundary." },

@@ -2,7 +2,7 @@
   "id": "1.4",
   "title": "Racetrack by Hand",
   "body": "ax-01",
-  "capabilityId": "CAP-HSA",
+  "capabilityId": "MULE-01",
   "brief": "Fly a four-corner circuit. Turn each corner with a Direction-only UPDATE.",
   "teaches": "NEW sets a full command; UPDATE amends one field of the active command. Steering the circuit with single-field (Heading) UPDATEs keeps bus traffic to a minimum — the racetrack par only falls to partial updates.",
   "objective": {

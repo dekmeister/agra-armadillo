@@ -14,7 +14,7 @@ import { testBody } from "./fixtures.ts";
 const command = (over: Partial<MA_FlightCommandMT>): MA_FlightCommandMT => ({
   CommandID: "CMD-1",
   CommandState: "NEW",
-  CapabilityID: "CAP-HSA",
+  CapabilityID: "MULE-01",
   Heading: 270,
   Altitude: 3000,
   Speed: 60,
@@ -41,7 +41,7 @@ describe("FA command validator", () => {
   });
 
   it("rejects an unknown capability with CAPABILITY_NOT_SUPPORTED", () => {
-    const out = validateFlightCommand(testBody, command({ CapabilityID: "CAP-NOPE" }));
+    const out = validateFlightCommand(testBody, command({ CapabilityID: "BAD-CAP" }));
     expect(out).toEqual({ accepted: false, result: "CAPABILITY_NOT_SUPPORTED" });
   });
 });
@@ -51,7 +51,7 @@ describe("FA command validator", () => {
 function acquireThenCommand(cmd: MA_FlightCommandMT): World {
   let w = initWorld(makeScenario(testBody));
   w = step(w); // t1: boot delivered
-  w = injectMA(w, msg("MA_ControlRequestMT", "MA", "FA", { RequestType: "ACQUIRE", CapabilityID: "CAP-HSA" }));
+  w = injectMA(w, msg("MA_ControlRequestMT", "MA", "FA", { RequestType: "ACQUIRE", CapabilityID: "MULE-01" }));
   w = step(w); // t2: ACQUIRE processed, APPROVED + ControlStatus emitted
   w = step(w); // t3: control granted on MA side
   w = injectMA(w, msg("MA_FlightCommandMT", "MA", "FA", cmd));

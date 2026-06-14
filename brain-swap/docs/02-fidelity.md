@@ -67,7 +67,7 @@ the XSD: `INVALID_CURVE`, `INVALID_WAYPOINT`, `PERFORMANCE_LIMIT_EXCEEDED`,
 3. **Discrete ticks.** "Periodic" rates (e.g. 1 s default `ServiceStatus`) map to
    every-N-ticks; everything is deterministic and replayable. Real systems are
    asynchronous.
-4. **Short IDs.** `CMD-7`, `CAP-HSA`, `RTE-2` instead of UUIDs. Correlation
+4. **Short IDs.** `CMD-7`, `MULE-01`, `RTE-2` instead of UUIDs. Correlation
    semantics (CommandID ↔ status, CapabilityID ↔ control request) are preserved
    exactly; only the format is shortened.
 5. **Pruned field sets.** Each message shows the fields the VI Volume's interaction

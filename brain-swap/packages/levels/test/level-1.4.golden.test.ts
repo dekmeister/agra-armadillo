@@ -38,26 +38,26 @@ describe("level 1.4 golden run (reference brain)", () => {
       .log.filter((e) => e.from === "MA")
       .map((e) => ({ tick: e.tick, type: e.type, payload: e.payload }));
     expect(sends).toEqual([
-      { tick: 2, type: "MA_ControlRequestMT", payload: { RequestType: "ACQUIRE", CapabilityID: "CAP-HSA" } },
+      { tick: 2, type: "MA_ControlRequestMT", payload: { RequestType: "ACQUIRE", CapabilityID: "MULE-01" } },
       {
         tick: 4,
         type: "MA_FlightCommandMT",
-        payload: { CommandID: "CMD-1", CommandState: "NEW", CapabilityID: "CAP-HSA", Heading: 270, Altitude: 3000, Speed: 25 },
+        payload: { CommandID: "CMD-1", CommandState: "NEW", CapabilityID: "MULE-01", Heading: 270, Altitude: 3000, Speed: 25 },
       },
       {
         tick: 47,
         type: "MA_FlightCommandMT",
-        payload: { CommandID: "CMD-1", CommandState: "UPDATE", CapabilityID: "CAP-HSA", Heading: 180 },
+        payload: { CommandID: "CMD-1", CommandState: "UPDATE", CapabilityID: "MULE-01", Heading: 180 },
       },
       {
         tick: 102,
         type: "MA_FlightCommandMT",
-        payload: { CommandID: "CMD-1", CommandState: "UPDATE", CapabilityID: "CAP-HSA", Heading: 90 },
+        payload: { CommandID: "CMD-1", CommandState: "UPDATE", CapabilityID: "MULE-01", Heading: 90 },
       },
       {
         tick: 169,
         type: "MA_FlightCommandMT",
-        payload: { CommandID: "CMD-1", CommandState: "UPDATE", CapabilityID: "CAP-HSA", Heading: 0 },
+        payload: { CommandID: "CMD-1", CommandState: "UPDATE", CapabilityID: "MULE-01", Heading: 0 },
       },
     ]);
   });

@@ -4,7 +4,7 @@
   "_doc": "Forgiving trainer (docs/03): wide HSA envelope, instant approvals, no quirks.",
   "capabilities": [
     {
-      "id": "CAP-HSA",
+      "id": "MULE-01",
       "type": "HSA_CSA",
       "profile": {
         "minAltitude": 0,

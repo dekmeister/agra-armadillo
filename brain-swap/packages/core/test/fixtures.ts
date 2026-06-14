@@ -6,7 +6,7 @@ export const testBody: BodyProfile = {
   name: "Test Mule",
   capabilities: [
     {
-      id: "CAP-HSA",
+      id: "MULE-01",
       type: "HSA_CSA",
       profile: { minAltitude: 0, maxAltitude: 12000, minAirspeed: 20, maxAirspeed: 140 },
     },
