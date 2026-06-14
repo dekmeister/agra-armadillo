@@ -217,7 +217,8 @@ button { font: inherit; }
 .edgechip.warn .guard { color: var(--k-warn); }
 
 /* ---- transition form ---- */
-.tform { padding: 8px 9px; display: flex; flex-direction: column; gap: 7px; overflow-y: auto; max-height: 240px; }
+.tform-panel { height: 310px; flex-shrink: 0; }
+.tform { padding: 8px 9px; display: flex; flex-direction: column; gap: 7px; overflow-y: auto; }
 .tform .frow { display: flex; flex-direction: column; gap: 3px; }
 .tform .frow > .flbl { font-family: var(--cond); font-weight: 600; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--k-dim); }
 .tform .controls { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }

@@ -1,5 +1,5 @@
 // Primary console: ChromeBar + StatusStrip + the 3-column grid (468 | 1fr | 386).
-// Left = brain editor + transition form; center = map + mission/spec; right = log pillar.
+// Left = brain editor (full height); center = map + mission/spec + transition form; right = log pillar.
 import { ChromeBar } from "./ChromeBar.tsx";
 import { StatusStrip } from "./StatusStrip.tsx";
 import { BrainEditorPanel } from "../editor/BrainEditorPanel.tsx";
@@ -16,7 +16,6 @@ export function Console() {
       <div className="grid">
         <div className="col">
           <BrainEditorPanel />
-          <TransitionForm />
         </div>
         <div className="col">
           <TacticalMapPanel />
@@ -24,6 +23,7 @@ export function Console() {
             <MissionCard />
             <BodySpecSheet />
           </div>
+          <TransitionForm />
         </div>
         <div className="col">
           <MessageLogPanel />

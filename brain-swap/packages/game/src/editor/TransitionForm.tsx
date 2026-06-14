@@ -30,7 +30,7 @@ export function TransitionForm() {
 
   if (index === null || !transition) {
     return (
-      <Panel title="TRANSITION" className="grow-0">
+      <Panel title="TRANSITION" className="tform-panel">
         <div style={{ padding: 10, fontSize: 10, color: "var(--k-dim)" }}>
           Select an edge to edit its trigger, guard, and action — or drag between states to
           create one.
@@ -56,7 +56,7 @@ export function TransitionForm() {
     guard && update(index, { guard: { ...guard, value: parseLiteral(text) } });
 
   return (
-    <Panel title="TRANSITION" meta={`${transition.from} → ${transition.target ?? transition.from}`}>
+    <Panel title="TRANSITION" meta={`${transition.from} → ${transition.target ?? transition.from}`} className="tform-panel">
       <div className="tform">
         {/* Trigger */}
         <div className="frow">
