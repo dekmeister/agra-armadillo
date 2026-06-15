@@ -1,6 +1,6 @@
 // Level Select — five world columns (W0–W4). Playable levels (catalog `playable` flag, backed
 // by the @brain-swap/levels registry) load on click via selectLevel; the rest are locked.
-// Medals (T/B/S = Ticks / Bus / Size) bind to persisted best scores vs each level's par.
+// Medals (T/B/R = Ticks / Bus / Rejections) bind to persisted best scores vs each level's par.
 import { useStore } from "../store.ts";
 import { WORLDS, type LevelEntry } from "./levelCatalog.ts";
 import { levelById } from "@brain-swap/levels";
@@ -15,12 +15,12 @@ function medal(value: number, par: number): Medal {
   return "none";
 }
 
-function medals(score: Score | undefined, pars: LevelPars | undefined): { t: Medal; b: Medal; s: Medal } {
-  if (!score || !pars) return { t: "none", b: "none", s: "none" };
+function medals(score: Score | undefined, pars: LevelPars | undefined): { t: Medal; b: Medal; r: Medal } {
+  if (!score || !pars) return { t: "none", b: "none", r: "none" };
   return {
     t: medal(score.ticks, pars.ticks),
     b: medal(score.busTraffic, pars.busTraffic),
-    s: medal(score.brainSize, pars.brainSize),
+    r: medal(score.rejections, pars.rejections),
   };
 }
 
@@ -63,7 +63,7 @@ export function LevelSelect() {
                     <div className="lid">{lv.id}</div>
                     <div className="lname">{lv.name}</div>
                     <div className="medals">
-                      {(["t", "b", "s"] as const).map((k) => (
+                      {(["t", "b", "r"] as const).map((k) => (
                         <span key={k} className={`medal ${m[k]}`}>{k.toUpperCase()}</span>
                       ))}
                     </div>

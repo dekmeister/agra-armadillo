@@ -12,7 +12,7 @@ interface MetricSpec {
 
 export function StatusStrip() {
   const running = useStore((s) => s.running);
-  const mode = useStore((s) => s.mode);
+  const composing = useStore((s) => s.composing);
   // Select the stable world snapshot, then derive the score in render. Computing the
   // score inside the selector would return a new object every call and trip
   // useSyncExternalStore's "getSnapshot should be cached" infinite-loop guard.
@@ -20,13 +20,19 @@ export function StatusStrip() {
   const score = useMemo(() => scoreWorld(world), [world]);
   const pars = useStore((s) => s.level.pars);
 
-  const lampLabel = running ? "RUN · SIMULATING" : mode === "RUN" ? "RUN · PAUSED" : "EDIT · HALTED";
+  const lampLabel = composing
+    ? "LIVE · COMPOSING"
+    : running
+      ? "LIVE · RUNNING"
+      : world.tick === 0
+        ? "READY"
+        : "LIVE · PAUSED";
 
+  // Realtime drops Brain Size (no state machine).
   const metrics: MetricSpec[] = [
     { key: "ticks", label: "Ticks", value: score.ticks, par: pars?.ticks },
     { key: "busTraffic", label: "Bus Traffic", value: score.busTraffic, par: pars?.busTraffic },
     { key: "rejections", label: "Rejections", value: score.rejections, par: pars?.rejections },
-    { key: "brainSize", label: "Brain Size", value: score.brainSize, par: pars?.brainSize },
   ];
 
   return (

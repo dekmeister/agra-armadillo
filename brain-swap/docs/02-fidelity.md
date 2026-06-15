@@ -66,7 +66,9 @@ the XSD: `INVALID_CURVE`, `INVALID_WAYPOINT`, `PERFORMANCE_LIMIT_EXCEEDED`,
    out-of-order delivery. Game: single in-order bus, 1-tick delivery.
 3. **Discrete ticks.** "Periodic" rates (e.g. 1 s default `ServiceStatus`) map to
    every-N-ticks; everything is deterministic and replayable. Real systems are
-   asynchronous.
+   asynchronous. Realtime mode paces tick advance on a wall-clock and pauses while the
+   player composes a message, but the sim itself stays tick-discrete — the recorded
+   session (`ScriptedInput[]`) replays identically.
 4. **Short IDs.** `CMD-7`, `MULE-01`, `RTE-2` instead of UUIDs. Correlation
    semantics (CommandID ↔ status, CapabilityID ↔ control request) are preserved
    exactly; only the format is shortened.

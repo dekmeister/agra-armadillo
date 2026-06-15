@@ -1,3 +1,5 @@
+// Keyboard/paste filters that keep a text input numeric (digits, dot, minus). Used by the
+// realtime message composer for number fields.
 const NAV_KEYS = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Escape', 'Enter', 'Home', 'End'];
 
 export function numericKeyDown(e: React.KeyboardEvent) {

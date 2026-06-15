@@ -1,4 +1,5 @@
-// ChromeBar (58px): MissionBlock | TickTransport | EditRunSwitch.
+// ChromeBar (58px): MissionBlock | LiveTransport. Realtime transport: Play/Pause · Restart ·
+// Step · Compose · speed · tick readout. (No EDIT/RUN switch — there is no brain to edit.)
 import { useState } from "react";
 import { useStore, type Speed } from "../store.ts";
 import { FidelityNotesModal } from "../meta/FidelityNotesPanel.tsx";
@@ -10,14 +11,14 @@ export function ChromeBar() {
   const level = useStore((s) => s.level);
   const body = useStore((s) => s.body);
   const running = useStore((s) => s.running);
+  const composing = useStore((s) => s.composing);
   const speed = useStore((s) => s.speed);
-  const mode = useStore((s) => s.mode);
   const playhead = useStore((s) => s.playhead);
   const togglePlay = useStore((s) => s.togglePlay);
-  const stop = useStore((s) => s.stop);
+  const restart = useStore((s) => s.restart);
   const stepOne = useStore((s) => s.stepOne);
+  const openComposer = useStore((s) => s.openComposer);
   const setSpeed = useStore((s) => s.setSpeed);
-  const setMode = useStore((s) => s.setMode);
 
   const cap = body.capabilities.find((c) => c.id === level.capabilityId);
   const notes = notesFor(level.fidelityNotes);
@@ -39,21 +40,18 @@ export function ChromeBar() {
           <button
             className={`iconbtn${running ? " playing" : ""}`}
             onClick={togglePlay}
-            disabled={mode === "EDIT"}
             title={running ? "Pause [Space]" : "Play [Space]"}
           >
             {running ? "❚❚" : "▶"}
           </button>
-          <button
-            className="iconbtn"
-            onClick={stop}
-            disabled={mode === "EDIT"}
-            title="Stop [S]"
-          >
+          <button className="iconbtn" onClick={restart} title="Restart [R]">
             ■
           </button>
-          <button className="iconbtn" onClick={stepOne} disabled={mode === "EDIT"} title="Step [→]">
+          <button className="iconbtn" onClick={stepOne} title="Step one tick [→]">
             ⏭
+          </button>
+          <button className="btn sm on" onClick={openComposer} disabled={composing} title="Compose & send [C]">
+            ✎ Send
           </button>
           <div className="seg">
             {SPEEDS.map(([s, key]) => (
@@ -74,25 +72,6 @@ export function ChromeBar() {
         </div>
 
         <div className="spacer" />
-
-        <div className="region runswitch">
-          <div className="seg run">
-            <button
-              className={`edit${mode === "EDIT" ? " on" : ""}`}
-              onClick={() => setMode("EDIT")}
-              title="Edit mode [E]"
-            >
-              EDIT
-            </button>
-            <button
-              className={`run${mode === "RUN" ? " on" : ""}`}
-              onClick={() => setMode("RUN")}
-              title="Run mode [R]"
-            >
-              RUN
-            </button>
-          </div>
-        </div>
       </div>
       {fidOpen && <FidelityNotesModal onClose={() => setFidOpen(false)} />}
     </>

@@ -1,54 +1,37 @@
 // The app store (Zustand) — the one bridge between the deterministic core and React.
-// It owns: the editable brain (core data) + UI-only node layout, the materialized
-// timeline (World[]), the playhead/transport, selections, and persisted best scores.
-// Every brain mutation rebuilds the timeline (docs/04: re-simulate 0→N, cheap here).
+// Realtime mode: the player IS the MA brain. There is no state machine; the player
+// injects MA→FA messages by hand and the live edge of the timeline advances tick by
+// tick. A session is a recorded input script (core's ScriptedInput[]) — replaying it
+// reproduces the run exactly (docs/04, CLAUDE.md rule #3). The store owns: the growing
+// timeline (World[]), the playhead/transport, the recorded script + pending (composed
+// but not-yet-injected) inputs, the composer flag, selections, and persisted best scores.
 import { create } from "zustand";
 import {
-  type Brain,
   type BodyProfile,
+  injectMA,
+  initWorld,
   type LevelDef,
   makeScenario,
-  type MessageTypeName,
+  type Message,
   type Score,
+  type Scenario,
   scoreWorld,
-  type Transition,
+  type ScriptedInput,
+  step,
   type World,
 } from "@brain-swap/core";
 import { bodyById, levelById } from "@brain-swap/levels";
-import { buildTimeline, finalFrame } from "./sim/timeline.ts";
+import { finalFrame } from "./sim/timeline.ts";
 
 const DEFAULT_LEVEL_ID = "1.2";
 
 export type View = "console" | "report" | "select" | "help" | "codex";
-export type Mode = "EDIT" | "RUN";
 export type Speed = 1 | 2 | 8;
 
-const SAVE_KEY = (levelId: string) => `brain-swap:save:${levelId}`;
 const BEST_KEY = "brain-swap:best";
 
-/** A fresh, blank brain — one initial state, no transitions. The player builds up from here. */
-export function starterBrain(): Brain {
-  return { id: "player-brain", initial: "start", states: ["start"], transitions: [] };
-}
-
-export interface Layout {
-  [stateId: string]: { x: number; y: number };
-}
-
-interface SavedSlot {
-  brain: Brain;
-  layout: Layout;
-}
-
-function loadSlot(levelId: string): SavedSlot | null {
-  try {
-    const raw = localStorage.getItem(SAVE_KEY(levelId));
-    if (!raw) return null;
-    return JSON.parse(raw) as SavedSlot;
-  } catch {
-    return null;
-  }
-}
+/** A bounded ceiling so a level without maxTicks can't grow the timeline forever. */
+const HARD_CEILING = 1000;
 
 function loadBest(): Record<string, { score: Score; won: boolean }> {
   try {
@@ -59,122 +42,90 @@ function loadBest(): Record<string, { score: Score; won: boolean }> {
   }
 }
 
-/** Auto-layout for states without a saved position: a single vertical column. Stacking
- * the states keeps the brain narrow so it reads well in a tight (tablet) editor column;
- * the row pitch leaves a gap for the edge's guard/send label to sit between nodes.
- * fitView frames it identically on desktop. */
-function autoLayout(states: readonly string[], existing: Layout): Layout {
-  const out: Layout = { ...existing };
-  let i = 0;
-  for (const s of states) {
-    if (!out[s]) {
-      out[s] = { x: 50, y: 30 + i * 130 };
-    }
-    i += 1;
-  }
-  return out;
-}
-
 interface StoreState {
   view: View;
   level: LevelDef;
   body: BodyProfile;
-  brain: Brain;
-  layout: Layout;
 
+  // The live, growing run. timeline[i] is the world at tick i; the live edge is the
+  // last frame. playhead is what the UI renders (== live edge while running; can be
+  // scrubbed back to review past ticks).
   timeline: World[];
   playhead: number;
   running: boolean;
   speed: Speed;
-  mode: Mode;
+
+  // Realtime session: every committed MA→FA input (for replay/scoring) + inputs the
+  // player composed but the sim hasn't injected yet, and whether the composer is open
+  // (which pauses the clock).
+  script: ScriptedInput[];
+  pendingInputs: Message[];
+  composing: boolean;
 
   selectedLogIndex: number | null;
-  selectedStateId: string | null;
-  selectedTransitionIndex: number | null;
   showPeriodic: boolean;
   toggleShowPeriodic: () => void;
 
   bestScores: Record<string, { score: Score; won: boolean }>;
 
-  // derived — returns the stable timeline[playhead] snapshot (safe in a selector).
-  // Derive scores from this in render (scoreWorld), never inside a selector.
+  // derived — the stable timeline[playhead] snapshot (safe in a selector). Derive
+  // scores from this in render (scoreWorld), never inside a selector.
   world: () => World;
 
   // navigation
   setView: (v: View) => void;
-  setMode: (m: Mode) => void;
   selectLevel: (levelId: string) => void;
 
   // transport
   play: () => void;
   pause: () => void;
-  stop: () => void;
   togglePlay: () => void;
+  restart: () => void;
   stepOne: () => void;
   setSpeed: (s: Speed) => void;
   scrubTo: (tick: number) => void;
+  /** Advance the live sim by n ticks: inject pending inputs at the live edge, then step. */
+  advanceLive: (nTicks: number) => void;
+
+  // composer (the player composing a message to send)
+  openComposer: () => void;
+  cancelComposer: () => void;
+  submitComposer: (message: Message) => void;
 
   // selection
   selectLog: (i: number | null) => void;
-  selectState: (id: string | null) => void;
-  selectTransition: (i: number | null) => void;
 
-  // brain editing
-  addState: (name: string) => void;
-  renameState: (oldId: string, newId: string) => void;
-  deleteState: (id: string) => void;
-  setInitial: (id: string) => void;
-  setNodePosition: (id: string, x: number, y: number) => void;
-  addTransition: (from: string) => void;
-  updateTransition: (index: number, patch: Partial<Transition>) => void;
-  deleteTransition: (index: number) => void;
-
-  // persistence / io
-  loadReference: () => void;
-  resetBrain: () => void;
-  exportBrain: () => string;
-  importBrain: (json: string) => boolean;
   recordResult: () => void;
 }
 
-function scenarioOf(s: Pick<StoreState, "body" | "brain" | "level">) {
-  return makeScenario(s.body, { brain: s.brain, level: s.level });
+function scenarioOf(s: Pick<StoreState, "body" | "level">): Scenario {
+  return makeScenario(s.body, { brain: null, level: s.level });
+}
+
+function maxStepsFor(level: LevelDef): number {
+  return level.maxTicks ?? HARD_CEILING;
 }
 
 export const useStore = create<StoreState>((set, get) => {
   const initialLevel = levelById(DEFAULT_LEVEL_ID)!.level;
   const initialBody = bodyById(initialLevel.body);
-  const saved = loadSlot(initialLevel.id);
-  const initialBrain = saved?.brain ?? starterBrain();
-  const initialLayout = autoLayout(initialBrain.states, saved?.layout ?? {});
-  const initialTimeline = buildTimeline(makeScenario(initialBody, { brain: initialBrain, level: initialLevel }));
-
-  /** Recompute timeline from the current brain, reset playhead, persist the slot. */
-  function rebuild(brain: Brain, layout: Layout) {
-    const timeline = buildTimeline(makeScenario(get().body, { brain, level: get().level }));
-    const nextLayout = autoLayout(brain.states, layout);
-    try {
-      localStorage.setItem(SAVE_KEY(get().level.id), JSON.stringify({ brain, layout: nextLayout }));
-    } catch {
-      /* ignore quota / private-mode */
-    }
-    set({ brain, layout: nextLayout, timeline, playhead: 0, running: false });
-  }
+  const initialTimeline = [initWorld(makeScenario(initialBody, { brain: null, level: initialLevel }))];
 
   return {
     view: "console",
     level: initialLevel,
     body: initialBody,
-    brain: initialBrain,
-    layout: initialLayout,
+
     timeline: initialTimeline,
     playhead: 0,
     running: false,
     speed: 1,
-    mode: "EDIT",
+
+    script: [],
+    pendingInputs: [],
+    composing: false,
+
     selectedLogIndex: null,
-    selectedStateId: null,
-    selectedTransitionIndex: null,
     showPeriodic: true,
     bestScores: loadBest(),
 
@@ -184,163 +135,112 @@ export const useStore = create<StoreState>((set, get) => {
     },
 
     setView: (v) => set({ view: v }),
-    setMode: (m) => {
-      if (m === "RUN") {
-        // Re-materialize from the current brain and start playing from tick 0.
-        const timeline = buildTimeline(scenarioOf(get()));
-        set({ mode: "RUN", timeline, playhead: 0, running: true, selectedLogIndex: null });
-      } else {
-        set({ mode: "EDIT", running: false, playhead: 0 });
-      }
-    },
+
     selectLevel: (levelId) => {
       const bundle = levelById(levelId);
       if (!bundle) return;
       const { level } = bundle;
       const body = bodyById(level.body);
-      const slot = loadSlot(level.id);
-      const brain = slot?.brain ?? starterBrain();
-      const layout = autoLayout(brain.states, slot?.layout ?? {});
-      const timeline = buildTimeline(makeScenario(body, { brain, level }));
       set({
         level,
         body,
-        brain,
-        layout,
-        timeline,
+        timeline: [initWorld(makeScenario(body, { brain: null, level }))],
         playhead: 0,
         running: false,
-        mode: "EDIT",
+        script: [],
+        pendingInputs: [],
+        composing: false,
         view: "console",
         selectedLogIndex: null,
-        selectedStateId: null,
-        selectedTransitionIndex: null,
       });
     },
 
     play: () => {
-      const { playhead, timeline } = get();
-      if (playhead >= timeline.length - 1) set({ playhead: 0, running: true });
-      else set({ running: true });
+      const { timeline } = get();
+      const final = timeline[timeline.length - 1]!;
+      if (final.outcome !== "running") {
+        // Session ended — start a fresh run.
+        get().restart();
+        set({ running: true });
+      } else {
+        // Resume live (snap the view back to the live edge if it was scrubbed).
+        set({ running: true, playhead: timeline.length - 1 });
+      }
     },
     pause: () => set({ running: false }),
-    stop: () => set({ playhead: 0, running: false }),
     togglePlay: () => (get().running ? get().pause() : get().play()),
-    stepOne: () => {
-      const { playhead, timeline } = get();
-      set({ playhead: Math.min(playhead + 1, timeline.length - 1), running: false });
+    restart: () => {
+      set({
+        timeline: [initWorld(scenarioOf(get()))],
+        playhead: 0,
+        running: false,
+        script: [],
+        pendingInputs: [],
+        composing: false,
+        selectedLogIndex: null,
+      });
     },
+    stepOne: () => get().advanceLive(1),
     setSpeed: (s) => set({ speed: s }),
     scrubTo: (tick) => {
       const { timeline } = get();
       const clamped = Math.max(0, Math.min(tick, timeline.length - 1));
-      const atEnd = clamped >= timeline.length - 1;
-      set({ playhead: clamped, running: atEnd ? false : get().running });
+      set({ playhead: clamped, running: false });
     },
+
+    advanceLive: (nTicks) => {
+      const state = get();
+      if (state.composing) return;
+      let frames = state.timeline;
+      let w = frames[frames.length - 1]!;
+      if (w.outcome !== "running") {
+        if (state.running) set({ running: false });
+        return;
+      }
+      const cap = maxStepsFor(state.level);
+      let script = state.script;
+      let pending = state.pendingInputs;
+      let next = frames; // becomes a fresh array on first append
+      let stepped = 0;
+      for (let k = 0; k < nTicks && w.outcome === "running" && w.tick < cap; k += 1) {
+        if (pending.length > 0) {
+          for (const m of pending) {
+            script = script === state.script ? [...script] : script;
+            script.push({ tick: w.tick, message: m });
+            w = injectMA(w, m);
+          }
+          pending = [];
+        }
+        w = step(w);
+        next = next === frames ? [...frames] : next;
+        next.push(w);
+        stepped += 1;
+      }
+      if (stepped === 0) return;
+      const terminal = w.outcome !== "running" || w.tick >= cap;
+      set({
+        timeline: next,
+        script,
+        pendingInputs: pending,
+        playhead: next.length - 1,
+        running: terminal ? false : state.running,
+      });
+      if (terminal) get().recordResult();
+    },
+
+    openComposer: () =>
+      set((s) => ({ composing: true, running: false, playhead: s.timeline.length - 1 })),
+    cancelComposer: () => set({ composing: false }),
+    submitComposer: (message) =>
+      set((s) => ({
+        pendingInputs: [...s.pendingInputs, message],
+        composing: false,
+        running: true,
+      })),
 
     selectLog: (i) => set({ selectedLogIndex: i }),
     toggleShowPeriodic: () => set((s) => ({ showPeriodic: !s.showPeriodic })),
-    selectState: (id) =>
-      set({ selectedStateId: id, selectedTransitionIndex: null }),
-    selectTransition: (i) =>
-      set({ selectedTransitionIndex: i, selectedStateId: null }),
 
-    addState: (name) => {
-      const id = name.trim();
-      const { brain, layout } = get();
-      if (!id || brain.states.includes(id)) return;
-      rebuild({ ...brain, states: [...brain.states, id] }, layout);
-      set({ selectedStateId: id });
-    },
-    renameState: (oldId, newIdRaw) => {
-      const newId = newIdRaw.trim();
-      const { brain, layout } = get();
-      if (!newId || oldId === newId || brain.states.includes(newId) || !brain.states.includes(oldId))
-        return;
-      const states = brain.states.map((s) => (s === oldId ? newId : s));
-      const transitions = brain.transitions.map((t) => ({
-        ...t,
-        from: t.from === oldId ? newId : t.from,
-        ...(t.target === oldId ? { target: newId } : {}),
-      }));
-      const nextLayout: Layout = { ...layout };
-      if (nextLayout[oldId]) {
-        nextLayout[newId] = nextLayout[oldId]!;
-        delete nextLayout[oldId];
-      }
-      rebuild(
-        { ...brain, states, transitions, initial: brain.initial === oldId ? newId : brain.initial },
-        nextLayout,
-      );
-      set({ selectedStateId: newId });
-    },
-    deleteState: (id) => {
-      const { brain, layout } = get();
-      if (brain.states.length <= 1) return;
-      const states = brain.states.filter((s) => s !== id);
-      const transitions = brain.transitions.filter((t) => t.from !== id && t.target !== id);
-      const nextLayout: Layout = { ...layout };
-      delete nextLayout[id];
-      const initial = brain.initial === id ? states[0]! : brain.initial;
-      rebuild({ ...brain, states, transitions, initial }, nextLayout);
-      set({ selectedStateId: null });
-    },
-    setInitial: (id) => {
-      const { brain, layout } = get();
-      if (!brain.states.includes(id)) return;
-      rebuild({ ...brain, initial: id }, layout);
-    },
-    setNodePosition: (id, x, y) => {
-      const layout = { ...get().layout, [id]: { x, y } };
-      set({ layout });
-      try {
-        localStorage.setItem(
-          SAVE_KEY(get().level.id),
-          JSON.stringify({ brain: get().brain, layout }),
-        );
-      } catch {
-        /* ignore */
-      }
-    },
-    addTransition: (from) => {
-      const { brain, layout } = get();
-      const firstType = (get().level.availableMessages?.[0] ?? "MA_FlightCapabilityStatusMT") as MessageTypeName;
-      const t: Transition = { from, trigger: { messageType: firstType } };
-      const transitions = [...brain.transitions, t];
-      rebuild({ ...brain, transitions }, layout);
-      set({ selectedTransitionIndex: transitions.length - 1, selectedStateId: null });
-    },
-    updateTransition: (index, patch) => {
-      const { brain, layout } = get();
-      const transitions = brain.transitions.map((t, i) => (i === index ? { ...t, ...patch } : t));
-      rebuild({ ...brain, transitions }, layout);
-      set({ selectedTransitionIndex: index });
-    },
-    deleteTransition: (index) => {
-      const { brain, layout } = get();
-      const transitions = brain.transitions.filter((_, i) => i !== index);
-      rebuild({ ...brain, transitions }, layout);
-      set({ selectedTransitionIndex: null });
-    },
-
-    loadReference: () => {
-      const ref = levelById(get().level.id)?.referenceBrain ?? starterBrain();
-      rebuild(ref, {});
-    },
-    resetBrain: () => {
-      rebuild(starterBrain(), {});
-    },
-    exportBrain: () => JSON.stringify(get().brain, null, 2),
-    importBrain: (json) => {
-      try {
-        const parsed = JSON.parse(json) as Brain;
-        if (!parsed || !Array.isArray(parsed.states) || !parsed.initial) return false;
-        rebuild(parsed, {});
-        return true;
-      } catch {
-        return false;
-      }
-    },
     recordResult: () => {
       const w = finalFrame(get().timeline);
       const score = scoreWorld(w);
@@ -360,7 +260,7 @@ export const useStore = create<StoreState>((set, get) => {
         try {
           localStorage.setItem(BEST_KEY, JSON.stringify(bestScores));
         } catch {
-          /* ignore */
+          /* ignore quota / private-mode */
         }
       }
     },

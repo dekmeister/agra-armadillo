@@ -12,7 +12,7 @@ import { faAdvanceApprovals, faHandleInbound, faPublish } from "./fa/engine.ts";
 import { evaluateWin } from "./level/runtime.ts";
 import { DELIVERED, type Message, type MessageLogEntry, msg } from "./types.ts";
 import { integrate } from "./vehicle/pointmass.ts";
-import type { Outcome, Scenario, World } from "./world.ts";
+import { initWorld, type Outcome, type Scenario, type World } from "./world.ts";
 
 /** Capability fields exposed to brain `cap.*` references. */
 function capContext(scenario: Scenario): Record<string, unknown> {
@@ -107,10 +107,71 @@ export function run(world: World, maxSteps: number): World {
 
 /**
  * Enqueue a scripted MA→FA message into the world's bus at the current tick
- * (delivered next tick). Used by golden-log tests to drive FA without a brain.
+ * (delivered next tick). Used by golden-log tests, the realtime player session,
+ * and `replayScript` to drive FA without a brain.
  */
 export function injectMA(world: World, message: Message): World {
   return { ...world, bus: enqueueAll(world.bus, [message], world.tick) };
+}
+
+/**
+ * One recorded MA→FA input in a realtime (player-driven) session: the message and
+ * the tick at which the player committed it — enqueued at that tick, delivered the
+ * following tick (the honest 1-tick latency). An ordered list of these fully
+ * describes a session; replaying it reproduces an identical run (CLAUDE.md rule #3).
+ */
+export interface ScriptedInput {
+  readonly tick: number;
+  readonly message: Message;
+}
+
+/**
+ * Replay a recorded input script headlessly. At each tick, every input committed
+ * at that tick is injected (via injectMA) before the world steps. Returns the full
+ * frame list (index === tick) — the brainless, human-session analogue of
+ * buildTimeline. Deterministic: same scenario + script ⇒ identical frames. The
+ * realtime UI advances the live edge with the same inject-then-step order, so a
+ * session and its replay agree exactly.
+ */
+export function replayScript(
+  scenario: Scenario,
+  script: readonly ScriptedInput[],
+  maxSteps: number,
+): World[] {
+  const frames: World[] = [initWorld(scenario)];
+  let w = frames[0]!;
+  while (w.outcome === "running" && w.tick < maxSteps) {
+    for (const input of script) {
+      if (input.tick === w.tick) w = injectMA(w, input.message);
+    }
+    w = step(w);
+    frames.push(w);
+  }
+  return frames;
+}
+
+/**
+ * Derive the input script implied by a finished timeline: every MA→FA delivery,
+ * back-dated to the tick it was enqueued (delivered tick − 1). Lets a reference
+ * brain double as a realtime reference solution — golden tests extract a script
+ * from a brain run, then `replayScript` it to prove the same level is solvable by
+ * hand. (Within-tick ordering of an MA send vs an FA publication may differ from
+ * the brain run, so the replay log is byte-stable but not byte-identical to it;
+ * the FA decisions, MA sends, outcome, and score are identical.)
+ */
+export function extractScript(timeline: readonly World[]): ScriptedInput[] {
+  const final = timeline[timeline.length - 1];
+  if (!final) return [];
+  const out: ScriptedInput[] = [];
+  for (const e of final.log) {
+    if (e.from === "MA") {
+      out.push({
+        tick: e.tick - 1,
+        message: { type: e.type, from: e.from, to: e.to, payload: e.payload } as Message,
+      });
+    }
+  }
+  return out;
 }
 
 // Re-export the message builder for test ergonomics.

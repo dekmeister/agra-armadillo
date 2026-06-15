@@ -14,6 +14,13 @@ Bodies introduced along the way (performance profiles are level data):
 
 ## Build status
 
+> **Realtime mode.** Levels are now played in realtime — the player *is* the MA brain,
+> hand-injecting MA→FA messages against FA's live stream (the visual state-machine
+> editor was removed; see `PLAN_FUTURE.md`). Each level's reference brain is retained
+> only as the source for a derived input script; `realtime-replay.golden.test.ts` proves
+> every level below is solvable by hand with the same MA sends and score. Scoring is now
+> three metrics (Ticks / Bus Traffic / Rejections — Brain Size dropped).
+
 Implemented and golden-tested (`packages/levels`): **1.2** (MVP), plus the
 post-MVP batch **1.1, 1.3, 1.4, 4.1, 4.5**. Bodies built: **AX-01 "Mule"**,
 **AX-02 "Heron"** (`approvalLatencyTicks 3`, ceiling 8000, `maxAirspeed 50`,

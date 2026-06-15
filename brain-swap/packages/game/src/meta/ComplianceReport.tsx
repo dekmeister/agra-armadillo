@@ -81,7 +81,7 @@ export function ComplianceReport() {
   const body = useStore((s) => s.body);
   const timeline = useStore((s) => s.timeline);
   const setView = useStore((s) => s.setView);
-  const setMode = useStore((s) => s.setMode);
+  const restart = useStore((s) => s.restart);
   const selectLevel = useStore((s) => s.selectLevel);
 
   const w = finalFrame(timeline);
@@ -138,7 +138,6 @@ export function ComplianceReport() {
             <MetricBar label="Ticks" value={score.ticks} par={pars.ticks} />
             <MetricBar label="Bus Traffic" value={score.busTraffic} par={pars.busTraffic} />
             <MetricBar label="Rejections" value={score.rejections} par={pars.rejections} />
-            <MetricBar label="Brain Size" value={score.brainSize} par={pars.brainSize} />
           </div>
           <div className="k-dim" style={{ fontSize: 9, marginTop: 8 }}>
             Population histograms with percentile ranking are deferred (docs/05 §6). Bars show your
@@ -153,7 +152,7 @@ export function ComplianceReport() {
           </span>
           <div className="right">
             <button className="btn" onClick={() => setView("select")}>Level Select</button>
-            <button className="btn" onClick={() => { setView("console"); setMode("EDIT"); }}>Retry · Optimize</button>
+            <button className="btn" onClick={() => { restart(); setView("console"); }}>Retry · Optimize</button>
             <button
               className="btn"
               disabled={!nextId}

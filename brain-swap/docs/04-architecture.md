@@ -80,8 +80,15 @@ to (override via `argv[2]`/`FIDELITY_XSD`). CI fails on inventions.
 
 **Sim ↔ UI boundary.** The sim advances only via `step(world): world` on immutable
 state; the React app drives it from a rAF loop at the chosen speed and renders
-snapshots. Rewind = re-simulate from tick 0 to N (cheap at this scale), which gives
-the message-log scrubber for free.
+snapshots. **Realtime mode (current):** there is no brain to precompute, so the
+store *live-steps* — each clock tick it injects the player's pending MA→FA messages
+(`injectMA`) then `step`s, appending the new frame to a growing `World[]`
+(`store.advanceLive`). The clock pauses while the player composes. A session is a
+recorded `ScriptedInput[]`; `replayScript(scenario, script, maxSteps)` reproduces the
+whole run headlessly (golden tests + "watch my run"). The playhead can scrub back over
+retained frames to review past ticks; resuming snaps to the live edge. (The older
+brain mode precomputed the entire timeline up front via `buildTimeline`, since the
+brain was fully-known data; that helper now backs tooling/tests only.)
 
 **Message log is the debugger.** Every bus delivery is recorded
 `{tick, from, to, type, payload, disposition}` where disposition ∈

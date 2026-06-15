@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Brain Swap React + PixiJS app: the MIL-SPEC Ground Station console (run view, brain editor, score screens).",
+  "description": "Brain Swap React + PixiJS app: the MIL-SPEC Ground Station console (realtime command console, telemetry, message log, score screens).",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -12,7 +12,6 @@
   "dependencies": {
     "@brain-swap/core": "*",
     "@brain-swap/levels": "*",
-    "@xyflow/react": "^12.3.5",
     "pixi.js": "^8.6.6",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

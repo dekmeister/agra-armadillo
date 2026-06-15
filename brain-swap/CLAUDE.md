@@ -1,12 +1,16 @@
 # CLAUDE.md — Brain Swap
 
-Zachtronics-style browser puzzle game teaching the A-GRA (ASK 5.0a) Vehicle
-Interface. The player builds a Mission Autonomy "brain" (visual state machine)
-that exchanges real VI messages with Flight Autonomy, then ports it across
-airframes. **Current state:** the MVP and a post-MVP batch have shipped — a
-playable React+Pixi game (`npm run dev`) with levels **1.1, 1.2, 1.3, 1.4, 4.1,
-4.5** and bodies **AX-01/02/03**, each level golden-tested. Read `docs/` before
-implementing; `docs/03-levels.md` has the authoritative per-level build status.
+Browser puzzle game teaching the A-GRA (ASK 5.0a) Vehicle Interface. **The player
+IS the Mission Autonomy "brain":** in **realtime mode** they read Flight Autonomy's
+live message stream and inject MA→FA messages by hand, tick by tick, with the clock
+pausing while they compose. (The original visual state-machine editor was removed —
+see `PLAN_FUTURE.md` and the realtime-mode plan. The brain *interpreter* survives in
+`packages/core` only to derive/verify each level's reference solution.) A realtime
+session is a deterministic recorded input script (`ScriptedInput[]`), so it replays
+and golden-tests exactly like a brain did. **Current state:** playable React+Pixi
+game (`npm run dev`) with levels **1.1, 1.2, 1.3, 1.4, 4.1, 4.5** and bodies
+**AX-01/02/03**, each level golden-tested (brain run + realtime-replay parity). Read
+`docs/` before implementing; `docs/03-levels.md` has per-level build status.
 
 ## Read first
 
@@ -42,12 +46,18 @@ implementing; `docs/03-levels.md` has the authoritative per-level build status.
 
 ## Locked decisions (don't re-litigate without the user)
 
-- Brain = visual state machine; reusable "interaction blocks" later.
+- **The player is the MA brain (realtime mode).** No visual state machine — the
+  player hand-injects MA→FA messages against a live FA stream. Core advances the
+  live edge via `store.advanceLive` (inject pending inputs through `injectMA`, then
+  `step`); the clock pauses while composing. A session = `ScriptedInput[]`, replayed
+  by `replayScript`. Reference brains are kept only as a source for derived scripts
+  (`extractScript`) and headless solvability proofs.
 - Stack: TypeScript (strict), Vite, npm workspaces (`core` / `levels` / `game`),
-  React 18 + React Flow for the editor, PixiJS v8 for the map, Zustand, vitest.
-  No backend; localStorage saves.
-- Scoring: Ticks, Bus Traffic, Rejections, Brain Size (`aggregateWorst` reduces
-  multi-body runs to the per-metric worst — used by 4.5).
+  React 18, PixiJS v8 for the map, Zustand, vitest. No backend; localStorage saves
+  best scores. (React Flow was removed with the editor.)
+- Scoring: **Ticks, Bus Traffic, Rejections** (Brain Size dropped — there is no
+  brain to size). `aggregateWorst` still reduces multi-body runs to the per-metric
+  worst (used by 4.5).
 - Every playable level ships with a hand-written reference brain and a byte-stable
   golden-run test that proves solvability headless (the original MVP discipline,
   now applied to each level).
@@ -91,7 +101,11 @@ path; only touch `packages/core` when the level genuinely needs a new mechanic.
    `outcome === "won"`, byte-stable log, exact MA sends, `scoreWorld === pars`,
    determinism; plus negative tests asserting bait/naive brains fail the *documented*
    way (`ignored-not-controller` / `REJECTED`). Long logs: pin length + a hash (see
-   `level-1.4.golden.test.ts`).
+   `level-1.4.golden.test.ts`). **Also add the level to `realtime-replay.golden.test.ts`'s
+   `CASES`** — that test derives a script from the reference brain (`extractScript`) and
+   replays it brainless (`replayScript`) to prove the level is solvable in realtime with
+   the same MA sends and score. The reference brain is purely a script source now; the
+   player never sees it.
 6. **Make it playable:** flip `playable: true` for that id in
    `packages/game/src/meta/levelCatalog.ts` (the store/registry wiring does the rest).
 7. **A genuinely new objective kind** means extending the union in
