@@ -22,10 +22,16 @@ function objectiveZones(level: LevelDef): readonly Zone[] {
   return [];
 }
 
-function worldBounds(level: LevelDef, startX: number, startY: number): Bounds {
+function worldBounds(
+  level: LevelDef,
+  startX: number,
+  startY: number,
+  vehX: number,
+  vehY: number,
+): Bounds {
   const margin = 250;
-  const xs = [startX];
-  const ys = [startY];
+  const xs = [startX, vehX];
+  const ys = [startY, vehY];
   for (const z of objectiveZones(level)) {
     xs.push(z.x - z.radius, z.x + z.radius);
     ys.push(z.y - z.radius, z.y + z.radius);
@@ -80,10 +86,12 @@ export function TacticalMapPanel() {
   const appRef = useRef<Application | null>(null);
   const gRef = useRef<Graphics | null>(null);
   const camRef = useRef<Cam | null>(null);
-  const boundsRef = useRef<Bounds>(worldBounds(level, body.start.x, body.start.y));
+  const boundsRef = useRef<Bounds>(
+    worldBounds(level, body.start.x, body.start.y, world.vehicle.x, world.vehicle.y),
+  );
   const drawRef = useRef<() => void>(() => {});
 
-  boundsRef.current = worldBounds(level, body.start.x, body.start.y);
+  boundsRef.current = worldBounds(level, body.start.x, body.start.y, world.vehicle.x, world.vehicle.y);
 
   const size = (): { W: number; H: number } => {
     const app = appRef.current;
@@ -284,6 +292,17 @@ export function TacticalMapPanel() {
     draw();
   };
 
+  // Snap the camera onto the aircraft at a moderate zoom (closer than Fit). Mirrors
+  // fitCamera's offset formula; deliberately no clampPan so the aircraft stays centred.
+  const centreView = () => {
+    const { W, H } = size();
+    const fit = fitScaleOf(boundsRef.current, W, H);
+    const scale = Math.min(Math.max(fit * 3, fit * 0.6), fit * 14);
+    const v = world.vehicle;
+    camRef.current = { scale, offX: W / 2 - v.x * scale, offY: H / 2 + v.y * scale };
+    draw();
+  };
+
   // Altitude tape (HTML overlay): commanded vs actual against the body envelope.
   const cmdAlt = world.vehicle.target?.altitude;
   const actAlt = world.vehicle.altitude;
@@ -297,6 +316,9 @@ export function TacticalMapPanel() {
     <Panel title="TACTICAL" titleAccent="MAP" className="grow">
       <div className="map-wrap">
         <div className="map-canvas" ref={hostRef} />
+        <button className="btn sm map-centre" onClick={centreView} title="Centre on the aircraft">
+          ✛ Centre
+        </button>
         <button className="btn sm map-fit" onClick={fitView} title="Frame the whole mission area">
           ⤢ Fit
         </button>
