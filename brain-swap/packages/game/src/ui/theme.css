@@ -354,6 +354,14 @@ kbd { display: inline-block; font-family: var(--mono); font-size: 12px; backgrou
 .mobile-card .mg-dim { color: var(--k-dim); }
 .mobile-card .btn { margin-top: 12px; }
 
+/* First-visit welcome card. Reuses .mobile-card; a touch wider and with a button row. */
+.welcome-gate { position: fixed; inset: 0; z-index: 1100; background: rgba(5, 7, 5, .9); display: flex; align-items: center; justify-content: center; padding: 24px; }
+.welcome-card { max-width: 540px; }
+.welcome-card .welcome-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.welcome-card .welcome-actions .btn { margin-top: 0; }
+.welcome-card .welcome-actions .btn.big { width: auto; flex: 1 1 auto; }
+.welcome-card .btn.ghost { color: var(--k-dim); }
+
 /* --- Realtime: telemetry panel + message composer --- */
 .tele-fill { position: absolute; inset: 0; display: flex; flex-direction: column; }
 .tele-grid { display: flex; flex-direction: column; gap: 4px; padding: 8px; overflow-y: auto; min-height: 0; flex: 1 1 auto; }

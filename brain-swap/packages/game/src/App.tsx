@@ -11,6 +11,7 @@ import { LevelSelect } from "./meta/LevelSelect.tsx";
 import { Help } from "./meta/Help.tsx";
 import { MessageCodex } from "./meta/MessageCodex.tsx";
 import { MobileGate } from "./ui/MobileGate.tsx";
+import { WelcomeOverlay } from "./ui/WelcomeOverlay.tsx";
 
 /** Ticks advanced per real second at 1× speed. 2×/8× scale this. */
 const TICKS_PER_SECOND = 4;
@@ -123,6 +124,7 @@ export function App() {
       {view === "codex" && <MessageCodex />}
       {view === "help" && <Help />}
       <MobileGate />
+      <WelcomeOverlay />
     </div>
   );
 }
