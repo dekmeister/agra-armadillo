@@ -7,7 +7,7 @@
 //   • Control by HSA/CSA Command (VI §1.2.2.2): validate; ignore if MA is not the
 //     secondary controller (fidelity lie #8 — FA isn't listening, no NACK invented).
 //   • Receive Vehicle State Data (VI §1.2.6.8): periodic position + activity reports.
-import { type BodyProfile, findCapability } from "../body.ts";
+import { type BodyProfile, type CapabilityProfile, findCapability } from "../body.ts";
 import {
   DELIVERED,
   FA_SYSTEM_ID,
@@ -27,6 +27,9 @@ export interface FaState {
   readonly secondaryControllers: Readonly<Record<string, string>>;
   /** capabilityId -> ticks remaining before a PENDING request becomes APPROVED. */
   readonly pendingApprovals: Readonly<Record<string, number>>;
+  /** capabilityId -> reason it is currently unavailable (absent = available).
+   *  Set by a `capability-unavailable` mission event; FA stops accepting commands. */
+  readonly unavailableCaps: Readonly<Record<string, "TEMPORARILY_UNAVAILABLE" | "UNAVAILABLE">>;
   readonly positionTicker: number;
   readonly activityTicker: number;
   readonly activeActivityId: string | null;
@@ -37,6 +40,7 @@ export function initFaState(): FaState {
     booted: true,
     secondaryControllers: {},
     pendingApprovals: {},
+    unavailableCaps: {},
     positionTicker: 0,
     activityTicker: 0,
     activeActivityId: null,
@@ -128,13 +132,19 @@ export interface FaInboundResult {
   readonly targetUpdate?: FlightTarget;
 }
 
-/** Phase B: FA processes one inbound message from MA. */
-export function faHandleInbound(body: BodyProfile, fa: FaState, message: Message): FaInboundResult {
+/** Phase B: FA processes one inbound message from MA. `dynamicEnvelope` carries any
+ *  mid-mission envelope overrides (from `degrade-envelope` events); empty for static levels. */
+export function faHandleInbound(
+  body: BodyProfile,
+  fa: FaState,
+  message: Message,
+  dynamicEnvelope: Readonly<Record<string, CapabilityProfile>> = {},
+): FaInboundResult {
   switch (message.type) {
     case "MA_ControlRequestMT":
       return handleControlRequest(body, fa, message.payload as MA_ControlRequestMT);
     case "MA_FlightCommandMT":
-      return handleFlightCommand(body, fa, message.payload as MA_FlightCommandMT);
+      return handleFlightCommand(body, fa, message.payload as MA_FlightCommandMT, dynamicEnvelope);
     default:
       return { fa, outbound: [], disposition: DELIVERED };
   }
@@ -181,13 +191,19 @@ function handleFlightCommand(
   body: BodyProfile,
   fa: FaState,
   cmd: MA_FlightCommandMT,
+  dynamicEnvelope: Readonly<Record<string, CapabilityProfile>>,
 ): FaInboundResult {
+  // A capability pulled mid-mission (capability-unavailable event) isn't listening
+  // either — same silent drop as not-controller (no NACK invented; fidelity lie #8).
+  if (fa.unavailableCaps[cmd.CapabilityID] !== undefined) {
+    return { fa, outbound: [], disposition: IGNORED_NOT_CONTROLLER };
+  }
   // FA isn't listening unless MA holds secondary control of this capability.
   if (!isSecondaryController(fa, cmd.CapabilityID)) {
     return { fa, outbound: [], disposition: IGNORED_NOT_CONTROLLER };
   }
 
-  const outcome = validateFlightCommand(body, cmd);
+  const outcome = validateFlightCommand(body, cmd, dynamicEnvelope[cmd.CapabilityID]);
   const status = msg("MA_FlightCommandStatusMT", "FA", "MA", {
     CommandID: cmd.CommandID,
     CommandProcessingState: outcome.accepted ? "ACCEPTED" : "REJECTED",

@@ -2,7 +2,7 @@
 // advertised in MA_FlightCapabilityMT (docs/04 pedagogical contract). Rejection
 // reasons are the real MA_ValidationResultEnum literals (docs/02). Deterministic
 // and learnable (fidelity lie #9).
-import { type BodyProfile, findCapability } from "../body.ts";
+import { type BodyProfile, type CapabilityProfile, findCapability } from "../body.ts";
 import type { MA_FlightCommandMT, MA_FlightCommandStatusMT } from "../messages/index.ts";
 import type { FlightTarget } from "../vehicle/pointmass.ts";
 
@@ -23,8 +23,16 @@ function reject(result: ValidationResult): ValidationOutcome {
  * Validate an HSA flight command against the body's advertised capability envelope.
  * Order matches docs/05 step 3: capability known? then envelope. No controller check
  * here — that is FA's listening gate (engine), not command validation.
+ *
+ * `profileOverride` is the current effective envelope when a `degrade-envelope`
+ * mission event has tightened it (sim.ts threads `world.dynamicEnvelope[capId]`);
+ * absent ⇒ validate against the body's static profile, exactly as before.
  */
-export function validateFlightCommand(body: BodyProfile, cmd: MA_FlightCommandMT): ValidationOutcome {
+export function validateFlightCommand(
+  body: BodyProfile,
+  cmd: MA_FlightCommandMT,
+  profileOverride?: CapabilityProfile,
+): ValidationOutcome {
   const cap = findCapability(body, cmd.CapabilityID);
   if (!cap) return reject("CAPABILITY_NOT_SUPPORTED");
 
@@ -33,7 +41,7 @@ export function validateFlightCommand(body: BodyProfile, cmd: MA_FlightCommandMT
     return { accepted: true, result: "FLIGHT_COMMAND_VALID", target: {} };
   }
 
-  const p = cap.profile;
+  const p = profileOverride ?? cap.profile;
   if (cmd.Altitude !== undefined) {
     if (p.maxAltitude !== undefined && cmd.Altitude > p.maxAltitude) {
       return reject("PERFORMANCE_LIMIT_EXCEEDED");

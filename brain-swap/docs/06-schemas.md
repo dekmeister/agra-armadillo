@@ -72,7 +72,8 @@ One airframe + its FA configuration. FA is one engine configured by this data
   // --- optional fields (post-MVP) ---
   "brief": "…", "teaches": "…",    // teaching copy surfaced in-game (optional)
   "start": { "x": 0, … },          // override the body's start for this mission (optional)
-  "bodies": ["ax-01","ax-02","ax-03"]  // multi-body level (4.5); one brain, every body
+  "bodies": ["ax-01","ax-02","ax-03"],  // multi-body level (4.5); one brain, every body
+  "events": [ { "kind": "degrade-envelope", "tick": 40, … } ]  // mid-mission schedule — see "Mission events"
 }
 ```
 
@@ -99,6 +100,36 @@ state, and the carried progress `{ holdTicks, waypointIndex }`.
 The world carries `waypointIndex` (next waypoint to reach) alongside `holdTicks`;
 both init to 0. Multi-body levels (`bodies`) ignore the singular `body` field — see
 `multiBodyScenarios` + `aggregateWorst` (`packages/levels/src/index.ts`, scoring).
+
+### Mission events (`MissionEvent` union, `level/events.ts`)
+
+`LevelDef.events?` is a deterministic schedule of mid-mission changes. Each event has
+a `kind` + integer `tick` and fires in **Phase A′** of the step that advances the
+world to that `tick` — before inbound delivery, so the commands delivered that tick
+are validated against the new state (and the re-advertised envelope reaches MA the
+next tick). Events emit only existing catalog messages (no new fidelity surface).
+Ordering among events sharing a tick is stable (`kind`, then id), so brain run,
+`replayScript`, and `store.advanceLive` agree byte-for-byte.
+
+```jsonc
+// degrade-envelope: tighten a capability's advertised envelope; FA re-advertises
+//   MA_FlightCapabilityMT with the merged values and validates against them.
+{ "kind": "degrade-envelope", "tick": 40, "capabilityId": "HERON-02", "maxAltitude": 6000 }
+
+// capability-unavailable: pull a capability; FA emits MA_FlightCapabilityStatusMT
+//   (TEMPORARILY_UNAVAILABLE|UNAVAILABLE), drops MA's control, and ignores commands
+//   on it until re-acquired.
+{ "kind": "capability-unavailable", "tick": 60, "capabilityId": "HERON-02", "reason": "TEMPORARILY_UNAVAILABLE" }
+
+// spawn-threat / despawn-threat: add/remove a threat zone in World.threats (optional
+//   velocity {vx,vy}). Rendered + breach-checked in later phases.
+{ "kind": "spawn-threat", "tick": 20, "threatId": "T1", "zone": {…}, "velocity": { "vx": 1, "vy": 0 } }
+{ "kind": "despawn-threat", "tick": 80, "threatId": "T1" }
+```
+
+The overlay this produces lives on the world: `World.dynamicEnvelope` (capId →
+effective `CapabilityProfile`, absent = the body's static profile) and
+`World.threats`; capability pulls are tracked in `FaState.unavailableCaps`.
 
 ## Brain — `*.reference-brain.json` and player saves (`Brain`)
 

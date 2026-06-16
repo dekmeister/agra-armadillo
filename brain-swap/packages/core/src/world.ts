@@ -3,9 +3,10 @@
 // (body + optional brain + optional level) that is carried along unchanged so step
 // stays a pure single-argument function.
 import { type BusState, emptyBus, enqueueAll } from "./bus.ts";
-import type { BodyProfile } from "./body.ts";
+import type { BodyProfile, CapabilityProfile } from "./body.ts";
 import { faBootMessages, type FaState, initFaState } from "./fa/engine.ts";
 import type { Brain } from "./brain/schema.ts";
+import type { ActiveThreat } from "./level/events.ts";
 import type { LevelDef } from "./level/types.ts";
 import type { MessageLogEntry } from "./types.ts";
 import { initVehicle, type VehicleState } from "./vehicle/pointmass.ts";
@@ -36,6 +37,10 @@ export interface World {
   readonly holdTicks: number;
   /** Index of the next waypoint to reach (waypoint-sequence objectives; 0 otherwise). */
   readonly waypointIndex: number;
+  /** Threat zones currently in the world (populated by `spawn-threat` events). */
+  readonly threats: readonly ActiveThreat[];
+  /** capabilityId -> effective envelope after `degrade-envelope` events (absent = static). */
+  readonly dynamicEnvelope: Readonly<Record<string, CapabilityProfile>>;
 }
 
 export function makeScenario(
@@ -59,5 +64,7 @@ export function initWorld(scenario: Scenario): World {
     outcome: "running",
     holdTicks: 0,
     waypointIndex: 0,
+    threats: [],
+    dynamicEnvelope: {},
   };
 }

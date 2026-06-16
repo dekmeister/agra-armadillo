@@ -4,6 +4,7 @@
 // capability; the deterministic event schedule lives here too (none needed for 1.2).
 import type { VehicleStart } from "../body.ts";
 import type { MessageTypeName } from "../messages/index.ts";
+import type { MissionEvent } from "./events.ts";
 
 export interface Zone {
   readonly x: number;
@@ -88,6 +89,9 @@ export interface LevelDef {
   readonly availableMessages?: readonly MessageTypeName[];
   /** Hard tick budget; the sim fails the run if exceeded (keeps golden runs finite). */
   readonly maxTicks: number;
+  /** Deterministic scheduled mid-mission changes (envelope degrade, capability pull,
+   *  threat spawn). Each fires in the step advancing the world to its `tick`. */
+  readonly events?: readonly MissionEvent[];
   readonly pars?: LevelPars;
   /** Fidelity-note references surfaced in-game (docs/02 list indices). */
   readonly fidelityNotes?: readonly number[];

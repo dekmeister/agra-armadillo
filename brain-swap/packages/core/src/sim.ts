@@ -1,14 +1,18 @@
 // The simulation orchestrator. `step(world): World` is a pure function over the
 // immutable world (docs/04). Fixed per-tick order:
-//   A. FA advances any PENDING control approvals (emitted from prior ticks).
-//   B. Deliver due bus messages → FA validates / the brain reacts → outbound enqueued.
-//   C. FA periodic vehicle-state publication.
-//   D. Vehicle integrates one tick.
-//   E. Level win/fail evaluation.
+//   A.  FA advances any PENDING control approvals (emitted from prior ticks).
+//   A′. Deterministic mission events scheduled for this tick fire (envelope degrade,
+//       capability pull, threat spawn) — before inbound, so this tick's MA commands
+//       are validated against the new envelope.
+//   B.  Deliver due bus messages → FA validates / the brain reacts → outbound enqueued.
+//   C.  FA periodic vehicle-state publication.
+//   D.  Vehicle integrates one tick.
+//   E.  Level win/fail evaluation.
 // Same scenario ⇒ identical message log, scores, and replay (CLAUDE.md rule #3).
 import { enqueueAll, takeDue } from "./bus.ts";
 import { reactToMessage } from "./brain/interpreter.ts";
 import { faAdvanceApprovals, faHandleInbound, faPublish } from "./fa/engine.ts";
+import { applyEvents } from "./level/events.ts";
 import { evaluateWin } from "./level/runtime.ts";
 import { DELIVERED, type Message, type MessageLogEntry, msg } from "./types.ts";
 import { integrate } from "./vehicle/pointmass.ts";
@@ -40,12 +44,26 @@ export function step(world: World): World {
   let fa = world.fa;
   let vehicle = world.vehicle;
   let ma = world.ma;
+  let threats = world.threats;
+  let dynamicEnvelope = world.dynamicEnvelope;
   const log: MessageLogEntry[] = [...world.log];
 
   // Phase A — advance pending approvals from earlier ticks.
   const adv = faAdvanceApprovals(fa);
   fa = adv.fa;
   bus = enqueueAll(bus, adv.outbound, tick);
+
+  // Phase A′ — fire mission events scheduled for this tick. Updates the envelope /
+  // availability / threat overlay before inbound so this tick's commands see it.
+  const ev = applyEvents(scenario.level?.events, tick, {
+    body,
+    fa,
+    overlay: { dynamicEnvelope, threats },
+  });
+  fa = ev.fa;
+  dynamicEnvelope = ev.overlay.dynamicEnvelope;
+  threats = ev.overlay.threats;
+  bus = enqueueAll(bus, ev.outbound, tick);
 
   // Phase B — deliver due messages.
   const taken = takeDue(bus, tick);
@@ -54,7 +72,7 @@ export function step(world: World): World {
   for (const q of taken.due) {
     const m = q.message;
     if (m.to === "FA") {
-      const res = faHandleInbound(body, fa, m);
+      const res = faHandleInbound(body, fa, m, dynamicEnvelope);
       fa = res.fa;
       if (res.targetUpdate !== undefined) vehicle = { ...vehicle, target: res.targetUpdate };
       bus = enqueueAll(bus, res.outbound, tick);
@@ -89,7 +107,7 @@ export function step(world: World): World {
     else if (tick >= scenario.level.maxTicks) outcome = "failed";
   }
 
-  return { scenario, tick, bus, log, fa, vehicle, ma, outcome, holdTicks, waypointIndex };
+  return { scenario, tick, bus, log, fa, vehicle, ma, outcome, holdTicks, waypointIndex, threats, dynamicEnvelope };
 }
 
 function entry(tick: number, m: Message, disposition: MessageLogEntry["disposition"]): MessageLogEntry {
