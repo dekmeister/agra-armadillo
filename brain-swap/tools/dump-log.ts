@@ -3,7 +3,7 @@
 // authoring golden tests and eyeballing new levels.
 //
 // Usage: npx tsx tools/dump-log.ts <levelKey> [brainKey]
-//   levelKey : 11 | 12 | 13 | 14 | 41 | 45
+//   levelKey : 11 | 12 | 13 | 14 | 45
 //   brainKey : ref (default) | naive | locked | none
 import { initWorld, makeScenario, run, scoreWorld, type World } from "@brain-swap/core";
 import * as L from "@brain-swap/levels";
@@ -13,7 +13,6 @@ const levels: Record<string, { level: any; ref?: any; naive?: any; locked?: any 
   "12": { level: L.level12, ref: L.level12ReferenceBrain },
   "13": { level: L.level13, ref: L.level13ReferenceBrain, naive: L.level13NaiveBrain },
   "14": { level: L.level14, ref: L.level14ReferenceBrain },
-  "41": { level: L.level41, ref: L.level41ReferenceBrain, naive: L.level41NaiveBrain },
   "45": { level: L.level45, locked: L.level45LockedBrain },
 };
 

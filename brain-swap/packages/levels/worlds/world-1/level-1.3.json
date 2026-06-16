@@ -6,14 +6,14 @@
   "brief": "Reach the station at the Heron's ceiling and hold. The envelope is data — read it.",
   "teaches": "FA validates every command against the envelope it advertised in MA_FlightCapabilityMT. Command above MaxAltitude and FA rejects with PERFORMANCE_LIMIT_EXCEEDED. Clamp to cap.MaxAltitude to fly clean with zero rejections.",
   "objective": {
-    "_doc": "reach-hold at the Heron's ceiling (8000 m). Only a brain that reads MaxAltitude reaches the band; a hardcoded over-ceiling altitude is rejected and never climbs.",
+    "_doc": "reach-hold at the Heron's ceiling (8000 m), flown south (heading 180) to a station at (0,-900) so it reads as a distinct map from 1.2's westbound run. Only a brain that reads MaxAltitude reaches the band; a hardcoded over-ceiling altitude is rejected and never climbs.",
     "kind": "reach-hold",
-    "zone": { "x": -900, "y": 0, "radius": 150 },
+    "zone": { "x": 0, "y": -900, "radius": 150 },
     "altitude": 8000,
     "altitudeTolerance": 50,
     "holdTicks": 10
   },
-  "start": { "x": 0, "y": 0, "altitude": 7900, "heading": 270, "speed": 35 },
+  "start": { "x": 0, "y": 0, "altitude": 7900, "heading": 180, "speed": 35 },
   "availableMessages": [
     "MA_FlightCapabilityMT",
     "MA_FlightCapabilityStatusMT",

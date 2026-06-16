@@ -18,9 +18,6 @@ import refBrain13Json from "../worlds/world-1/level-1.3.reference-brain.json";
 import naiveBrain13Json from "../worlds/world-1/level-1.3.naive-brain.json";
 import level14Json from "../worlds/world-1/level-1.4.json";
 import refBrain14Json from "../worlds/world-1/level-1.4.reference-brain.json";
-import level41Json from "../worlds/world-4/level-4.1.json";
-import refBrain41Json from "../worlds/world-4/level-4.1.reference-brain.json";
-import naiveBrain41Json from "../worlds/world-4/level-4.1.naive-brain.json";
 import level45Json from "../worlds/world-4/level-4.5.json";
 import lockedBrain45Json from "../worlds/world-4/level-4.5.locked-brain.json";
 
@@ -43,10 +40,6 @@ export const level13NaiveBrain = naiveBrain13Json as unknown as Brain;
 
 export const level14 = level14Json as unknown as LevelDef;
 export const level14ReferenceBrain = refBrain14Json as unknown as Brain;
-
-export const level41 = level41Json as unknown as LevelDef;
-export const level41ReferenceBrain = refBrain41Json as unknown as Brain;
-export const level41NaiveBrain = naiveBrain41Json as unknown as Brain;
 
 export const level45 = level45Json as unknown as LevelDef;
 export const level45LockedBrain = lockedBrain45Json as unknown as Brain;
@@ -80,7 +73,6 @@ export const LEVELS: Record<string, LevelBundle> = {
   "1.2": { level: level12, referenceBrain: level12ReferenceBrain },
   "1.3": { level: level13, referenceBrain: level13ReferenceBrain },
   "1.4": { level: level14, referenceBrain: level14ReferenceBrain },
-  "4.1": { level: level41, referenceBrain: level41ReferenceBrain },
   "4.5": { level: level45, referenceBrain: level45LockedBrain },
 };
 

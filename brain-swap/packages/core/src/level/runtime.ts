@@ -1,6 +1,6 @@
 // Level runtime: the world-state win predicate (docs/01 — never "message sent").
 // Dispatches on the objective kind:
-//   • reach-hold        — be in the zone & altitude band for holdTicks ticks (1.2/1.3/4.1/4.5).
+//   • reach-hold        — be in the zone & altitude band for holdTicks ticks (1.2/1.3/4.5).
 //   • hold-control      — be the secondary controller of the capability for holdTicks ticks (1.1).
 //   • waypoint-sequence — pass each waypoint in order; hold the final one (1.4).
 import { isSecondaryController, type FaState } from "../fa/engine.ts";

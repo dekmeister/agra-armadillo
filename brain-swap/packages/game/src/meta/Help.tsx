@@ -36,8 +36,8 @@ export function Help() {
             control-acquisition handshake (<span className="k-cyan">1.1</span>) and your first valid
             flight command (<span className="k-cyan">1.2</span>); later ones add the performance
             envelope (<span className="k-cyan">1.3</span>), a hand-flown racetrack
-            (<span className="k-cyan">1.4</span>), and re-flying across airframes
-            (<span className="k-cyan">4.1 / 4.5</span>).
+            (<span className="k-cyan">1.4</span>), and re-flying one brain across airframes
+            (<span className="k-cyan">4.5</span>).
           </p>
         </section>
 

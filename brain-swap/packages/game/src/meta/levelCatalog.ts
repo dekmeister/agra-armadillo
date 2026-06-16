@@ -62,7 +62,6 @@ export const WORLDS: WorldEntry[] = [
     no: "W4",
     name: "Brain Swap",
     levels: [
-      { id: "4.1", name: "Second Body", playable: true },
       { id: "4.2", name: "The Flinch" },
       { id: "4.3", name: "Degraded" },
       { id: "4.4", name: "Heartbeat Discipline" },

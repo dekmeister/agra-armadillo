@@ -35,7 +35,7 @@
             "CommandID": "CMD-1",
             "CommandState": "NEW",
             "CapabilityID": { "cap": "CapabilityID" },
-            "Heading": 270,
+            "Heading": 180,
             "Altitude": 9000,
             "Speed": 40
           }

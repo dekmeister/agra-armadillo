@@ -81,7 +81,7 @@ describe("level 1.3 golden run (reference brain)", () => {
           CommandID: "CMD-1",
           CommandState: "NEW",
           CapabilityID: "HERON-02",
-          Heading: 270,
+          Heading: 180,
           Altitude: 8000,
           Speed: 50,
         },

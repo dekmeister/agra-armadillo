@@ -35,7 +35,7 @@
             "CommandID": "CMD-1",
             "CommandState": "NEW",
             "CapabilityID": { "cap": "CapabilityID" },
-            "Heading": 270,
+            "Heading": 180,
             "Altitude": { "cap": "MaxAltitude" },
             "Speed": { "cap": "MaxAirspeed" }
           }
@@ -46,7 +46,7 @@
     {
       "from": "cruising",
       "trigger": { "messageType": "MA_PositionReportDetailedMT" },
-      "guard": { "field": "Longitude", "op": "<=", "value": -600 },
+      "guard": { "field": "Latitude", "op": "<=", "value": -600 },
       "actions": [
         {
           "kind": "send",

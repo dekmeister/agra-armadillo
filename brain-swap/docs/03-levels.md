@@ -22,7 +22,9 @@ Bodies introduced along the way (performance profiles are level data):
 > three metrics (Ticks / Bus Traffic / Rejections — Brain Size dropped).
 
 Implemented and golden-tested (`packages/levels`): **1.2** (MVP), plus the
-post-MVP batch **1.1, 1.3, 1.4, 4.1, 4.5**. Bodies built: **AX-01 "Mule"**,
+post-MVP batch **1.1, 1.3, 1.4, 4.5**. (Standalone **4.1** was built then removed
+in the Phase-0 streamline — its portability lesson is now owned by 4.5, which
+already flies one locked brain across the whole fleet.) Bodies built: **AX-01 "Mule"**,
 **AX-02 "Heron"** (`approvalLatencyTicks 3`, ceiling 8000, `maxAirspeed 50`,
 slow turn), **AX-03 "Ferret"** (agile `maxTurnRateDeg 10`, narrow altitude band
 1000–10000, higher stall `minAirspeed 30`). Everything else below is design, not
@@ -33,15 +35,15 @@ The built versions are deliberately simplified against the design copy (see
 - **1.3** advertises a *static* envelope — no fuel burn-off / ceiling-rise yet
   (needs a fuel model + event schedule). The lesson (clamp to `cap.MaxAltitude`)
   is intact; a level `start` override puts AX-02 near its ceiling so the climb
-  completes during the zone transit.
+  completes during the zone transit. Flown **south (heading 180) to a station at
+  `(0,-900)`** so it reads as a distinct map from 1.2's westbound run to `(-900,0)`.
 - **1.4** is flown by *position-threshold* steering (Direction-only `UPDATE` when
   a position-report coordinate crosses a corner), not FA-managed timed legs; the
   waypoint zones sit on the straight legs (no brain timer yet).
-- **4.1** re-flies the **1.2** HSA mission on AX-02 (the design's 1.4-hold /
-  2.3-station are not built); the reference brain reads `cap.MaxAirspeed`/
-  `cap.MinAirspeed` and waits for APPROVED, so it ports unchanged.
 - **4.5** is graded headless (worst-of-three via the test harness); no in-game
-  score-screen UI yet.
+  score-screen UI yet. It owns the portability lesson outright: the locked
+  profile-driven brain (reads `cap.MaxAltitude`/`MaxAirspeed`/`MinAirspeed`) ports
+  unchanged across AX-01/02/03 — the role the removed standalone 4.1 used to fill.
 
 ## World 0 — Listen Before You Speak (2 levels)
 
@@ -137,13 +139,12 @@ this variant; its sister variant in world 4 doesn't)
 
 ## World 4 — Brain Swap (5 levels)
 
-- **4.1 Second Body. [Built]** Re-fly 1.4's hold + 2.3's station with your existing brains
-  on AX-02: lower ceiling, PENDING before APPROVED, slower turn rate. A brain that
-  hardcoded altitudes/speeds gets `PERFORMANCE_LIMIT_EXCEEDED`; one that read the
-  profile mostly just works. Edits allowed but counted ("diff size" bonus metric).
-  *(Built: re-flies the 1.2 HSA mission on AX-02; the profile-driven reference brain
-  reads `cap.MaxAirspeed`/`cap.MinAirspeed` and ports with zero edits, while a brain
-  that hardcoded the Mule's `Speed:60` is rejected.)*
+- **4.1 Second Body. [Removed — folded into 4.5]** Originally a standalone "re-fly
+  the mission on AX-02" level. Built, then removed in the Phase-0 streamline because
+  it duplicated to *play* what 4.5 already proves: a profile-driven brain ported to a
+  body with a lower ceiling, PENDING-before-APPROVED latency, and a slower turn rate.
+  The portability lesson now lives in 4.5, which flies one locked brain across the
+  whole AX-01/02/03 fleet.
 - **4.2 The Flinch.** AX-03 with an anxious FA: frequent collision-avoidance
   interrupts (`CONSTRAINT_COLLISION_AVOIDANCE`, capabilities TEMPORARILY_UNAVAILABLE,
   resume signaled by fresh `MA_FlightCapabilityMT`). Brain must hold state, not

@@ -134,9 +134,11 @@ the XSD: `INVALID_CURVE`, `INVALID_WAYPOINT`, `PERFORMANCE_LIMIT_EXCEEDED`,
 > ticks), #4/#13 (short ids + CapabilityID correlation), #6 (2D + altitude scalar),
 > #8 (silent ignore when not controller), #12 (hold = slow transit).
 >
-> **Added by the post-MVP batch (1.1/1.3/1.4/4.1/4.5):** #14 (static envelope, 1.3),
+> **Added by the post-MVP batch (1.1/1.3/1.4/4.5):** #14 (static envelope, 1.3),
 > #15 (geometric racetrack, 1.4), #16 (headless type certificate, 4.5). 1.1 exercises
-> the handshake (lie #8 bait); 4.1/4.5 lean on #6/#13 for portable, profile-driven brains.
+> the handshake (lie #8 bait); 4.5 leans on #6/#13 for one portable, profile-driven
+> brain certified across the AX-01/02/03 fleet (the portability lesson the standalone
+> 4.1 used to carry is now absorbed here).
 
 ## 4. Honesty mechanisms
 

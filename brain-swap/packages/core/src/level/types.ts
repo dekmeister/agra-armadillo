@@ -26,7 +26,7 @@ export interface Waypoint {
  * here rather than special-casing the runtime.
  */
 
-/** Reach a zone at a target altitude and hold (level 1.2, 1.3, 4.1, 4.5). */
+/** Reach a zone at a target altitude and hold (level 1.2, 1.3, 4.5). */
 export interface ReachHoldObjective {
   readonly kind: "reach-hold";
   /** Reach-and-hold zone. */
@@ -81,7 +81,7 @@ export interface LevelDef {
   /**
    * Optional per-mission vehicle start, overriding the body's default. Decouples
    * mission geometry from the airframe so one body can fly different setups
-   * (e.g. 1.3 starts near the ceiling; 4.1 starts low on the same body).
+   * (e.g. 1.3 starts near the ceiling).
    */
   readonly start?: VehicleStart;
   /** Subset of the catalog available in this level's editor (UI concern; informational here). */

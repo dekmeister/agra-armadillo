@@ -22,8 +22,6 @@ import {
   level13ReferenceBrain,
   level14,
   level14ReferenceBrain,
-  level41,
-  level41ReferenceBrain,
   level45,
   level45LockedBrain,
   multiBodyScenarios,
@@ -53,7 +51,6 @@ const CASES: Case[] = [
   { id: "1.2", level: level12, brain: level12ReferenceBrain },
   { id: "1.3", level: level13, brain: level13ReferenceBrain },
   { id: "1.4", level: level14, brain: level14ReferenceBrain },
-  { id: "4.1", level: level41, brain: level41ReferenceBrain },
   { id: "4.5", level: level45, brain: level45LockedBrain },
 ];
 

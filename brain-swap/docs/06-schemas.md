@@ -84,7 +84,7 @@ without narrowing. `evaluateWin` (`level/runtime.ts`) is given the vehicle, the 
 state, and the carried progress `{ holdTicks, waypointIndex }`.
 
 ```jsonc
-// reach-hold (1.2, 1.3, 4.1, 4.5): be in the zone & altitude band for holdTicks
+// reach-hold (1.2, 1.3, 4.5): be in the zone & altitude band for holdTicks
 { "kind": "reach-hold", "zone": {…}, "altitude": 3000, "altitudeTolerance": 50, "holdTicks": 10 }
 
 // hold-control (1.1): be the secondary controller of capabilityId for holdTicks (no flight)

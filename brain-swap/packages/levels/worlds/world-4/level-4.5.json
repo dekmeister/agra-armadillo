@@ -4,8 +4,8 @@
   "body": "ax-01",
   "bodies": ["ax-01", "ax-02", "ax-03"],
   "capabilityId": "MULE-01",
-  "brief": "One locked brain. Three airframes. Certify it flies the mission on all of them.",
-  "teaches": "The brain-swap thesis: a brain written against the interface, not the airframe, ports across the fleet. Commanded values sit inside every body's envelope; the handshake absorbs each body's approval latency.",
+  "brief": "One locked brain, no edits. Certify it flies the mission on a second and third airframe with envelopes and approval timing it never saw before.",
+  "teaches": "Portability is the whole point of the interface: a brain that reads the body's advertised profile (MaxAltitude / MaxAirspeed / MinAirspeed) instead of hardcoding the Mule's numbers ports unchanged to the Heron and Ferret, while one that baked in a body's values would be rejected. Commanded values sit inside every body's common envelope; the handshake absorbs each body's approval latency. Score is the worst of the three runs.",
   "objective": {
     "_doc": "Same reach-hold mission run on every body in `bodies`. The locked brain must win on all three; the level score is the worst-of-three (aggregateWorst).",
     "kind": "reach-hold",
