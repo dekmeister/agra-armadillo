@@ -32,6 +32,7 @@ export interface FaState {
   readonly unavailableCaps: Readonly<Record<string, "TEMPORARILY_UNAVAILABLE" | "UNAVAILABLE">>;
   readonly positionTicker: number;
   readonly activityTicker: number;
+  readonly navigationTicker: number;
   readonly activeActivityId: string | null;
 }
 
@@ -43,6 +44,7 @@ export function initFaState(): FaState {
     unavailableCaps: {},
     positionTicker: 0,
     activityTicker: 0,
+    navigationTicker: 0,
     activeActivityId: null,
   };
 }
@@ -139,12 +141,13 @@ export function faHandleInbound(
   fa: FaState,
   message: Message,
   dynamicEnvelope: Readonly<Record<string, CapabilityProfile>> = {},
+  vehicle?: VehicleState,
 ): FaInboundResult {
   switch (message.type) {
     case "MA_ControlRequestMT":
       return handleControlRequest(body, fa, message.payload as MA_ControlRequestMT);
     case "MA_FlightCommandMT":
-      return handleFlightCommand(body, fa, message.payload as MA_FlightCommandMT, dynamicEnvelope);
+      return handleFlightCommand(body, fa, message.payload as MA_FlightCommandMT, dynamicEnvelope, vehicle);
     default:
       return { fa, outbound: [], disposition: DELIVERED };
   }
@@ -192,6 +195,7 @@ function handleFlightCommand(
   fa: FaState,
   cmd: MA_FlightCommandMT,
   dynamicEnvelope: Readonly<Record<string, CapabilityProfile>>,
+  vehicle?: VehicleState,
 ): FaInboundResult {
   // A capability pulled mid-mission (capability-unavailable event) isn't listening
   // either — same silent drop as not-controller (no NACK invented; fidelity lie #8).
@@ -203,7 +207,7 @@ function handleFlightCommand(
     return { fa, outbound: [], disposition: IGNORED_NOT_CONTROLLER };
   }
 
-  const outcome = validateFlightCommand(body, cmd, dynamicEnvelope[cmd.CapabilityID]);
+  const outcome = validateFlightCommand(body, cmd, dynamicEnvelope[cmd.CapabilityID], vehicle);
   const status = msg("MA_FlightCommandStatusMT", "FA", "MA", {
     CommandID: cmd.CommandID,
     CommandProcessingState: outcome.accepted ? "ACCEPTED" : "REJECTED",
@@ -262,5 +266,19 @@ export function faPublish(
     );
   }
 
-  return { fa: { ...fa, positionTicker, activityTicker }, outbound };
+  // Endurance report — only for fuel-bearing bodies with a navigation interval set.
+  let navigationTicker = fa.navigationTicker + 1;
+  const navInterval = body.publish.navigationIntervalTicks ?? 0;
+  if (body.fuel !== undefined && vehicle.fuel !== undefined && navInterval > 0 && navigationTicker >= navInterval) {
+    navigationTicker = 0;
+    const pct = body.fuel.capacity > 0 ? (vehicle.fuel / body.fuel.capacity) * 100 : 0;
+    outbound.push(
+      msg("NavigationReportMT", "FA", "MA", {
+        Fuel: Math.round(vehicle.fuel),
+        Percent: Math.round(pct),
+      }),
+    );
+  }
+
+  return { fa: { ...fa, positionTicker, activityTicker, navigationTicker }, outbound };
 }

@@ -32,7 +32,7 @@ export const WORLDS: WorldEntry[] = [
       { id: "1.3", name: "Envelope", playable: true },
       { id: "1.4", name: "Racetrack by Hand", playable: true },
       { id: "1.5", name: "Winds Aloft" },
-      { id: "1.6", name: "Bingo" },
+      { id: "1.6", name: "Bingo", playable: true },
       { id: "1.7", name: "Counter-Offer" },
     ],
   },

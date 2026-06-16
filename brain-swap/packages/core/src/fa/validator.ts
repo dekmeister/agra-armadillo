@@ -2,9 +2,9 @@
 // advertised in MA_FlightCapabilityMT (docs/04 pedagogical contract). Rejection
 // reasons are the real MA_ValidationResultEnum literals (docs/02). Deterministic
 // and learnable (fidelity lie #9).
-import { type BodyProfile, type CapabilityProfile, findCapability } from "../body.ts";
+import { type BodyProfile, type CapabilityProfile, findCapability, fuelBurnAt } from "../body.ts";
 import type { MA_FlightCommandMT, MA_FlightCommandStatusMT } from "../messages/index.ts";
-import type { FlightTarget } from "../vehicle/pointmass.ts";
+import type { FlightTarget, VehicleState } from "../vehicle/pointmass.ts";
 
 export type ValidationResult = NonNullable<MA_FlightCommandStatusMT["ValidationResult"]>;
 
@@ -27,11 +27,16 @@ function reject(result: ValidationResult): ValidationOutcome {
  * `profileOverride` is the current effective envelope when a `degrade-envelope`
  * mission event has tightened it (sim.ts threads `world.dynamicEnvelope[capId]`);
  * absent ⇒ validate against the body's static profile, exactly as before.
+ *
+ * `vehicle` supplies current fuel for the endurance pre-check (fuel-bearing bodies
+ * with `fuel.minEnduranceTicks`): FA rejects a command whose commanded speed would
+ * leave too little remaining endurance — VIOLATION_ENDURANCE (the Bingo lesson).
  */
 export function validateFlightCommand(
   body: BodyProfile,
   cmd: MA_FlightCommandMT,
   profileOverride?: CapabilityProfile,
+  vehicle?: VehicleState,
 ): ValidationOutcome {
   const cap = findCapability(body, cmd.CapabilityID);
   if (!cap) return reject("CAPABILITY_NOT_SUPPORTED");
@@ -56,6 +61,18 @@ export function validateFlightCommand(
     }
     if (p.minAirspeed !== undefined && cmd.Speed < p.minAirspeed) {
       return reject("PERFORMANCE_LIMIT_EXCEEDED");
+    }
+  }
+
+  // Endurance reserve: a faster command burns fuel quicker, leaving less loiter time.
+  if (
+    cmd.Speed !== undefined &&
+    body.fuel?.minEnduranceTicks !== undefined &&
+    vehicle?.fuel !== undefined
+  ) {
+    const burn = fuelBurnAt(body.fuel, cmd.Speed);
+    if (burn > 0 && vehicle.fuel / burn < body.fuel.minEnduranceTicks) {
+      return reject("VIOLATION_ENDURANCE");
     }
   }
 

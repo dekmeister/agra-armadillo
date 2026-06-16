@@ -129,6 +129,16 @@ the XSD: `INVALID_CURVE`, `INVALID_WAYPOINT`, `PERFORMANCE_LIMIT_EXCEEDED`,
     the golden test runs the brain on every body in the level's `bodies` list and
     records the worst-of-three score (`aggregateWorst`). There is no in-game
     score-screen UI for the multi-body comparison yet.
+17. **Fuel is a flat scalar with a U-curve burn (level 1.6).** Real endurance
+    (`EnduranceBaseType`) carries `Fuel` (a `MassType`), `Duration`, `DurationEnd`, and
+    `Percent`, inside a `NavigationReportMT` that also reports `SystemID`/`Source`/
+    `ContingencyLevel`/`Navigation`. The game prunes to flat `Fuel` (kg) + `Percent`
+    and burns a U-shaped fuel flow `minBurn + burnQuad·(speed − bestSpeed)²` per tick —
+    a floor at the most efficient speed (a bit above the stall), rising gently toward
+    the stall and steeply toward max speed (the generic aircraft fuel-flow curve). It's
+    deterministic and learnable, not real aerodynamics. FA's endurance reserve check
+    (`VIOLATION_ENDURANCE` when a commanded speed leaves `< minEnduranceTicks` of
+    endurance) is a single threshold standing in for real FA energy management.
 
 > **Exercised by the MVP (level 1.2):** lies #2 (single in-order bus), #3 (discrete
 > ticks), #4/#13 (short ids + CapabilityID correlation), #6 (2D + altitude scalar),
@@ -139,6 +149,9 @@ the XSD: `INVALID_CURVE`, `INVALID_WAYPOINT`, `PERFORMANCE_LIMIT_EXCEEDED`,
 > the handshake (lie #8 bait); 4.5 leans on #6/#13 for one portable, profile-driven
 > brain certified across the AX-01/02/03 fleet (the portability lesson the standalone
 > 4.1 used to carry is now absorbed here).
+>
+> **Added by Phase 2–3:** #5/#6/#12 again for 2.2 (hand-flown no-fly avoidance) and
+> 1.6 (Bingo); #17 (flat fuel + linear burn + endurance reserve, 1.6).
 
 ## 4. Honesty mechanisms
 

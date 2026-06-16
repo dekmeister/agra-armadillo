@@ -72,7 +72,7 @@ export function step(world: World): World {
   for (const q of taken.due) {
     const m = q.message;
     if (m.to === "FA") {
-      const res = faHandleInbound(body, fa, m, dynamicEnvelope);
+      const res = faHandleInbound(body, fa, m, dynamicEnvelope, vehicle);
       fa = res.fa;
       if (res.targetUpdate !== undefined) vehicle = { ...vehicle, target: res.targetUpdate };
       bus = enqueueAll(bus, res.outbound, tick);
@@ -92,8 +92,8 @@ export function step(world: World): World {
   fa = pub.fa;
   bus = enqueueAll(bus, pub.outbound, tick);
 
-  // Phase D — integrate the vehicle one tick.
-  vehicle = integrate(vehicle, body.flight);
+  // Phase D — integrate the vehicle one tick (burns fuel on fuel-bearing bodies).
+  vehicle = integrate(vehicle, body.flight, body.fuel);
 
   // Phase E — level win/fail.
   let outcome: Outcome = world.outcome;
@@ -103,9 +103,11 @@ export function step(world: World): World {
     const wc = evaluateWin(scenario.level, vehicle, fa, { holdTicks, waypointIndex }, threats);
     holdTicks = wc.holdTicks;
     waypointIndex = wc.waypointIndex;
-    // A breach fails the run immediately, ahead of a same-tick win or the budget.
+    const fuelOut = vehicle.fuel !== undefined && vehicle.fuel <= 0;
+    // Priority: a breach fails immediately; else a win; else running dry; else budget.
     if (wc.failed) outcome = "failed";
     else if (wc.won) outcome = "won";
+    else if (fuelOut) outcome = "failed";
     else if (tick >= scenario.level.maxTicks) outcome = "failed";
   }
 

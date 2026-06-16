@@ -22,14 +22,16 @@ Bodies introduced along the way (performance profiles are level data):
 > three metrics (Ticks / Bus Traffic / Rejections — Brain Size dropped).
 
 Implemented and golden-tested (`packages/levels`): **1.2** (MVP), plus the
-post-MVP batch **1.1, 1.3, 1.4, 4.5**, and the avoidance level **2.2** (Phase 2).
-(Standalone **4.1** was built then removed in the Phase-0 streamline — its
-portability lesson is now owned by 4.5, which already flies one locked brain across
-the whole fleet.) Bodies built: **AX-01 "Mule"**,
-**AX-02 "Heron"** (`approvalLatencyTicks 3`, ceiling 8000, `maxAirspeed 50`,
-slow turn), **AX-03 "Ferret"** (agile `maxTurnRateDeg 10`, narrow altitude band
-1000–10000, higher stall `minAirspeed 30`). Everything else below is design, not
-yet built.
+post-MVP batch **1.1, 1.3, 1.4, 4.5**, the avoidance level **2.2** (Phase 2), and
+the endurance level **1.6 Bingo** (Phase 3). (Standalone **4.1** was built then
+removed in the Phase-0 streamline — its portability lesson is now owned by 4.5,
+which already flies one locked brain across the whole fleet.) Bodies built (one
+version each): **AX-01 "Mule"**, **AX-02 "Heron"** (`approvalLatencyTicks 3`, ceiling
+8000, `maxAirspeed 50`, slow turn; carries the **fuel model** — a U-shaped burn used
+by Bingo), **AX-03 "Ferret"** (agile `maxTurnRateDeg 10`, narrow altitude band
+1000–10000, higher stall `minAirspeed 30`). Only the Heron models fuel; the others
+have no fuel model so it never affects their levels. Everything else below is design,
+not yet built.
 
 The built versions are deliberately simplified against the design copy (see
 `docs/02-fidelity.md` lies #14–16):
@@ -84,10 +86,16 @@ The built versions are deliberately simplified against the design copy (see
 - **1.5 Winds Aloft.** Reach a narrow corridor in a stiff crosswind read from
   `WeatherObservationMT`. Heading (HSA) vs course (CSA, `Course` field) — command
   course or compute your own crab angle. Teaches: H vs C is not pedantry.
-- **1.6 Bingo.** Distant zone, thin fuel. `NavigationReportMT` (fuel mass/percent/
+- **1.6 Bingo. [Built]** Distant zone, thin fuel. `NavigationReportMT` (fuel mass/percent/
   duration) + `SpeedOptimizationEnum` MAX_ENDURANCE vs explicit speed. Greedy max
   cruise → `VIOLATION_ENDURANCE` rejection. Teaches: FA validates against
-  endurance, and speed can be delegated.
+  endurance, and speed can be delegated. *(Built on the fuel-bearing **AX-02 Heron**
+  with a U-shaped fuel flow (`minBurn + burnQuad·(speed − bestSpeed)²`),
+  `NavigationReportMT` pruned to flat `Fuel`+`Percent`, and an FA endurance-reserve
+  check. The Heron launches hot on a thin tank, so the player must slow to the
+  efficient cruise to make the range; the naive max-throttle brain is rejected
+  `VIOLATION_ENDURANCE` and flames out short. Speed delegation via
+  `SpeedOptimizationEnum` and `Duration` are not built — fidelity lie #17.)*
 - **1.7 Counter-Offer.** Mission parameters FA won't accept as-asked; FA rejects
   *with a best-effort `MA_TaskMT`* (Flight field). Brain must read the suggested
   parameters and resend. Teaches: rejection is the start of a negotiation, not a

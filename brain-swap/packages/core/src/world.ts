@@ -59,7 +59,7 @@ export function initWorld(scenario: Scenario): World {
     bus,
     log: [],
     fa: initFaState(),
-    vehicle: initVehicle(scenario.level?.start ?? scenario.body.start),
+    vehicle: initVehicle(scenario.level?.start ?? scenario.body.start, scenario.body.fuel?.capacity),
     ma: { brainState: scenario.brain ? scenario.brain.initial : null },
     outcome: "running",
     holdTicks: 0,

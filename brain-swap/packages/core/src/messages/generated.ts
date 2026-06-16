@@ -62,6 +62,11 @@ export interface MA_PositionReportDetailedMT {
   NavigationSolutionState?: "ALIGNING" | "FREE_INERTIAL" | "GPS" | "BLENDED";
 }
 
+export interface NavigationReportMT {
+  Fuel?: number;
+  Percent?: number;
+}
+
 /** Maps each message type name to its pruned payload interface. */
 export interface MessagePayloads {
   MA_FlightCapabilityMT: MA_FlightCapabilityMT;
@@ -73,6 +78,7 @@ export interface MessagePayloads {
   MA_FlightCommandStatusMT: MA_FlightCommandStatusMT;
   MA_FlightActivityMT: MA_FlightActivityMT;
   MA_PositionReportDetailedMT: MA_PositionReportDetailedMT;
+  NavigationReportMT: NavigationReportMT;
 }
 
 /** Union of all Tier-1 message type names. */
@@ -424,8 +430,29 @@ export const MESSAGE_CATALOG = {
         "required": false
       }
     ]
+  },
+  "NavigationReportMT": {
+    "name": "NavigationReportMT",
+    "tier": 1,
+    "direction": "FA->MA",
+    "citation": "VI Vol §1.2.6.8 Receive Vehicle State Data (endurance)",
+    "summary": "Periodic ownship endurance. FA publishes remaining fuel (mass, kg) and percent of capacity; the brain reads it to fly a sustainable profile (the Bingo lesson). Real Endurance carries Fuel/Duration/DurationEnd/Percent — pruned here to flat Fuel + Percent (fidelity lie #5).",
+    "fields": [
+      {
+        "name": "Fuel",
+        "path": "MessageData.Endurance.Fuel",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "Percent",
+        "path": "MessageData.Endurance.Percent",
+        "type": "number",
+        "required": false
+      }
+    ]
   }
 } as const satisfies Record<MessageTypeName, CatalogMessageMeta>;
 
 /** All Tier-1 message type names, in catalog order. */
-export const MESSAGE_TYPE_NAMES = ["MA_FlightCapabilityMT","MA_FlightCapabilityStatusMT","MA_ControlRequestMT","MA_ControlRequestStatusMT","ControlStatusMT","MA_FlightCommandMT","MA_FlightCommandStatusMT","MA_FlightActivityMT","MA_PositionReportDetailedMT"] as const satisfies readonly MessageTypeName[];
+export const MESSAGE_TYPE_NAMES = ["MA_FlightCapabilityMT","MA_FlightCapabilityStatusMT","MA_ControlRequestMT","MA_ControlRequestStatusMT","ControlStatusMT","MA_FlightCommandMT","MA_FlightCommandStatusMT","MA_FlightActivityMT","MA_PositionReportDetailedMT","NavigationReportMT"] as const satisfies readonly MessageTypeName[];

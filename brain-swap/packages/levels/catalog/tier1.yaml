@@ -131,3 +131,17 @@ messages:
       - { name: Longitude, path: MessageData.PositionReportData.Kinematics.Position.Longitude, type: number, required: false }
       - { name: Altitude, path: MessageData.PositionReportData.Kinematics.Position.Altitude, type: number, required: false }
       - { name: NavigationSolutionState, path: MessageData.PositionReportData.NavigationSolutionState, type: enum, values: [ALIGNING, FREE_INERTIAL, GPS, BLENDED], required: false }
+
+  # --- Receive Vehicle State Data (endurance, VI §1.2.6.8) ------------------
+  - name: NavigationReportMT
+    tier: 1
+    direction: FA->MA
+    citation: "VI Vol §1.2.6.8 Receive Vehicle State Data (endurance)"
+    summary: >-
+      Periodic ownship endurance. FA publishes remaining fuel (mass, kg) and percent
+      of capacity; the brain reads it to fly a sustainable profile (the Bingo lesson).
+      Real Endurance carries Fuel/Duration/DurationEnd/Percent — pruned here to flat
+      Fuel + Percent (fidelity lie #5).
+    fields:
+      - { name: Fuel, path: MessageData.Endurance.Fuel, type: number, required: false }
+      - { name: Percent, path: MessageData.Endurance.Percent, type: number, required: false }

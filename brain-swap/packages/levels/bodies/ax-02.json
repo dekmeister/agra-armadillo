@@ -24,7 +24,16 @@
   },
   "publish": {
     "positionIntervalTicks": 1,
-    "activityIntervalTicks": 5
+    "activityIntervalTicks": 5,
+    "navigationIntervalTicks": 5
+  },
+  "fuel": {
+    "_doc": "U-shaped fuel flow: floor 4 kg/tick at bestSpeed 32 (just above the 25 stall), rising quadratically — gently toward the stall, steeply toward 50. Full tank 1000 kg easily covers the short HSA missions (1.3/4.5); Bingo issues a thin start.fuel so an unsustainable speed trips the endurance reserve.",
+    "capacity": 1000,
+    "minBurn": 4,
+    "bestSpeed": 32,
+    "burnQuad": 0.02,
+    "minEnduranceTicks": 50
   },
   "start": {
     "x": 0,

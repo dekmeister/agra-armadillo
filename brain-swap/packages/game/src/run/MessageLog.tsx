@@ -15,6 +15,7 @@ import type { MessageLogEntry, MessageTypeName } from "@brain-swap/core";
 const PERIODIC_TYPES = new Set<MessageTypeName>([
   "MA_PositionReportDetailedMT",
   "MA_FlightActivityMT",
+  "NavigationReportMT",
 ]);
 
 export function MessageLogPanel() {

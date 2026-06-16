@@ -1,0 +1,32 @@
+{
+  "id": "1.6",
+  "title": "Bingo",
+  "body": "ax-02",
+  "capabilityId": "HERON-02",
+  "brief": "A distant station, a thin tank. Command a sustainable cruise — too fast and FA refuses on endurance; too slow and you flame out before you arrive. Watch the fuel on NavigationReportMT.",
+  "teaches": "FA validates a command against endurance, not just the envelope: a speed that would burn the reserve too fast is rejected VIOLATION_ENDURANCE. Faster also means fewer ticks aloft, so the win is a sustainable cruise read off the fuel reports — not max throttle.",
+  "objective": {
+    "_doc": "reach-hold at a far station (-2600,0) @ 3000 m. The Heron launches hot (speed 50) on a thin tank (start.fuel 420): hold max throttle and you flame out well short, so the player must SLOW to the fuel-flow minimum (~35) to make the range. Commanding max throttle is also rejected VIOLATION_ENDURANCE.",
+    "kind": "reach-hold",
+    "zone": { "x": -2600, "y": 0, "radius": 200 },
+    "altitude": 3000,
+    "altitudeTolerance": 50,
+    "holdTicks": 8
+  },
+  "start": { "x": 0, "y": 0, "altitude": 3000, "heading": 270, "speed": 50, "fuel": 420 },
+  "availableMessages": [
+    "MA_FlightCapabilityMT",
+    "MA_FlightCapabilityStatusMT",
+    "MA_ControlRequestMT",
+    "MA_ControlRequestStatusMT",
+    "ControlStatusMT",
+    "MA_FlightCommandMT",
+    "MA_FlightCommandStatusMT",
+    "MA_FlightActivityMT",
+    "MA_PositionReportDetailedMT",
+    "NavigationReportMT"
+  ],
+  "maxTicks": 200,
+  "pars": { "ticks": 73, "busTraffic": 2, "rejections": 0, "brainSize": 7 },
+  "fidelityNotes": [5, 6, 8, 12, 17]
+}

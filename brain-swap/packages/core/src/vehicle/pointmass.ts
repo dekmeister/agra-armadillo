@@ -2,7 +2,7 @@
 // one tick in a single fixed step toward commanded targets, honoring the body's
 // turn-rate / climb-rate / acceleration limits. Pure and deterministic — trig is
 // fine; what's banned is RNG/wall-clock/DOM (see the core determinism test).
-import type { FlightModel } from "../body.ts";
+import { type FlightModel, type FuelModel, fuelBurnAt, type VehicleStart } from "../body.ts";
 
 /** Commanded HSA targets (any subset). Undefined fields are "hold current". */
 export interface FlightTarget {
@@ -19,16 +19,21 @@ export interface VehicleState {
   readonly heading: number; // deg, 0 = +y (north), 90 = +x (east)
   readonly speed: number; // m per tick
   readonly target: FlightTarget | null;
+  /** Remaining fuel (kg); undefined on bodies without a fuel model. */
+  readonly fuel?: number;
 }
 
-export function initVehicle(start: {
-  x: number;
-  y: number;
-  altitude: number;
-  heading: number;
-  speed: number;
-}): VehicleState {
-  return { ...start, heading: normalizeDeg(start.heading), target: null };
+export function initVehicle(start: VehicleStart, fuelCapacity?: number): VehicleState {
+  const fuel = start.fuel ?? fuelCapacity;
+  return {
+    x: start.x,
+    y: start.y,
+    altitude: start.altitude,
+    heading: normalizeDeg(start.heading),
+    speed: start.speed,
+    target: null,
+    ...(fuel !== undefined ? { fuel } : {}),
+  };
 }
 
 export function normalizeDeg(deg: number): number {
@@ -53,8 +58,10 @@ export function turnToward(current: number, goal: number, maxStep: number): numb
   return normalizeDeg(c + Math.sign(diff) * maxStep);
 }
 
-/** Advance the vehicle one tick toward its target within the body's limits. */
-export function integrate(v: VehicleState, flight: FlightModel): VehicleState {
+/** Advance the vehicle one tick toward its target within the body's limits. Burns
+ *  fuel when the body has a fuel model (the U-shaped `fuelBurnAt` curve), floored at
+ *  0. Bodies without a fuel model (vehicle.fuel undefined) never burn. */
+export function integrate(v: VehicleState, flight: FlightModel, fuel?: FuelModel): VehicleState {
   let { heading, speed, altitude } = v;
   const t = v.target;
   if (t) {
@@ -63,7 +70,7 @@ export function integrate(v: VehicleState, flight: FlightModel): VehicleState {
     if (t.altitude !== undefined) altitude = approach(altitude, t.altitude, flight.maxClimbRate);
   }
   const rad = (heading * Math.PI) / 180;
-  return {
+  const next: VehicleState = {
     x: v.x + speed * Math.sin(rad),
     y: v.y + speed * Math.cos(rad),
     altitude,
@@ -71,6 +78,10 @@ export function integrate(v: VehicleState, flight: FlightModel): VehicleState {
     speed,
     target: v.target,
   };
+  if (fuel !== undefined && v.fuel !== undefined) {
+    return { ...next, fuel: Math.max(0, v.fuel - fuelBurnAt(fuel, speed)) };
+  }
+  return v.fuel !== undefined ? { ...next, fuel: v.fuel } : next;
 }
 
 export function distance(ax: number, ay: number, bx: number, by: number): number {
