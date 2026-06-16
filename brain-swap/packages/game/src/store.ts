@@ -61,6 +61,8 @@ interface StoreState {
   script: ScriptedInput[];
   pendingInputs: Message[];
   composing: boolean;
+  /** Next CommandID sequence number to prefill in the composer (CMD-1, CMD-2, …). */
+  commandSeq: number;
 
   selectedLogIndex: number | null;
   showPeriodic: boolean;
@@ -124,6 +126,7 @@ export const useStore = create<StoreState>((set, get) => {
     script: [],
     pendingInputs: [],
     composing: false,
+    commandSeq: 1,
 
     selectedLogIndex: null,
     showPeriodic: false,
@@ -150,6 +153,7 @@ export const useStore = create<StoreState>((set, get) => {
         script: [],
         pendingInputs: [],
         composing: false,
+        commandSeq: 1,
         view: "console",
         selectedLogIndex: null,
       });
@@ -177,6 +181,7 @@ export const useStore = create<StoreState>((set, get) => {
         script: [],
         pendingInputs: [],
         composing: false,
+        commandSeq: 1,
         selectedLogIndex: null,
       });
     },
@@ -236,6 +241,8 @@ export const useStore = create<StoreState>((set, get) => {
         pendingInputs: [...s.pendingInputs, message],
         composing: false,
         running: true,
+        // Each flight command consumes a CommandID; bump the prefill counter.
+        commandSeq: message.type === "MA_FlightCommandMT" ? s.commandSeq + 1 : s.commandSeq,
       })),
 
     selectLog: (i) => set({ selectedLogIndex: i }),

@@ -270,8 +270,11 @@ select, input.field {
 .modal.narrow { width: 560px; }
 .modal .mbody { display: grid; grid-template-columns: 1fr 220px; gap: 8px; padding: 9px; overflow: hidden; min-height: 0; }
 .fieldlist { display: flex; flex-direction: column; gap: 5px; overflow-y: auto; min-height: 0; }
-.fieldlist .fl-row { display: grid; grid-template-columns: 1fr auto auto; gap: 6px; align-items: center; padding: 4px 6px; border: 1px solid var(--k-line); background: var(--k-panel2); }
+.fieldlist .fl-row { display: grid; grid-template-columns: 1fr auto auto; gap: 6px; align-items: center; padding: 4px 6px; border: 1px solid var(--k-line); background: var(--k-panel2); cursor: text; }
 .fieldlist .fl-row .fl-name { display: flex; align-items: center; gap: 5px; font-size: 12.5px; }
+/* Active field: subtle "this is where typing lands" hint — deliberately fainter than the
+   amber type-picker highlight so it doesn't read as a clickable button. */
+.fieldlist .fl-row.active { border-color: var(--k-olive); background: rgba(93,107,63,.10); }
 .palettes { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
 .palette .pt { font-family: var(--cond); font-weight: 700; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--k-dim); margin-bottom: 4px; }
 .palette .pitem { font-size: 12.5px; padding: 3px 6px; border: 1px solid var(--k-line); margin-bottom: 3px; cursor: grab; display: flex; align-items: center; gap: 6px; }
@@ -280,6 +283,12 @@ select, input.field {
 .modal .mfoot { display: flex; align-items: center; gap: 10px; padding: 8px 9px; border-top: 1px solid var(--k-line); }
 .modal .mfoot .vsum { font-size: 12px; color: var(--k-olive); }
 .modal .mfoot .vsum.bad { color: var(--k-caution); }
+/* Rejected-Enter feedback: flash the mandatory-items summary twice. */
+.modal .mfoot .vsum.flash { animation: vsum-flash .55s ease-in-out; }
+@keyframes vsum-flash {
+  0%, 40%, 100% { opacity: 1; }
+  20%, 60% { opacity: .15; }
+}
 .modal .mfoot .right { margin-left: auto; display: flex; gap: 8px; }
 
 /* ============================================================

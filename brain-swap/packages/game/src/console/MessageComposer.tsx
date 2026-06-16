@@ -6,11 +6,12 @@
 // were a state-machine concept). Validation mirrors FA exactly like the old send form:
 // required fields populated + Altitude/Speed within the advertised envelope
 // (packages/core/src/fa/validator.ts).
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   catalogEntry,
   findCapability,
   type Message,
+  type MessageLogEntry,
   type MessageTypeName,
 } from "@brain-swap/core";
 import { useStore } from "../store.ts";
@@ -21,12 +22,27 @@ import { numericKeyDown, numericPaste } from "../ui/inputFilters.ts";
 
 const NO_MESSAGES: readonly MessageTypeName[] = [];
 
+/** The CapabilityID MA currently holds control of (latest ControlStatusMT naming MA as
+ * SecondaryController), or undefined before control has been taken. Used to prefill the
+ * CapabilityID field once the player has acquired an aircraft — they type it the first time. */
+function controlledCapabilityId(log: readonly MessageLogEntry[]): string | undefined {
+  for (let i = log.length - 1; i >= 0; i -= 1) {
+    if (log[i]!.type !== "ControlStatusMT") continue;
+    const p = log[i]!.payload as Record<string, unknown>;
+    return p.SecondaryController === "MA" ? (p.CapabilityID as string) : undefined;
+  }
+  return undefined;
+}
+
 export function MessageComposer() {
   const body = useStore((s) => s.body);
   const level = useStore((s) => s.level);
   const available = useStore((s) => s.level.availableMessages) ?? NO_MESSAGES;
   const submit = useStore((s) => s.submitComposer);
   const cancel = useStore((s) => s.cancelComposer);
+  const commandSeq = useStore((s) => s.commandSeq);
+  const world = useStore((s) => s.world());
+  const heldCapId = useMemo(() => controlledCapabilityId(world.log), [world.log]);
 
   // Sendable = MA→FA messages the level exposes.
   const sendable = useMemo(
@@ -56,6 +72,8 @@ export function MessageComposer() {
       messageType={messageType}
       body={body}
       capabilityId={level.capabilityId}
+      commandSeq={commandSeq}
+      heldCapabilityId={heldCapId}
       onBack={sendable.length > 1 ? () => setMessageType(null) : undefined}
       onCancel={cancel}
       onSend={(payload) => submit({ type: messageType, from: "MA", to: "FA", payload } as Message)}
@@ -155,6 +173,8 @@ function FieldForm({
   messageType,
   body,
   capabilityId,
+  commandSeq,
+  heldCapabilityId,
   onBack,
   onCancel,
   onSend,
@@ -162,16 +182,39 @@ function FieldForm({
   messageType: MessageTypeName;
   body: import("@brain-swap/core").BodyProfile;
   capabilityId: string;
+  commandSeq: number;
+  heldCapabilityId?: string;
   onBack?: () => void;
   onCancel: () => void;
   onSend: (payload: Record<string, unknown>) => void;
 }) {
   const fields = catalogEntry(messageType).fields;
-  const init = useRef<Record<string, string>>(
-    Object.fromEntries(fields.map((f) => [f.name, f.values?.[0] ?? ""])),
+  // Prefill the IDs that are pure bookkeeping for the player: CommandID auto-increments
+  // (CMD-1, CMD-2, …); CapabilityID is filled once control has been taken (they type it the
+  // first time, on the control request, when heldCapabilityId is still undefined).
+  const [values, setValues] = useState<Record<string, string>>(() =>
+    Object.fromEntries(
+      fields.map((f) => {
+        if (f.name === "CommandID") return [f.name, `CMD-${commandSeq}`];
+        if (f.name === "CapabilityID" && heldCapabilityId) return [f.name, heldCapabilityId];
+        return [f.name, f.values?.[0] ?? ""];
+      }),
+    ),
   );
-  const [values, setValues] = useState<Record<string, string>>(init.current);
   const setField = (name: string, value: string) => setValues((s) => ({ ...s, [name]: value }));
+
+  // Active field: indicated in the form and focused for typing. Up/down cycles it, and
+  // clicking anywhere in a row activates it. Refs let arrow-nav / clicks move focus.
+  const [active, setActive] = useState(0);
+  const fieldRefs = useRef<(HTMLInputElement | HTMLSelectElement | null)[]>([]);
+  useEffect(() => {
+    fieldRefs.current[active]?.focus();
+  }, [active]);
+  const moveActive = (delta: number) =>
+    setActive((a) => (a + delta + fields.length) % fields.length);
+
+  // Bumped on each rejected Enter to re-trigger the "mandatory items" flash (key remount).
+  const [flashTick, setFlashTick] = useState(0);
 
   const capProfile = findCapability(body, capabilityId)?.profile;
 
@@ -211,14 +254,39 @@ function FieldForm({
     onSend(payload);
   };
 
+  // Enter sends (when valid) or flashes the mandatory-items summary; Escape steps back to
+  // the message-type picker (or cancels when there is no picker); up/down cycle fields.
+  const onFormKey = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      // Let a focused footer button handle its own Enter (it fires onClick) to avoid a double-send.
+      if ((e.target as HTMLElement).tagName === "BUTTON") return;
+      e.preventDefault();
+      if (valid) send();
+      else setFlashTick((t) => t + 1);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      (onBack ?? onCancel)();
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      moveActive(1);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      moveActive(-1);
+    }
+  };
+
   return (
     <div className="modal-scrim" onClick={onCancel}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+      <div className="modal" onClick={(e) => e.stopPropagation()} onKeyDown={onFormKey}>
         <Panel title="SEND" titleAccent={messageType} meta="COMPOSE FIELDS">
           <div className="mbody" style={{ display: "block" }}>
             <div className="fieldlist">
-              {fields.map((f) => (
-                <div className="fl-row" key={f.name}>
+              {fields.map((f, i) => (
+                <div
+                  className={`fl-row${i === active ? " active" : ""}`}
+                  key={f.name}
+                  onClick={() => setActive(i)}
+                >
                   <span className="fl-name">
                     <Identifier name={f.name} />
                     {f.required && <span className="req">REQ</span>}
@@ -227,7 +295,12 @@ function FieldForm({
                     </span>
                   </span>
                   {f.values ? (
-                    <select value={values[f.name] ?? ""} onChange={(e) => setField(f.name, e.target.value)}>
+                    <select
+                      ref={(el) => (fieldRefs.current[i] = el)}
+                      value={values[f.name] ?? ""}
+                      onChange={(e) => setField(f.name, e.target.value)}
+                      onFocus={() => setActive(i)}
+                    >
                       <option value="">—</option>
                       {f.values.map((v) => (
                         <option key={v} value={v}>
@@ -236,13 +309,19 @@ function FieldForm({
                       ))}
                     </select>
                   ) : f.type === "boolean" ? (
-                    <select value={values[f.name] ?? ""} onChange={(e) => setField(f.name, e.target.value)}>
+                    <select
+                      ref={(el) => (fieldRefs.current[i] = el)}
+                      value={values[f.name] ?? ""}
+                      onChange={(e) => setField(f.name, e.target.value)}
+                      onFocus={() => setActive(i)}
+                    >
                       <option value="">—</option>
                       <option value="true">true</option>
                       <option value="false">false</option>
                     </select>
                   ) : f.type === "number" ? (
                     <input
+                      ref={(el) => (fieldRefs.current[i] = el)}
                       className="field"
                       style={{ width: 130 }}
                       value={values[f.name] ?? ""}
@@ -250,14 +329,17 @@ function FieldForm({
                       onChange={(e) => setField(f.name, e.target.value)}
                       onKeyDown={numericKeyDown}
                       onPaste={numericPaste}
+                      onFocus={() => setActive(i)}
                     />
                   ) : (
                     <input
+                      ref={(el) => (fieldRefs.current[i] = el)}
                       className="field"
                       style={{ width: 130 }}
                       value={values[f.name] ?? ""}
                       placeholder="value"
                       onChange={(e) => setField(f.name, e.target.value)}
+                      onFocus={() => setActive(i)}
                     />
                   )}
                 </div>
@@ -265,7 +347,10 @@ function FieldForm({
             </div>
           </div>
           <div className="mfoot">
-            <span className={`vsum${valid ? "" : " bad"}`}>
+            <span
+              key={flashTick}
+              className={`vsum${valid ? "" : " bad"}${flashTick > 0 && !valid ? " flash" : ""}`}
+            >
               {valid
                 ? "all required fields satisfied · values within advertised envelope"
                 : errors.join(" · ")}
@@ -273,14 +358,14 @@ function FieldForm({
             <div className="right">
               {onBack && (
                 <button className="btn" onClick={onBack}>
-                  ◂ Type
+                  ◂ Type [Esc]
                 </button>
               )}
               <button className="btn" onClick={onCancel}>
-                Cancel
+                {onBack ? "Cancel" : "Cancel [Esc]"}
               </button>
               <button className="btn on" onClick={send} disabled={!valid}>
-                Send ▸
+                Send ▸ [↵]
               </button>
             </div>
           </div>
