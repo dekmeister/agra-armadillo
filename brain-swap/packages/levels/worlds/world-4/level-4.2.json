@@ -1,0 +1,35 @@
+{
+  "id": "4.2",
+  "title": "The Flinch",
+  "body": "ax-03",
+  "capabilityId": "FERRET-03",
+  "brief": "The Ferret's FA is twitchy about traffic. A hazard pops up on your track and FA takes the aircraft with a CAUTION fault. Don't fight it — yield, then re-command a vector that clears the zone and press on to the station.",
+  "teaches": "Collision avoidance is FA's job and it will override you: command a vector into a hazard and FA raises MA_FaultMT (CAUTION) and flies clear, rejecting any command still pointing in (VIOLATION_AIR_TRAFFIC). Resume by commanding a clear vector; spamming the same dangerous heading gets you nowhere.",
+  "objective": {
+    "_doc": "reach-hold at (-2000,0) @ 3000 m. A threat pops up at (-1000,0) on the direct track; FA flinches and takes the aircraft. The reference dog-legs south around it then back; a brain that ignores the fault is held off and never arrives.",
+    "kind": "reach-hold",
+    "zone": { "x": -2000, "y": 0, "radius": 350 },
+    "altitude": 3000,
+    "altitudeTolerance": 50,
+    "holdTicks": 8
+  },
+  "start": { "x": 0, "y": 0, "altitude": 3000, "heading": 270, "speed": 50 },
+  "availableMessages": [
+    "MA_FlightCapabilityMT",
+    "MA_FlightCapabilityStatusMT",
+    "MA_ControlRequestMT",
+    "MA_ControlRequestStatusMT",
+    "ControlStatusMT",
+    "MA_FlightCommandMT",
+    "MA_FlightCommandStatusMT",
+    "MA_FlightActivityMT",
+    "MA_PositionReportDetailedMT",
+    "MA_FaultMT"
+  ],
+  "maxTicks": 200,
+  "events": [
+    { "kind": "spawn-threat", "tick": 2, "threatId": "BANDIT-1", "zone": { "x": -1000, "y": 0, "radius": 250 } }
+  ],
+  "pars": { "ticks": 77, "busTraffic": 5, "rejections": 0, "brainSize": 13 },
+  "fidelityNotes": [5, 6, 8, 12, 18]
+}

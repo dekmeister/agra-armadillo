@@ -24,6 +24,12 @@ import naiveBrain16Json from "../worlds/world-1/level-1.6.naive-brain.json";
 import level22Json from "../worlds/world-2/level-2.2.json";
 import refBrain22Json from "../worlds/world-2/level-2.2.reference-brain.json";
 import naiveBrain22Json from "../worlds/world-2/level-2.2.naive-brain.json";
+import level42Json from "../worlds/world-4/level-4.2.json";
+import refBrain42Json from "../worlds/world-4/level-4.2.reference-brain.json";
+import naiveBrain42Json from "../worlds/world-4/level-4.2.naive-brain.json";
+import level43Json from "../worlds/world-4/level-4.3.json";
+import refBrain43Json from "../worlds/world-4/level-4.3.reference-brain.json";
+import naiveBrain43Json from "../worlds/world-4/level-4.3.naive-brain.json";
 import level45Json from "../worlds/world-4/level-4.5.json";
 import lockedBrain45Json from "../worlds/world-4/level-4.5.locked-brain.json";
 
@@ -54,6 +60,14 @@ export const level16NaiveBrain = naiveBrain16Json as unknown as Brain;
 export const level22 = level22Json as unknown as LevelDef;
 export const level22ReferenceBrain = refBrain22Json as unknown as Brain;
 export const level22NaiveBrain = naiveBrain22Json as unknown as Brain;
+
+export const level42 = level42Json as unknown as LevelDef;
+export const level42ReferenceBrain = refBrain42Json as unknown as Brain;
+export const level42NaiveBrain = naiveBrain42Json as unknown as Brain;
+
+export const level43 = level43Json as unknown as LevelDef;
+export const level43ReferenceBrain = refBrain43Json as unknown as Brain;
+export const level43NaiveBrain = naiveBrain43Json as unknown as Brain;
 
 export const level45 = level45Json as unknown as LevelDef;
 export const level45LockedBrain = lockedBrain45Json as unknown as Brain;
@@ -89,6 +103,8 @@ export const LEVELS: Record<string, LevelBundle> = {
   "1.4": { level: level14, referenceBrain: level14ReferenceBrain },
   "1.6": { level: level16, referenceBrain: level16ReferenceBrain },
   "2.2": { level: level22, referenceBrain: level22ReferenceBrain },
+  "4.2": { level: level42, referenceBrain: level42ReferenceBrain },
+  "4.3": { level: level43, referenceBrain: level43ReferenceBrain },
   "4.5": { level: level45, referenceBrain: level45LockedBrain },
 };
 

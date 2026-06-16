@@ -29,6 +29,10 @@ export interface ControlBehavior {
   readonly approvalLatencyTicks: number;
 }
 
+/** Collision-avoidance sensitivity. Present only on "flinchy" airframes: FA takes the
+ *  aircraft (CAUTION fault + fly-away) when the commanded vector would enter a threat
+ *  zone within this many ticks. Absent ⇒ FA never intervenes (the original bodies). */
+
 export interface PublishSchedule {
   readonly positionIntervalTicks: number;
   readonly activityIntervalTicks: number;
@@ -86,6 +90,8 @@ export interface BodyProfile {
   readonly start: VehicleStart;
   /** Fuel/endurance model; present only on fuel-bearing airframes. */
   readonly fuel?: FuelModel;
+  /** Lookahead (ticks) for FA's collision-avoidance interrupt; absent ⇒ no interrupt. */
+  readonly collisionLookaheadTicks?: number;
 }
 
 export function findCapability(body: BodyProfile, capabilityId: string): BodyCapability | undefined {

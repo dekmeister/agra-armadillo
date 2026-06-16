@@ -132,6 +132,23 @@ messages:
       - { name: Altitude, path: MessageData.PositionReportData.Kinematics.Position.Altitude, type: number, required: false }
       - { name: NavigationSolutionState, path: MessageData.PositionReportData.NavigationSolutionState, type: enum, values: [ALIGNING, FREE_INERTIAL, GPS, BLENDED], required: false }
 
+  # --- Subsystem fault (collision-avoidance interrupt) ----------------------
+  - name: MA_FaultMT
+    tier: 1
+    direction: FA->MA
+    citation: "VI Vol §1.2.6 Receive Vehicle State Data (fault information)"
+    summary: >-
+      FA reports a subsystem fault. Used here for the collision-avoidance interrupt:
+      when MA commands a vector into a threat, FA takes the aircraft and raises a
+      CAUTION fault. Real MA_SubsystemFaultType also carries FaultState/ComponentID —
+      pruned to the fields the player reads (fidelity lie #5).
+    fields:
+      - { name: FaultID, path: MessageData.FaultInformation.FaultID, type: string, required: true }
+      - { name: Severity, path: MessageData.FaultInformation.Severity, type: enum, values: [NOMINAL, ADVISORY, CAUTION, WARNING, FAILED], required: true }
+      - { name: FaultCode, path: MessageData.FaultInformation.FaultCode, type: string, required: false }
+      - { name: FaultDescription, path: MessageData.FaultInformation.FaultDescription, type: string, required: false }
+      - { name: CapabilityID, path: MessageData.FaultInformation.CapabilityID, type: string, required: false }
+
   # --- Receive Vehicle State Data (endurance, VI §1.2.6.8) ------------------
   - name: NavigationReportMT
     tier: 1

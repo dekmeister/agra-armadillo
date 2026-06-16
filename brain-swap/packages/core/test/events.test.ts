@@ -152,13 +152,16 @@ describe("mission events — spawn-threat / despawn-threat", () => {
   ];
   const frames = () => replayScript(makeScenario(body, { level: levelWith(events) }), [], 7);
 
-  it("records a spawned threat in the world from its tick, and removes it on despawn", () => {
+  it("records a spawned threat, advances it by its velocity, and removes it on despawn", () => {
     const f = frames();
-    expect(frameAt(f, 1).threats).toEqual([]);
-    expect(frameAt(f, 3).threats).toEqual([
-      { id: "T1", zone: { x: 100, y: 0, radius: 50 }, velocity: { vx: 1, vy: 0 } },
-    ]);
-    expect(frameAt(f, 6).threats).toEqual([]);
+    expect(frameAt(f, 1).threats).toEqual([]); // before spawn (tick 2)
+    const t3 = frameAt(f, 3).threats;
+    expect(t3).toHaveLength(1);
+    expect(t3[0]!.id).toBe("T1");
+    // Moving threat: its center advances by vx=1 each tick from the spawn x=100.
+    expect(t3[0]!.zone.x).toBeGreaterThan(100);
+    expect(frameAt(f, 4).threats[0]!.zone.x).toBeGreaterThan(t3[0]!.zone.x);
+    expect(frameAt(f, 6).threats).toEqual([]); // despawned at tick 5
   });
 });
 

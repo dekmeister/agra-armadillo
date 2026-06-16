@@ -15,6 +15,8 @@ const levels: Record<string, { level: any; ref?: any; naive?: any; locked?: any 
   "14": { level: L.level14, ref: L.level14ReferenceBrain },
   "16": { level: L.level16, ref: L.level16ReferenceBrain, naive: L.level16NaiveBrain },
   "22": { level: L.level22, ref: L.level22ReferenceBrain, naive: L.level22NaiveBrain },
+  "42": { level: L.level42, ref: L.level42ReferenceBrain, naive: L.level42NaiveBrain },
+  "43": { level: L.level43, ref: L.level43ReferenceBrain, naive: L.level43NaiveBrain },
   "45": { level: L.level45, locked: L.level45LockedBrain },
 };
 

@@ -62,6 +62,14 @@ export interface MA_PositionReportDetailedMT {
   NavigationSolutionState?: "ALIGNING" | "FREE_INERTIAL" | "GPS" | "BLENDED";
 }
 
+export interface MA_FaultMT {
+  FaultID: string;
+  Severity: "NOMINAL" | "ADVISORY" | "CAUTION" | "WARNING" | "FAILED";
+  FaultCode?: string;
+  FaultDescription?: string;
+  CapabilityID?: string;
+}
+
 export interface NavigationReportMT {
   Fuel?: number;
   Percent?: number;
@@ -78,6 +86,7 @@ export interface MessagePayloads {
   MA_FlightCommandStatusMT: MA_FlightCommandStatusMT;
   MA_FlightActivityMT: MA_FlightActivityMT;
   MA_PositionReportDetailedMT: MA_PositionReportDetailedMT;
+  MA_FaultMT: MA_FaultMT;
   NavigationReportMT: NavigationReportMT;
 }
 
@@ -431,6 +440,52 @@ export const MESSAGE_CATALOG = {
       }
     ]
   },
+  "MA_FaultMT": {
+    "name": "MA_FaultMT",
+    "tier": 1,
+    "direction": "FA->MA",
+    "citation": "VI Vol §1.2.6 Receive Vehicle State Data (fault information)",
+    "summary": "FA reports a subsystem fault. Used here for the collision-avoidance interrupt: when MA commands a vector into a threat, FA takes the aircraft and raises a CAUTION fault. Real MA_SubsystemFaultType also carries FaultState/ComponentID — pruned to the fields the player reads (fidelity lie #5).",
+    "fields": [
+      {
+        "name": "FaultID",
+        "path": "MessageData.FaultInformation.FaultID",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "Severity",
+        "path": "MessageData.FaultInformation.Severity",
+        "type": "enum",
+        "values": [
+          "NOMINAL",
+          "ADVISORY",
+          "CAUTION",
+          "WARNING",
+          "FAILED"
+        ],
+        "required": true
+      },
+      {
+        "name": "FaultCode",
+        "path": "MessageData.FaultInformation.FaultCode",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "FaultDescription",
+        "path": "MessageData.FaultInformation.FaultDescription",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "CapabilityID",
+        "path": "MessageData.FaultInformation.CapabilityID",
+        "type": "string",
+        "required": false
+      }
+    ]
+  },
   "NavigationReportMT": {
     "name": "NavigationReportMT",
     "tier": 1,
@@ -455,4 +510,4 @@ export const MESSAGE_CATALOG = {
 } as const satisfies Record<MessageTypeName, CatalogMessageMeta>;
 
 /** All Tier-1 message type names, in catalog order. */
-export const MESSAGE_TYPE_NAMES = ["MA_FlightCapabilityMT","MA_FlightCapabilityStatusMT","MA_ControlRequestMT","MA_ControlRequestStatusMT","ControlStatusMT","MA_FlightCommandMT","MA_FlightCommandStatusMT","MA_FlightActivityMT","MA_PositionReportDetailedMT","NavigationReportMT"] as const satisfies readonly MessageTypeName[];
+export const MESSAGE_TYPE_NAMES = ["MA_FlightCapabilityMT","MA_FlightCapabilityStatusMT","MA_ControlRequestMT","MA_ControlRequestStatusMT","ControlStatusMT","MA_FlightCommandMT","MA_FlightCommandStatusMT","MA_FlightActivityMT","MA_PositionReportDetailedMT","MA_FaultMT","NavigationReportMT"] as const satisfies readonly MessageTypeName[];

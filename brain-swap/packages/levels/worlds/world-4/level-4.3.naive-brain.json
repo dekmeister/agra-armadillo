@@ -1,0 +1,64 @@
+{
+  "id": "naive-4.3",
+  "_doc": "Bait brain (teaching artifact, docs/02): caches the boot MinAirspeed (20) and commands it as its loiter on the re-advert. After the degrade the floor is 30, so FA rejects the speed-20 command PERFORMANCE_LIMIT_EXCEEDED; the vehicle never slows below cruise and blows through the zone without holding. The lesson: re-read the live envelope.",
+  "initial": "await-capability",
+  "states": ["await-capability", "awaiting-approval", "confirming-control", "cruising", "loiter"],
+  "transitions": [
+    {
+      "from": "await-capability",
+      "trigger": { "messageType": "MA_FlightCapabilityStatusMT" },
+      "guard": { "field": "Availability", "op": "==", "value": "AVAILABLE" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "MA_ControlRequestMT",
+          "fields": { "RequestType": "ACQUIRE", "CapabilityID": { "cap": "CapabilityID" } }
+        }
+      ],
+      "target": "awaiting-approval"
+    },
+    {
+      "from": "awaiting-approval",
+      "trigger": { "messageType": "MA_ControlRequestStatusMT" },
+      "guard": { "field": "ApprovalRequestProcessingState", "op": "==", "value": "APPROVED" },
+      "target": "confirming-control"
+    },
+    {
+      "from": "confirming-control",
+      "trigger": { "messageType": "ControlStatusMT" },
+      "guard": { "field": "SecondaryController", "op": "==", "value": "MA" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "MA_FlightCommandMT",
+          "fields": {
+            "CommandID": "CMD-1",
+            "CommandState": "NEW",
+            "CapabilityID": { "cap": "CapabilityID" },
+            "Heading": 270,
+            "Altitude": 3000,
+            "Speed": 60
+          }
+        }
+      ],
+      "target": "cruising"
+    },
+    {
+      "from": "cruising",
+      "trigger": { "messageType": "MA_FlightCapabilityMT" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "MA_FlightCommandMT",
+          "fields": {
+            "CommandID": "CMD-1",
+            "CommandState": "UPDATE",
+            "CapabilityID": { "cap": "CapabilityID" },
+            "Speed": 20
+          }
+        }
+      ],
+      "target": "loiter"
+    }
+  ]
+}

@@ -87,3 +87,28 @@ export function integrate(v: VehicleState, flight: FlightModel, fuel?: FuelModel
 export function distance(ax: number, ay: number, bx: number, by: number): number {
   return Math.hypot(ax - bx, ay - by);
 }
+
+/** True if a point advancing from (x,y) along `heading` at `speed` is in, or enters
+ *  within `ticks`, the circle `zone`. Straight-line projection (deterministic). */
+export function pathEntersZone(
+  x: number,
+  y: number,
+  heading: number,
+  speed: number,
+  zone: { x: number; y: number; radius: number },
+  ticks: number,
+): boolean {
+  const rad = (heading * Math.PI) / 180;
+  const dx = Math.sin(rad) * speed;
+  const dy = Math.cos(rad) * speed;
+  for (let k = 0; k <= ticks; k += 1) {
+    if (distance(x + dx * k, y + dy * k, zone.x, zone.y) <= zone.radius) return true;
+  }
+  return false;
+}
+
+/** Heading (deg) pointing from a zone center straight out to (x,y) — i.e. directly
+ *  away from the zone (FA's collision-avoidance escape vector). */
+export function headingAwayFrom(x: number, y: number, zone: { x: number; y: number }): number {
+  return normalizeDeg((Math.atan2(x - zone.x, y - zone.y) * 180) / Math.PI);
+}

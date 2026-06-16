@@ -22,6 +22,7 @@
   "control": {
     "approvalLatencyTicks": 0
   },
+  "collisionLookaheadTicks": 6,
   "publish": {
     "positionIntervalTicks": 1,
     "activityIntervalTicks": 5

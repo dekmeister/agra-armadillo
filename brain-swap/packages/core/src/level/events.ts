@@ -71,6 +71,15 @@ export interface EventOverlay {
   readonly threats: readonly ActiveThreat[];
 }
 
+/** Advance moving threats one tick by their velocity (immutable copy). Threats with
+ *  no velocity are left as-is; an all-static list is returned unchanged. */
+export function advanceThreats(threats: readonly ActiveThreat[]): readonly ActiveThreat[] {
+  if (!threats.some((t) => t.velocity)) return threats;
+  return threats.map((t) =>
+    t.velocity ? { ...t, zone: { ...t.zone, x: t.zone.x + t.velocity.vx, y: t.zone.y + t.velocity.vy } } : t,
+  );
+}
+
 /** Stable per-event id for deterministic ordering of events that share a tick. */
 function eventId(e: MissionEvent): string {
   switch (e.kind) {

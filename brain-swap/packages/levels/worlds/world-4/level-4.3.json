@@ -1,0 +1,33 @@
+{
+  "id": "4.3",
+  "title": "Degraded",
+  "body": "ax-01",
+  "capabilityId": "MULE-01",
+  "brief": "Mid-mission, FA re-advertises a tightened envelope: the minimum airspeed climbs. Re-read MA_FlightCapabilityMT and loiter at the NEW floor — a brain that cached the boot numbers gets rejected.",
+  "teaches": "The performance envelope is live, not a boot-time fact. FA republishes MA_FlightCapabilityMT when conditions change; commands are validated against the latest envelope. Read the re-advertised MinAirspeed to slow into the zone; a hardcoded boot value is rejected PERFORMANCE_LIMIT_EXCEEDED and you blow through the station.",
+  "objective": {
+    "_doc": "reach-hold at a far station (-2400,0) @ 3000 m. The win needs a slow loiter to dwell in the zone; mid-mission (tick 14) the envelope tightens (MinAirspeed 20 -> 30), so the loiter speed must be read from the re-advert. A cached 20 is rejected and the vehicle never slows enough to hold.",
+    "kind": "reach-hold",
+    "zone": { "x": -2400, "y": 0, "radius": 150 },
+    "altitude": 3000,
+    "altitudeTolerance": 50,
+    "holdTicks": 8
+  },
+  "availableMessages": [
+    "MA_FlightCapabilityMT",
+    "MA_FlightCapabilityStatusMT",
+    "MA_ControlRequestMT",
+    "MA_ControlRequestStatusMT",
+    "ControlStatusMT",
+    "MA_FlightCommandMT",
+    "MA_FlightCommandStatusMT",
+    "MA_FlightActivityMT",
+    "MA_PositionReportDetailedMT"
+  ],
+  "maxTicks": 200,
+  "events": [
+    { "kind": "degrade-envelope", "tick": 14, "capabilityId": "MULE-01", "minAirspeed": 30 }
+  ],
+  "pars": { "ticks": 67, "busTraffic": 3, "rejections": 0, "brainSize": 9 },
+  "fidelityNotes": [5, 6, 8, 12, 14]
+}

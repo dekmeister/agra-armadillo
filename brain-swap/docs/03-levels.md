@@ -23,15 +23,17 @@ Bodies introduced along the way (performance profiles are level data):
 
 Implemented and golden-tested (`packages/levels`): **1.2** (MVP), plus the
 post-MVP batch **1.1, 1.3, 1.4, 4.5**, the avoidance level **2.2** (Phase 2), and
-the endurance level **1.6 Bingo** (Phase 3). (Standalone **4.1** was built then
+the endurance level **1.6 Bingo** (Phase 3), and the **4.2 The Flinch** (collision
+interrupt) + **4.3 Degraded** (live envelope) levels (Phase 4). (Standalone **4.1** was built then
 removed in the Phase-0 streamline — its portability lesson is now owned by 4.5,
 which already flies one locked brain across the whole fleet.) Bodies built (one
 version each): **AX-01 "Mule"**, **AX-02 "Heron"** (`approvalLatencyTicks 3`, ceiling
 8000, `maxAirspeed 50`, slow turn; carries the **fuel model** — a U-shaped burn used
 by Bingo), **AX-03 "Ferret"** (agile `maxTurnRateDeg 10`, narrow altitude band
-1000–10000, higher stall `minAirspeed 30`). Only the Heron models fuel; the others
-have no fuel model so it never affects their levels. Everything else below is design,
-not yet built.
+1000–10000, higher stall `minAirspeed 30`; carries `collisionLookaheadTicks` so its
+FA flinches at traffic — the Flinch airframe). Only the Heron models fuel and only the
+Ferret flinches; absent those fields a body is unaffected (4.5 runs the Ferret with no
+threats, so no interrupt). Everything else below is design, not yet built.
 
 The built versions are deliberately simplified against the design copy (see
 `docs/02-fidelity.md` lies #14–16):
@@ -164,16 +166,25 @@ this variant; its sister variant in world 4 doesn't)
   body with a lower ceiling, PENDING-before-APPROVED latency, and a slower turn rate.
   The portability lesson now lives in 4.5, which flies one locked brain across the
   whole AX-01/02/03 fleet.
-- **4.2 The Flinch.** AX-03 with an anxious FA: frequent collision-avoidance
+- **4.2 The Flinch. [Built]** AX-03 with an anxious FA: frequent collision-avoidance
   interrupts (`CONSTRAINT_COLLISION_AVOIDANCE`, capabilities TEMPORARILY_UNAVAILABLE,
   resume signaled by fresh `MA_FlightCapabilityMT`). Brain must hold state, not
   spam, and resume cleanly. Also: it advertises *no* Curve Following — a brain that
-  assumes the mode meets `CAPABILITY_NOT_SUPPORTED`.
-- **4.3 Degraded.** Mid-mission `MA_FaultMT` (CAUTION, then WARNING) and a
+  assumes the mode meets `CAPABILITY_NOT_SUPPORTED`. *(Built: a `spawn-threat` pops up
+  on the track; FA raises a CAUTION `MA_FaultMT` and flies the Ferret clear, rejecting
+  any vector still entering the zone (`VIOLATION_AIR_TRAFFIC`). The reference yields and
+  dog-legs around; a brain that ignores the fault is held off and times out. Avoidance
+  is the fly-away interrupt of fidelity lie #18, not the full `CONSTRAINT_*`/curve
+  story.)*
+- **4.3 Degraded. [Built]** Mid-mission `MA_FaultMT` (CAUTION, then WARNING) and a
   tightened republished envelope. The mission is still completable inside the new
   numbers. Final exam in consuming status: the brain that re-reads
   `MA_FlightCapabilityMT` after a fault passes; the one that cached it at boot
-  doesn't.
+  doesn't. *(Built: a `degrade-envelope` event raises MinAirspeed mid-mission and FA
+  re-advertises `MA_FlightCapabilityMT`. The reference reads the new floor off the
+  re-advert (`{msg: MinAirspeed}`) and loiters valid; the naive caches the boot value
+  and is rejected `PERFORMANCE_LIMIT_EXCEEDED`, blowing through the station. No
+  `MA_FaultMT` in this build — the re-advert alone carries the lesson.)*
 - **4.4 Heartbeat Discipline.** AX-04 (isolator modeled): the brain must publish
   `ServiceStatusMT` every N ticks; on missed FA heartbeats it must issue
   `SubsystemStatusDataRequestMT` before assuming failure (real comms-failure

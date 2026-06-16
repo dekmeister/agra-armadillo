@@ -1,0 +1,100 @@
+{
+  "id": "ref-4.2",
+  "_doc": "Yields to FA's collision interrupt: cruise west; when the threat pops up and FA raises MA_FaultMT, dog-leg south to clear the zone, run west past it, then cut back northwest to the station and hold. Each leg is a vector clear of the threat, so FA hands control back.",
+  "initial": "await-capability",
+  "states": ["await-capability", "awaiting-approval", "confirming-control", "cruising", "south", "past", "approach"],
+  "transitions": [
+    {
+      "from": "await-capability",
+      "trigger": { "messageType": "MA_FlightCapabilityStatusMT" },
+      "guard": { "field": "Availability", "op": "==", "value": "AVAILABLE" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "MA_ControlRequestMT",
+          "fields": { "RequestType": "ACQUIRE", "CapabilityID": { "cap": "CapabilityID" } }
+        }
+      ],
+      "target": "awaiting-approval"
+    },
+    {
+      "from": "awaiting-approval",
+      "trigger": { "messageType": "MA_ControlRequestStatusMT" },
+      "guard": { "field": "ApprovalRequestProcessingState", "op": "==", "value": "APPROVED" },
+      "target": "confirming-control"
+    },
+    {
+      "from": "confirming-control",
+      "trigger": { "messageType": "ControlStatusMT" },
+      "guard": { "field": "SecondaryController", "op": "==", "value": "MA" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "MA_FlightCommandMT",
+          "fields": {
+            "CommandID": "CMD-1",
+            "CommandState": "NEW",
+            "CapabilityID": { "cap": "CapabilityID" },
+            "Heading": 270,
+            "Altitude": 3000,
+            "Speed": 50
+          }
+        }
+      ],
+      "target": "cruising"
+    },
+    {
+      "from": "cruising",
+      "trigger": { "messageType": "MA_FaultMT" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "MA_FlightCommandMT",
+          "fields": {
+            "CommandID": "CMD-1",
+            "CommandState": "UPDATE",
+            "CapabilityID": { "cap": "CapabilityID" },
+            "Heading": 180
+          }
+        }
+      ],
+      "target": "south"
+    },
+    {
+      "from": "south",
+      "trigger": { "messageType": "MA_PositionReportDetailedMT" },
+      "guard": { "field": "Latitude", "op": "<=", "value": -500 },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "MA_FlightCommandMT",
+          "fields": {
+            "CommandID": "CMD-1",
+            "CommandState": "UPDATE",
+            "CapabilityID": { "cap": "CapabilityID" },
+            "Heading": 270
+          }
+        }
+      ],
+      "target": "past"
+    },
+    {
+      "from": "past",
+      "trigger": { "messageType": "MA_PositionReportDetailedMT" },
+      "guard": { "field": "Longitude", "op": "<=", "value": -1900 },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "MA_FlightCommandMT",
+          "fields": {
+            "CommandID": "CMD-1",
+            "CommandState": "UPDATE",
+            "CapabilityID": { "cap": "CapabilityID" },
+            "Heading": 0
+          }
+        }
+      ],
+      "target": "approach"
+    }
+  ]
+}

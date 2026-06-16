@@ -150,8 +150,20 @@ the XSD: `INVALID_CURVE`, `INVALID_WAYPOINT`, `PERFORMANCE_LIMIT_EXCEEDED`,
 > brain certified across the AX-01/02/03 fleet (the portability lesson the standalone
 > 4.1 used to carry is now absorbed here).
 >
-> **Added by Phase 2–3:** #5/#6/#12 again for 2.2 (hand-flown no-fly avoidance) and
-> 1.6 (Bingo); #17 (flat fuel + linear burn + endurance reserve, 1.6).
+18. **Collision avoidance is a fly-away plus a fault (level 4.2).** Real
+    `MA_SubsystemFaultType` carries `FaultState`/`ComponentID` and FA's avoidance is a
+    full maneuver against tracked traffic. The game prunes `MA_FaultMT` to
+    `FaultID`/`Severity`/`FaultDescription`/`CapabilityID` and models the interrupt as:
+    when the commanded vector would enter a threat within a fixed per-body lookahead,
+    FA raises one CAUTION fault, overrides the target to fly directly away from the
+    zone, and rejects any re-issued vector still entering a threat
+    (`VIOLATION_AIR_TRAFFIC`) until MA commands a clear one. Threats are circles in the
+    2D world (lie #6); pop-ups and motion are `spawn-threat` events.
+
+> **Added by Phase 2–4:** #5/#6/#12 again for 2.2 (hand-flown no-fly avoidance), 1.6
+> (Bingo), 4.2 (The Flinch) and 4.3 (Degraded); #17 (flat fuel + U-curve burn +
+> endurance reserve, 1.6); #18 (collision interrupt fly-away + MA_FaultMT, 4.2). 4.3
+> exercises #14 (the envelope is live — re-read the re-advertised MA_FlightCapabilityMT).
 
 ## 4. Honesty mechanisms
 

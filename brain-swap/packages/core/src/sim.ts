@@ -11,8 +11,8 @@
 // Same scenario ⇒ identical message log, scores, and replay (CLAUDE.md rule #3).
 import { enqueueAll, takeDue } from "./bus.ts";
 import { reactToMessage } from "./brain/interpreter.ts";
-import { faAdvanceApprovals, faHandleInbound, faPublish } from "./fa/engine.ts";
-import { applyEvents } from "./level/events.ts";
+import { faAdvanceApprovals, faCollisionCheck, faHandleInbound, faPublish } from "./fa/engine.ts";
+import { advanceThreats, applyEvents } from "./level/events.ts";
 import { evaluateWin } from "./level/runtime.ts";
 import { DELIVERED, type Message, type MessageLogEntry, msg } from "./types.ts";
 import { integrate } from "./vehicle/pointmass.ts";
@@ -72,7 +72,7 @@ export function step(world: World): World {
   for (const q of taken.due) {
     const m = q.message;
     if (m.to === "FA") {
-      const res = faHandleInbound(body, fa, m, dynamicEnvelope, vehicle);
+      const res = faHandleInbound(body, fa, m, dynamicEnvelope, vehicle, threats);
       fa = res.fa;
       if (res.targetUpdate !== undefined) vehicle = { ...vehicle, target: res.targetUpdate };
       bus = enqueueAll(bus, res.outbound, tick);
@@ -92,8 +92,16 @@ export function step(world: World): World {
   fa = pub.fa;
   bus = enqueueAll(bus, pub.outbound, tick);
 
-  // Phase D — integrate the vehicle one tick (burns fuel on fuel-bearing bodies).
+  // Phase C′ — collision-avoidance interrupt (CAUTION fault + fly-away override).
+  const col = faCollisionCheck(body, fa, vehicle, threats);
+  fa = col.fa;
+  if (col.targetOverride !== undefined) vehicle = { ...vehicle, target: col.targetOverride };
+  bus = enqueueAll(bus, col.outbound, tick);
+
+  // Phase D — integrate the vehicle one tick (burns fuel on fuel-bearing bodies);
+  // advance any moving threats by their velocity.
   vehicle = integrate(vehicle, body.flight, body.fuel);
+  threats = advanceThreats(threats);
 
   // Phase E — level win/fail.
   let outcome: Outcome = world.outcome;

@@ -1,0 +1,47 @@
+{
+  "id": "naive-4.2",
+  "_doc": "Bait brain (teaching artifact, docs/02): commands the direct heading and never reacts to the fault. FA takes the aircraft and holds it clear of the pop-up threat; with no clear vector ever commanded, the vehicle is flown off and never reaches the station — the run times out. Ignoring the interrupt is not a strategy.",
+  "initial": "await-capability",
+  "states": ["await-capability", "awaiting-approval", "confirming-control", "cruising"],
+  "transitions": [
+    {
+      "from": "await-capability",
+      "trigger": { "messageType": "MA_FlightCapabilityStatusMT" },
+      "guard": { "field": "Availability", "op": "==", "value": "AVAILABLE" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "MA_ControlRequestMT",
+          "fields": { "RequestType": "ACQUIRE", "CapabilityID": { "cap": "CapabilityID" } }
+        }
+      ],
+      "target": "awaiting-approval"
+    },
+    {
+      "from": "awaiting-approval",
+      "trigger": { "messageType": "MA_ControlRequestStatusMT" },
+      "guard": { "field": "ApprovalRequestProcessingState", "op": "==", "value": "APPROVED" },
+      "target": "confirming-control"
+    },
+    {
+      "from": "confirming-control",
+      "trigger": { "messageType": "ControlStatusMT" },
+      "guard": { "field": "SecondaryController", "op": "==", "value": "MA" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "MA_FlightCommandMT",
+          "fields": {
+            "CommandID": "CMD-1",
+            "CommandState": "NEW",
+            "CapabilityID": { "cap": "CapabilityID" },
+            "Heading": 270,
+            "Altitude": 3000,
+            "Speed": 50
+          }
+        }
+      ],
+      "target": "cruising"
+    }
+  ]
+}
