@@ -1,0 +1,65 @@
+{
+  "id": "ref-2.2",
+  "_doc": "Dog-leg: handshake, then NEW heading 270 (west) crawling at 25; past the fence's longitude, a Direction-only UPDATE turns south (180) and the vehicle crawls down through the station. Two flight commands; no point ever enters the avoid circle.",
+  "initial": "await-capability",
+  "states": ["await-capability", "awaiting-approval", "confirming-control", "leg-west", "leg-south"],
+  "transitions": [
+    {
+      "from": "await-capability",
+      "trigger": { "messageType": "MA_FlightCapabilityStatusMT" },
+      "guard": { "field": "Availability", "op": "==", "value": "AVAILABLE" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "MA_ControlRequestMT",
+          "fields": { "RequestType": "ACQUIRE", "CapabilityID": { "cap": "CapabilityID" } }
+        }
+      ],
+      "target": "awaiting-approval"
+    },
+    {
+      "from": "awaiting-approval",
+      "trigger": { "messageType": "MA_ControlRequestStatusMT" },
+      "guard": { "field": "ApprovalRequestProcessingState", "op": "==", "value": "APPROVED" },
+      "target": "confirming-control"
+    },
+    {
+      "from": "confirming-control",
+      "trigger": { "messageType": "ControlStatusMT" },
+      "guard": { "field": "SecondaryController", "op": "==", "value": "MA" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "MA_FlightCommandMT",
+          "fields": {
+            "CommandID": "CMD-1",
+            "CommandState": "NEW",
+            "CapabilityID": { "cap": "CapabilityID" },
+            "Heading": 270,
+            "Altitude": 3000,
+            "Speed": 25
+          }
+        }
+      ],
+      "target": "leg-west"
+    },
+    {
+      "from": "leg-west",
+      "trigger": { "messageType": "MA_PositionReportDetailedMT" },
+      "guard": { "field": "Longitude", "op": "<=", "value": -360 },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "MA_FlightCommandMT",
+          "fields": {
+            "CommandID": "CMD-1",
+            "CommandState": "UPDATE",
+            "CapabilityID": { "cap": "CapabilityID" },
+            "Heading": 180
+          }
+        }
+      ],
+      "target": "leg-south"
+    }
+  ]
+}

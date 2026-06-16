@@ -3,9 +3,12 @@
 //   • reach-hold        — be in the zone & altitude band for holdTicks ticks (1.2/1.3/4.5).
 //   • hold-control      — be the secondary controller of the capability for holdTicks ticks (1.1).
 //   • waypoint-sequence — pass each waypoint in order; hold the final one (1.4).
+// Orthogonal to the objective: entering any `level.avoid` circle or event-spawned
+// `World.threats` zone fails the run (breach-check below the kind switch).
+import { type ActiveThreat } from "./events.ts";
 import { isSecondaryController, type FaState } from "../fa/engine.ts";
 import { distance, type VehicleState } from "../vehicle/pointmass.ts";
-import type { LevelDef, Waypoint } from "./types.ts";
+import type { LevelDef, Waypoint, Zone } from "./types.ts";
 
 export interface WinEvaluation {
   /** Whether the terminal win predicate holds this tick. */
@@ -16,6 +19,8 @@ export interface WinEvaluation {
   readonly waypointIndex: number;
   /** Whether the objective is now met. */
   readonly won: boolean;
+  /** Whether the vehicle has breached a no-fly / threat zone this tick (run fails). */
+  readonly failed: boolean;
 }
 
 /** Objective-progress carried in the World between ticks. */
@@ -48,23 +53,31 @@ export function predicateHolds(level: LevelDef, vehicle: VehicleState): boolean 
   return inZoneAtAltitude(vehicle, o.zone, o.altitude, o.altitudeTolerance);
 }
 
+/** True if the vehicle is inside any no-fly / threat circle (breach = run fails). */
+function breached(vehicle: VehicleState, level: LevelDef, threats: readonly ActiveThreat[]): boolean {
+  const zones: Zone[] = [...(level.avoid ?? []), ...threats.map((t) => t.zone)];
+  return zones.some((z) => distance(vehicle.x, vehicle.y, z.x, z.y) <= z.radius);
+}
+
 export function evaluateWin(
   level: LevelDef,
   vehicle: VehicleState,
   fa: FaState,
   progress: Progress,
+  threats: readonly ActiveThreat[] = [],
 ): WinEvaluation {
+  const failed = breached(vehicle, level, threats);
   const o = level.objective;
   switch (o.kind) {
     case "reach-hold": {
       const satisfied = inZoneAtAltitude(vehicle, o.zone, o.altitude, o.altitudeTolerance);
       const holdTicks = satisfied ? progress.holdTicks + 1 : 0;
-      return { satisfied, holdTicks, waypointIndex: progress.waypointIndex, won: holdTicks >= o.holdTicks };
+      return { satisfied, holdTicks, waypointIndex: progress.waypointIndex, won: holdTicks >= o.holdTicks, failed };
     }
     case "hold-control": {
       const satisfied = isSecondaryController(fa, level.capabilityId);
       const holdTicks = satisfied ? progress.holdTicks + 1 : 0;
-      return { satisfied, holdTicks, waypointIndex: progress.waypointIndex, won: holdTicks >= o.holdTicks };
+      return { satisfied, holdTicks, waypointIndex: progress.waypointIndex, won: holdTicks >= o.holdTicks, failed };
     }
     case "waypoint-sequence": {
       let waypointIndex = progress.waypointIndex;
@@ -76,7 +89,7 @@ export function evaluateWin(
       const onFinal = waypointIndex === last;
       const satisfied = onFinal && inWaypoint(vehicle, o.waypoints[last]!);
       const holdTicks = satisfied ? progress.holdTicks + 1 : 0;
-      return { satisfied, holdTicks, waypointIndex, won: holdTicks >= o.holdTicks };
+      return { satisfied, holdTicks, waypointIndex, won: holdTicks >= o.holdTicks, failed };
     }
   }
 }

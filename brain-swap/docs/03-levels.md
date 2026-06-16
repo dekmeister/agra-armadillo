@@ -22,9 +22,10 @@ Bodies introduced along the way (performance profiles are level data):
 > three metrics (Ticks / Bus Traffic / Rejections — Brain Size dropped).
 
 Implemented and golden-tested (`packages/levels`): **1.2** (MVP), plus the
-post-MVP batch **1.1, 1.3, 1.4, 4.5**. (Standalone **4.1** was built then removed
-in the Phase-0 streamline — its portability lesson is now owned by 4.5, which
-already flies one locked brain across the whole fleet.) Bodies built: **AX-01 "Mule"**,
+post-MVP batch **1.1, 1.3, 1.4, 4.5**, and the avoidance level **2.2** (Phase 2).
+(Standalone **4.1** was built then removed in the Phase-0 streamline — its
+portability lesson is now owned by 4.5, which already flies one locked brain across
+the whole fleet.) Bodies built: **AX-01 "Mule"**,
 **AX-02 "Heron"** (`approvalLatencyTicks 3`, ceiling 8000, `maxAirspeed 50`,
 slow turn), **AX-03 "Ferret"** (agile `maxTurnRateDeg 10`, narrow altitude band
 1000–10000, higher stall `minAirspeed 30`). Everything else below is design, not
@@ -40,6 +41,11 @@ The built versions are deliberately simplified against the design copy (see
 - **1.4** is flown by *position-threshold* steering (Direction-only `UPDATE` when
   a position-report coordinate crosses a corner), not FA-managed timed legs; the
   waypoint zones sit on the straight legs (no brain timer yet).
+- **2.2** is a *hand-flown* avoidance level (`LevelDef.avoid` no-fly circle +
+  world-state breach → `failed`), not the design's route-plan geozones / `Validate
+  Route Plan`. The lesson (avoidance is world-state; FA flies you into the fence if
+  commanded) is intact: the reference dog-legs around the circle with a Direction-only
+  `UPDATE`; the naive straight-line brain breaches and fails with no FA rejection.
 - **4.5** is graded headless (worst-of-three via the test harness); no in-game
   score-screen UI yet. It owns the portability lesson outright: the locked
   profile-driven brain (reads `cap.MaxAltitude`/`MaxAirspeed`/`MinAirspeed`) ports
@@ -96,11 +102,16 @@ The built versions are deliberately simplified against the design copy (see
   Skipping or reordering any step fails with the real status semantics. This level
   is unapologetically the route-plan state machine, and it becomes the player's
   first big reusable interaction block.
-- **2.2 Threading the Fence.** Build the route's waypoints yourself around
+- **2.2 Threading the Fence. [Built]** Build the route's waypoints yourself around
   geozones. Lazy straight line → `VIOLATION_GEOFENCE` (with the offending segment
   identified, per `RouteValidationInvalidPathType`). Optional pre-check via
   Validate Route Plan (`RoutePlanValidationCommandMT`) — costs messages, saves
-  rejections; the metrics trade off against each other.
+  rejections; the metrics trade off against each other. *(Built as a hand-flown
+  HSA avoidance level: a `LevelDef.avoid` no-fly circle on the direct line; entering
+  it is a world-state breach → `failed` (no geofence rejection). The reference brain
+  dog-legs with a Direction-only `UPDATE`; the naive straight-line brain breaches.
+  Route-plan geozones / `Validate Route Plan` are not built — they belong with the
+  Phase-5 route-upload world.)*
 - **2.3 On Station.** Loiter on a fix: Racetrack with the real defaults (right
   turns; 60 s legs at/below 14 000 ft MSL, 90 s above). Par requires letting the
   defaults work for you instead of over-specifying. Teaches loiter types +

@@ -22,6 +22,11 @@ function objectiveZones(level: LevelDef): readonly Zone[] {
   return [];
 }
 
+/** No-fly / threat circles to draw: the level's static `avoid` plus any live threats. */
+function avoidZones(level: LevelDef, world: World): readonly Zone[] {
+  return [...(level.avoid ?? []), ...world.threats.map((t) => t.zone)];
+}
+
 function worldBounds(
   level: LevelDef,
   startX: number,
@@ -32,7 +37,9 @@ function worldBounds(
   const margin = 250;
   const xs = [startX, vehX];
   const ys = [startY, vehY];
-  for (const z of objectiveZones(level)) {
+  // Frame objective zones and the level's static no-fly circles (live threats are
+  // transient and not framed, so the camera stays steady as they come and go).
+  for (const z of [...objectiveZones(level), ...(level.avoid ?? [])]) {
     xs.push(z.x - z.radius, z.x + z.radius);
     ys.push(z.y - z.radius, z.y + z.radius);
   }
@@ -121,6 +128,13 @@ export function TacticalMapPanel() {
       g.moveTo(sx(b.minX), sy(y)).lineTo(sx(b.maxX), sy(y));
     }
     g.stroke({ width: 1, color: colorNum(color.line), alpha: 0.35 });
+
+    // no-fly / threat zone(s) (dashed red circle, faint red fill) — drawn under the
+    // objective so the green stays legible where they overlap.
+    for (const z of avoidZones(level, world)) {
+      g.circle(sx(z.x), sy(z.y), z.radius * cam.scale).fill({ color: colorNum(color.warn), alpha: 0.08 });
+      dashedCircle(g, sx(z.x), sy(z.y), z.radius * cam.scale, colorNum(color.warn));
+    }
 
     // objective zone(s) (dashed green circle) + center cross
     for (const z of objectiveZones(level)) {
@@ -316,6 +330,11 @@ export function TacticalMapPanel() {
     <Panel title="TACTICAL" titleAccent="MAP" className="grow">
       <div className="map-wrap">
         <div className="map-canvas" ref={hostRef} />
+        {world.outcome !== "running" && (
+          <div className={`map-verdict ${world.outcome === "won" ? "pass" : "fail"}`}>
+            {world.outcome === "won" ? "PASS" : "FAIL"}
+          </div>
+        )}
         <button className="btn sm map-centre" onClick={centreView} title="Centre on the aircraft">
           ✛ Centre
         </button>

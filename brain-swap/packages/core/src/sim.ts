@@ -100,10 +100,12 @@ export function step(world: World): World {
   let holdTicks = world.holdTicks;
   let waypointIndex = world.waypointIndex;
   if (scenario.level) {
-    const wc = evaluateWin(scenario.level, vehicle, fa, { holdTicks, waypointIndex });
+    const wc = evaluateWin(scenario.level, vehicle, fa, { holdTicks, waypointIndex }, threats);
     holdTicks = wc.holdTicks;
     waypointIndex = wc.waypointIndex;
-    if (wc.won) outcome = "won";
+    // A breach fails the run immediately, ahead of a same-tick win or the budget.
+    if (wc.failed) outcome = "failed";
+    else if (wc.won) outcome = "won";
     else if (tick >= scenario.level.maxTicks) outcome = "failed";
   }
 

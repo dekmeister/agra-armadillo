@@ -41,7 +41,7 @@ export const WORLDS: WorldEntry[] = [
     name: "Waypoint Following",
     levels: [
       { id: "2.1", name: "The Upload Liturgy" },
-      { id: "2.2", name: "Threading the Fence" },
+      { id: "2.2", name: "Threading the Fence", playable: true },
       { id: "2.3", name: "On Station" },
       { id: "2.4", name: "Read-Only" },
       { id: "2.5", name: "Retask" },

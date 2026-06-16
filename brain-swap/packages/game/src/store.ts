@@ -126,7 +126,7 @@ export const useStore = create<StoreState>((set, get) => {
     composing: false,
 
     selectedLogIndex: null,
-    showPeriodic: true,
+    showPeriodic: false,
     bestScores: loadBest(),
 
     world: () => {

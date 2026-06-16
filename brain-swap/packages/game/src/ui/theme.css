@@ -203,6 +203,12 @@ button { font: inherit; }
 .map-coords { position: absolute; left: 8px; top: 8px; font-family: var(--mono); font-size: 11.5px; color: var(--k-olive); background: rgba(7,10,7,.7); padding: 2px 6px; pointer-events: none; letter-spacing: .06em; }
 .map-fit { position: absolute; right: 52px; top: 8px; z-index: 4; }
 .map-centre { position: absolute; right: 108px; top: 8px; z-index: 4; }
+.map-verdict { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 5; pointer-events: none;
+  font-family: var(--stencil); font-size: 30px; letter-spacing: .2em; text-transform: uppercase;
+  padding: 4px 26px; border: 2px solid currentColor; background: rgba(7,10,7,.8);
+  color: currentColor; text-shadow: 0 0 10px currentColor; }
+.map-verdict.pass { color: var(--k-ok); }
+.map-verdict.fail { color: var(--k-warn); }
 .alt-tape { position: absolute; right: 0; top: 0; bottom: 0; width: 44px; border-left: 1px solid var(--k-line); background: rgba(7,10,7,.6); }
 .alt-tape .atick { position: absolute; right: 4px; font-size: 10px; color: var(--k-dim); transform: translateY(-50%); }
 .alt-tape .amark { position: absolute; right: 0; width: 14px; height: 2px; transform: translateY(-50%); }

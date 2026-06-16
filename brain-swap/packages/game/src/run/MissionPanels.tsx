@@ -12,6 +12,7 @@ interface CollapseProps {
 export function MissionCard({ collapsed, onToggleCollapse }: CollapseProps) {
   const level = useStore((s) => s.level);
   const o = level.objective;
+  const avoidCount = level.avoid?.length ?? 0;
   return (
     <Panel
       title="MISSION"
@@ -47,6 +48,12 @@ export function MissionCard({ collapsed, onToggleCollapse }: CollapseProps) {
         ) : (
           <div className="win">
             WIN ▸ pass {o.waypoints.length} waypoints in order, then hold for {o.holdTicks} ticks.
+          </div>
+        )}
+        {avoidCount > 0 && (
+          <div className="win k-warn">
+            CAUTION ▸ stay clear of {avoidCount} no-fly zone{avoidCount > 1 ? "s" : ""} — entering one
+            ends the mission.
           </div>
         )}
       </div>

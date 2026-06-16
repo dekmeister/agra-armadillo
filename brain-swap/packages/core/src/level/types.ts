@@ -12,6 +12,12 @@ export interface Zone {
   readonly radius: number;
 }
 
+/** A no-fly / threat circle. Entering one fails the run; orthogonal to the
+ *  objective kind (a level may pair `avoid` with any objective). */
+export interface AvoidZone extends Zone {
+  readonly id: string;
+}
+
 /** One leg of a waypoint sequence: a zone plus an optional altitude band. */
 export interface Waypoint {
   readonly zone: Zone;
@@ -89,6 +95,9 @@ export interface LevelDef {
   readonly availableMessages?: readonly MessageTypeName[];
   /** Hard tick budget; the sim fails the run if exceeded (keeps golden runs finite). */
   readonly maxTicks: number;
+  /** No-fly circles; entering any one fails the run. Composes with any objective and
+   *  with event-spawned `World.threats` (both are breach-checked the same way). */
+  readonly avoid?: readonly AvoidZone[];
   /** Deterministic scheduled mid-mission changes (envelope degrade, capability pull,
    *  threat spawn). Each fires in the step advancing the world to its `tick`. */
   readonly events?: readonly MissionEvent[];
