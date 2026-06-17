@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import { approach, initVehicle, integrate, normalizeDeg, turnToward } from "@brain-swap/core";
+import { describe, expect, it } from "vitest";
 import { testBody } from "./fixtures.ts";
 
 describe("point-mass kinematics", () => {

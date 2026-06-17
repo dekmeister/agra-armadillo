@@ -1,11 +1,15 @@
 // ChromeBar (58px): MissionBlock | LiveTransport. Realtime transport: Play/Pause · Restart ·
 // Step · Compose · speed · tick readout. (No EDIT/RUN switch — there is no brain to edit.)
 import { useState } from "react";
-import { useStore, type Speed } from "../store.ts";
 import { FidelityNotesModal } from "../meta/FidelityNotesPanel.tsx";
 import { notesFor } from "../meta/fidelityNotes.ts";
+import { type Speed, useStore } from "../store.ts";
 
-const SPEEDS: [Speed, string][] = [[1, "1"], [2, "2"], [8, "3"]];
+const SPEEDS: [Speed, string][] = [
+  [1, "1"],
+  [2, "2"],
+  [8, "3"],
+];
 
 export function ChromeBar() {
   const level = useStore((s) => s.level);
@@ -61,7 +65,12 @@ export function ChromeBar() {
           </button>
           <div className="seg">
             {SPEEDS.map(([s, key]) => (
-              <button key={s} className={speed === s ? "on" : ""} onClick={() => setSpeed(s)} title={`${s}× speed [${key}]`}>
+              <button
+                key={s}
+                className={speed === s ? "on" : ""}
+                onClick={() => setSpeed(s)}
+                title={`${s}× speed [${key}]`}
+              >
                 {s}×
               </button>
             ))}

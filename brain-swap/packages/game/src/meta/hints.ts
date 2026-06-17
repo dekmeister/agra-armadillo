@@ -28,8 +28,7 @@ export function hintFor(kind: BadgeKind, reason?: string): Hint | null {
     return {
       severity: "info",
       title: "Why was this ignored?",
-      body:
-        "FA always retains control and only listens to its SecondaryController. You sent this command before holding secondary control of the capability, so FA silently dropped it (it isn't listening — there is no NACK). Acquire control first: send MA_ControlRequestMT with RequestType ACQUIRE, wait for MA_ControlRequestStatusMT APPROVED, and confirm you appear as SecondaryController in the next ControlStatusMT.",
+      body: "FA always retains control and only listens to its SecondaryController. You sent this command before holding secondary control of the capability, so FA silently dropped it (it isn't listening — there is no NACK). Acquire control first: send MA_ControlRequestMT with RequestType ACQUIRE, wait for MA_ControlRequestStatusMT APPROVED, and confirm you appear as SecondaryController in the next ControlStatusMT.",
     };
   }
   if (kind === "rejected") {

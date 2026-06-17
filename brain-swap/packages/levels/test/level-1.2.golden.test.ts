@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { initWorld, type MessageLogEntry, run, scoreWorld, type World } from "@brain-swap/core";
 import { level12, level12ReferenceBrain, scenarioFor } from "@brain-swap/levels";
+import { describe, expect, it } from "vitest";
 
 // Build-order step 4, the definition of done: the hand-written reference brain
 // solves level 1.2 in a deterministic, byte-stable golden run — the level is
@@ -69,7 +69,11 @@ describe("level 1.2 golden run (reference brain)", () => {
       .log.filter((e) => e.from === "MA")
       .map((e) => ({ tick: e.tick, type: e.type, payload: e.payload }));
     expect(sends).toEqual([
-      { tick: 2, type: "MA_ControlRequestMT", payload: { RequestType: "ACQUIRE", CapabilityID: "MULE-01" } },
+      {
+        tick: 2,
+        type: "MA_ControlRequestMT",
+        payload: { RequestType: "ACQUIRE", CapabilityID: "MULE-01" },
+      },
       {
         tick: 4,
         type: "MA_FlightCommandMT",

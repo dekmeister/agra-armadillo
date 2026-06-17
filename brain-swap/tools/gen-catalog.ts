@@ -7,8 +7,8 @@
 // Output is committed; run `npm run gen:catalog` to regenerate after editing the YAML.
 import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { loadCatalog, REPO_ROOT } from "./catalog-source.ts";
 import type { CatalogField, CatalogMessage } from "./catalog-source.ts";
+import { loadCatalog, REPO_ROOT } from "./catalog-source.ts";
 
 const OUT = resolve(REPO_ROOT, "packages/core/src/messages/generated.ts");
 

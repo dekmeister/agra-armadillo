@@ -1,16 +1,15 @@
-import { describe, expect, it } from "vitest";
 import {
   type Brain,
   extractScript,
   initWorld,
   type LevelDef,
-  makeScenario,
   type MessageLogEntry,
+  makeScenario,
   replayScript,
   run,
   type Scenario,
-  scoreWorld,
   type ScriptedInput,
+  scoreWorld,
   type World,
 } from "@brain-swap/core";
 import {
@@ -36,6 +35,7 @@ import {
   level45LockedBrain,
   multiBodyScenarios,
 } from "@brain-swap/levels";
+import { describe, expect, it } from "vitest";
 
 // Realtime mode: the player *is* the MA brain — they inject MA→FA messages by
 // hand instead of building a state machine. A session is a recorded input script
@@ -75,7 +75,10 @@ const maSends = (log: readonly MessageLogEntry[]) =>
     .map((e) => ({ tick: e.tick, type: e.type, payload: e.payload }));
 
 /** Run the reference brain headless and derive the realtime input script from it. */
-function deriveScript(scenario: Scenario, maxSteps: number): { brainRun: World; script: ScriptedInput[] } {
+function deriveScript(
+  scenario: Scenario,
+  maxSteps: number,
+): { brainRun: World; script: ScriptedInput[] } {
   const brainRun = run(initWorld(scenario), maxSteps);
   return { brainRun, script: extractScript([brainRun]) };
 }

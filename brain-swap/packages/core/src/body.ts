@@ -94,6 +94,9 @@ export interface BodyProfile {
   readonly collisionLookaheadTicks?: number;
 }
 
-export function findCapability(body: BodyProfile, capabilityId: string): BodyCapability | undefined {
+export function findCapability(
+  body: BodyProfile,
+  capabilityId: string,
+): BodyCapability | undefined {
   return body.capabilities.find((c) => c.id === capabilityId);
 }

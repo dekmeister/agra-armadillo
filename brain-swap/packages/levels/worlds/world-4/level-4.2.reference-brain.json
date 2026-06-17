@@ -2,7 +2,15 @@
   "id": "ref-4.2",
   "_doc": "Yields to FA's collision interrupt: cruise west; when the threat pops up and FA raises MA_FaultMT, dog-leg south to clear the zone, run west past it, then cut back northwest to the station and hold. Each leg is a vector clear of the threat, so FA hands control back.",
   "initial": "await-capability",
-  "states": ["await-capability", "awaiting-approval", "confirming-control", "cruising", "south", "past", "approach"],
+  "states": [
+    "await-capability",
+    "awaiting-approval",
+    "confirming-control",
+    "cruising",
+    "south",
+    "past",
+    "approach"
+  ],
   "transitions": [
     {
       "from": "await-capability",

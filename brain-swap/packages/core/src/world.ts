@@ -2,10 +2,11 @@
 // step(world): World on this state (docs/04). A scenario bundles the static config
 // (body + optional brain + optional level) that is carried along unchanged so step
 // stays a pure single-argument function.
-import { type BusState, emptyBus, enqueueAll } from "./bus.ts";
+
 import type { BodyProfile, CapabilityProfile } from "./body.ts";
-import { faBootMessages, type FaState, initFaState } from "./fa/engine.ts";
 import type { Brain } from "./brain/schema.ts";
+import { type BusState, emptyBus, enqueueAll } from "./bus.ts";
+import { type FaState, faBootMessages, initFaState } from "./fa/engine.ts";
 import type { ActiveThreat } from "./level/events.ts";
 import type { LevelDef } from "./level/types.ts";
 import type { MessageLogEntry } from "./types.ts";
@@ -59,14 +60,20 @@ export function initWorld(scenario: Scenario): World {
     if (e.kind === "capability-available") unavailable[e.capabilityId] = "TEMPORARILY_UNAVAILABLE";
   }
   const bus = enqueueAll(emptyBus(), faBootMessages(scenario.body, unavailable), 0);
-  const fa = Object.keys(unavailable).length > 0 ? { ...initFaState(), unavailableCaps: unavailable } : initFaState();
+  const fa =
+    Object.keys(unavailable).length > 0
+      ? { ...initFaState(), unavailableCaps: unavailable }
+      : initFaState();
   return {
     scenario,
     tick: 0,
     bus,
     log: [],
     fa,
-    vehicle: initVehicle(scenario.level?.start ?? scenario.body.start, scenario.body.fuel?.capacity),
+    vehicle: initVehicle(
+      scenario.level?.start ?? scenario.body.start,
+      scenario.body.fuel?.capacity,
+    ),
     ma: { brainState: scenario.brain ? scenario.brain.initial : null },
     outcome: "running",
     holdTicks: 0,

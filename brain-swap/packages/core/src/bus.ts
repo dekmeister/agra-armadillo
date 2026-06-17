@@ -24,7 +24,11 @@ export function enqueue(bus: BusState, message: Message, currentTick: number): B
 }
 
 /** Enqueue several messages in order, preserving FIFO sequence. */
-export function enqueueAll(bus: BusState, messages: readonly Message[], currentTick: number): BusState {
+export function enqueueAll(
+  bus: BusState,
+  messages: readonly Message[],
+  currentTick: number,
+): BusState {
   let next = bus;
   for (const m of messages) next = enqueue(next, m, currentTick);
   return next;

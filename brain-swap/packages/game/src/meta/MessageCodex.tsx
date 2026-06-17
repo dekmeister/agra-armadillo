@@ -4,8 +4,8 @@
 // messages without leaving the game.
 import {
   catalogEntry,
-  MESSAGE_TYPE_NAMES,
   type Direction,
+  MESSAGE_TYPE_NAMES,
   type MessageTypeName,
 } from "@brain-swap/core";
 import { MessageReference } from "./MessageReference.tsx";
@@ -32,7 +32,8 @@ export function MessageCodex() {
             <div>
               <span className="k">DIRECTION </span>
               <span className="v">
-                <span className="k-cyan">MA→FA</span> = you send · <span className="k-amber">FA→MA</span> = you receive
+                <span className="k-cyan">MA→FA</span> = you send ·{" "}
+                <span className="k-amber">FA→MA</span> = you receive
               </span>
             </div>
             <div>
@@ -57,7 +58,10 @@ export function MessageCodex() {
                     key={n}
                     href={`#msg-${n}`}
                     className="codex-idx-link"
-                    onClick={(e) => { e.preventDefault(); scrollTo(n); }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      scrollTo(n);
+                    }}
                   >
                     {catalogEntry(n).name}
                   </a>
@@ -68,7 +72,9 @@ export function MessageCodex() {
         </nav>
 
         <h2>MESSAGES DETAIL</h2>
-        {MESSAGE_TYPE_NAMES.map((name) => <MessageReference key={name} name={name} />)}
+        {MESSAGE_TYPE_NAMES.map((name) => (
+          <MessageReference key={name} name={name} />
+        ))}
       </div>
     </div>
   );

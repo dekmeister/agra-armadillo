@@ -5,24 +5,25 @@
 // reproduces the run exactly (docs/04, CLAUDE.md rule #3). The store owns: the growing
 // timeline (World[]), the playhead/transport, the recorded script + pending (composed
 // but not-yet-injected) inputs, the composer flag, selections, and persisted best scores.
-import { create } from "zustand";
+
 import {
   type BodyProfile,
   extractScript,
-  injectMA,
   initWorld,
+  injectMA,
   type LevelDef,
-  makeScenario,
   type Message,
+  makeScenario,
   run,
-  type Score,
   type Scenario,
-  scoreWorld,
+  type Score,
   type ScriptedInput,
+  scoreWorld,
   step,
   type World,
 } from "@brain-swap/core";
 import { bodyById, levelById } from "@brain-swap/levels";
+import { create } from "zustand";
 import { isTutorialLevel } from "./meta/levelCatalog.ts";
 import { finalFrame } from "./sim/timeline.ts";
 
@@ -136,7 +137,9 @@ function deriveDemoScript(levelId: string): ScriptedInput[] {
 export const useStore = create<StoreState>((set, get) => {
   const initialLevel = levelById(DEFAULT_LEVEL_ID)!.level;
   const initialBody = bodyById(initialLevel.body);
-  const initialTimeline = [initWorld(makeScenario(initialBody, { brain: null, level: initialLevel }))];
+  const initialTimeline = [
+    initWorld(makeScenario(initialBody, { brain: null, level: initialLevel })),
+  ];
 
   return {
     view: "console",
@@ -226,7 +229,7 @@ export const useStore = create<StoreState>((set, get) => {
     advanceLive: (nTicks) => {
       const state = get();
       if (state.composing) return;
-      let frames = state.timeline;
+      const frames = state.timeline;
       let w = frames[frames.length - 1]!;
       if (w.outcome !== "running") {
         if (state.running) set({ running: false });

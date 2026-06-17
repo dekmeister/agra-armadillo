@@ -14,9 +14,9 @@
 // The lesson TEXT is the level's authored `teaches` (surfaced here for the first time),
 // with a per-kind fallback. Authored per-level events/overrides are the documented seam.
 import { scoreWorld } from "../score.ts";
-import type { Outcome, World } from "../world.ts";
-import type { MessageLogEntry } from "../types.ts";
 import type { ScriptedInput } from "../sim.ts";
+import type { MessageLogEntry } from "../types.ts";
+import type { Outcome, World } from "../world.ts";
 import type { LevelDef, Objective } from "./types.ts";
 
 export type EventPolarity = "positive" | "negative" | "neutral";
@@ -85,16 +85,23 @@ const hasIgnored = (log: readonly MessageLogEntry[]): boolean =>
 
 /** An ACQUIRE FA refused — e.g. issued before the capability advertised AVAILABLE (1.1). */
 const hasControlRejection = (log: readonly MessageLogEntry[]): boolean =>
-  log.some((e) => e.type === "MA_ControlRequestStatusMT" && pay(e).ApprovalRequestProcessingState === "REJECTED");
+  log.some(
+    (e) =>
+      e.type === "MA_ControlRequestStatusMT" &&
+      pay(e).ApprovalRequestProcessingState === "REJECTED",
+  );
 
 const hasAccepted = (log: readonly MessageLogEntry[]): boolean =>
-  log.some((e) => e.type === "MA_FlightCommandStatusMT" && pay(e).CommandProcessingState === "ACCEPTED");
+  log.some(
+    (e) => e.type === "MA_FlightCommandStatusMT" && pay(e).CommandProcessingState === "ACCEPTED",
+  );
 
 // `step` collapses three distinct failures into outcome "failed" (sim.ts): a no-fly /
 // threat breach (stops early), running the fuel dry, and hitting maxTicks. Tease them
 // apart so the debrief names the real cause.
 const timedOut = (world: World, level: LevelDef): boolean => world.tick >= level.maxTicks;
-const flamedOut = (world: World): boolean => world.vehicle.fuel !== undefined && world.vehicle.fuel <= 0;
+const flamedOut = (world: World): boolean =>
+  world.vehicle.fuel !== undefined && world.vehicle.fuel <= 0;
 const breached = (world: World, level: LevelDef): boolean =>
   world.outcome === "failed" && !flamedOut(world) && !timedOut(world, level);
 
@@ -123,16 +130,22 @@ function faults(world: World, level: LevelDef): Fault[] {
   const found: Fault[] = [];
 
   if (hasControlRejection(log)) {
-    found.push({ note: "Your ACQUIRE was REJECTED — wait for the capability to advertise AVAILABLE before requesting control." });
+    found.push({
+      note: "Your ACQUIRE was REJECTED — wait for the capability to advertise AVAILABLE before requesting control.",
+    });
   }
   if (hasIgnored(log)) {
-    found.push({ note: "You commanded before holding control — FA ignored it (not the controller)." });
+    found.push({
+      note: "You commanded before holding control — FA ignored it (not the controller).",
+    });
   }
   for (const reason of rejectionReasons(log)) {
     found.push({ note: rejectionNote(reason) });
   }
   if (flamedOut(world)) {
-    found.push({ note: "You ran the tank dry — command a more efficient cruise to make the range." });
+    found.push({
+      note: "You ran the tank dry — command a more efficient cruise to make the range.",
+    });
   } else if (breached(world, level)) {
     found.push({ note: "You flew into a no-fly / threat zone — the run was aborted." });
   }
@@ -225,21 +238,60 @@ function recap(world: World, level: LevelDef): ScoredEvent[] {
     if (e.type === "MA_ControlRequestStatusMT") {
       const state = pay(e).ApprovalRequestProcessingState as string | undefined;
       if (state === "PENDING") {
-        events.push({ id: "control-pending", polarity: "neutral", label: "Control request PENDING", tick: e.tick, points: 0 });
+        events.push({
+          id: "control-pending",
+          polarity: "neutral",
+          label: "Control request PENDING",
+          tick: e.tick,
+          points: 0,
+        });
       } else if (state === "APPROVED") {
-        events.push({ id: "control-approved", polarity: "positive", label: "Control APPROVED", tick: e.tick, points: 0, viRef: "§1.2.2.7" });
+        events.push({
+          id: "control-approved",
+          polarity: "positive",
+          label: "Control APPROVED",
+          tick: e.tick,
+          points: 0,
+          viRef: "§1.2.2.7",
+        });
       } else if (state === "REJECTED" || state === "CANCELED") {
-        events.push({ id: "control-denied", polarity: "negative", label: `Control ${state}`, tick: e.tick, points: 0 });
+        events.push({
+          id: "control-denied",
+          polarity: "negative",
+          label: `Control ${state}`,
+          tick: e.tick,
+          points: 0,
+        });
       }
     } else if (e.type === "MA_FlightCommandStatusMT") {
       const state = pay(e).CommandProcessingState as string | undefined;
       if (state === "ACCEPTED") {
-        events.push({ id: "command-accepted", polarity: "positive", label: "Command ACCEPTED", tick: e.tick, points: 0, viRef: "§1.2.2.2" });
+        events.push({
+          id: "command-accepted",
+          polarity: "positive",
+          label: "Command ACCEPTED",
+          tick: e.tick,
+          points: 0,
+          viRef: "§1.2.2.2",
+        });
       } else if (state === "REJECTED") {
         const reason = pay(e).ValidationResult as string | undefined;
-        events.push({ id: "command-rejected", polarity: "negative", label: "Command REJECTED", detail: reason, tick: e.tick, points: 0 });
+        events.push({
+          id: "command-rejected",
+          polarity: "negative",
+          label: "Command REJECTED",
+          detail: reason,
+          tick: e.tick,
+          points: 0,
+        });
       } else if (state === "CANCELED") {
-        events.push({ id: "command-canceled", polarity: "neutral", label: "Command CANCELED", tick: e.tick, points: 0 });
+        events.push({
+          id: "command-canceled",
+          polarity: "neutral",
+          label: "Command CANCELED",
+          tick: e.tick,
+          points: 0,
+        });
       }
     } else if (e.type === "MA_FaultMT") {
       const sev = pay(e).Severity as string | undefined;
@@ -255,13 +307,37 @@ function recap(world: World, level: LevelDef): ScoredEvent[] {
   }
   // Terminal verdict, naming the real failure cause.
   if (world.outcome === "won") {
-    events.push({ id: "objective-met", polarity: "positive", label: "Objective met", tick: world.tick, points: 0 });
+    events.push({
+      id: "objective-met",
+      polarity: "positive",
+      label: "Objective met",
+      tick: world.tick,
+      points: 0,
+    });
   } else if (flamedOut(world)) {
-    events.push({ id: "run-flameout", polarity: "negative", label: "Flamed out — ran the tank dry", tick: world.tick, points: 0 });
+    events.push({
+      id: "run-flameout",
+      polarity: "negative",
+      label: "Flamed out — ran the tank dry",
+      tick: world.tick,
+      points: 0,
+    });
   } else if (breached(world, level)) {
-    events.push({ id: "run-failed", polarity: "negative", label: "Run aborted — entered a no-fly / threat zone", tick: world.tick, points: 0 });
+    events.push({
+      id: "run-failed",
+      polarity: "negative",
+      label: "Run aborted — entered a no-fly / threat zone",
+      tick: world.tick,
+      points: 0,
+    });
   } else {
-    events.push({ id: "run-timeout", polarity: "negative", label: "Out of time — objective not met", tick: world.tick, points: 0 });
+    events.push({
+      id: "run-timeout",
+      polarity: "negative",
+      label: "Out of time — objective not met",
+      tick: world.tick,
+      points: 0,
+    });
   }
   return events;
 }

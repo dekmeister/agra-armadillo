@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
-import { describe, expect, it } from "vitest";
 import { initWorld, type MessageLogEntry, run, scoreWorld, type World } from "@brain-swap/core";
 import { level43, level43NaiveBrain, level43ReferenceBrain, scenarioFor } from "@brain-swap/levels";
+import { describe, expect, it } from "vitest";
 
 // Level 4.3 "Degraded": mid-mission FA re-advertises a tightened envelope (MinAirspeed
 // 20 -> 30). The reference re-reads MA_FlightCapabilityMT and loiters at the NEW floor
@@ -32,11 +32,22 @@ describe("level 4.3 golden run (reference brain)", () => {
       .log.filter((e) => e.from === "MA")
       .map((e) => ({ tick: e.tick, type: e.type, payload: e.payload }));
     expect(sends).toEqual([
-      { tick: 2, type: "MA_ControlRequestMT", payload: { RequestType: "ACQUIRE", CapabilityID: "MULE-01" } },
+      {
+        tick: 2,
+        type: "MA_ControlRequestMT",
+        payload: { RequestType: "ACQUIRE", CapabilityID: "MULE-01" },
+      },
       {
         tick: 4,
         type: "MA_FlightCommandMT",
-        payload: { CommandID: "CMD-1", CommandState: "NEW", CapabilityID: "MULE-01", Heading: 270, Altitude: 3000, Speed: 60 },
+        payload: {
+          CommandID: "CMD-1",
+          CommandState: "NEW",
+          CapabilityID: "MULE-01",
+          Heading: 270,
+          Altitude: 3000,
+          Speed: 60,
+        },
       },
       {
         tick: 16,
@@ -71,6 +82,8 @@ describe("level 4.3 negative run (naive brain that cached the boot envelope)", (
         (e.payload as { CommandProcessingState?: string }).CommandProcessingState === "REJECTED",
     );
     expect(rejected).toBeDefined();
-    expect((rejected!.payload as { ValidationResult?: string }).ValidationResult).toBe("PERFORMANCE_LIMIT_EXCEEDED");
+    expect((rejected!.payload as { ValidationResult?: string }).ValidationResult).toBe(
+      "PERFORMANCE_LIMIT_EXCEEDED",
+    );
   });
 });

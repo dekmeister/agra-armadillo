@@ -2,7 +2,15 @@
   "id": "ref-1.4",
   "_doc": "Handshake, one NEW command to start the circuit, then a Direction-only UPDATE (Heading field only) at each corner threshold. Steering by position guards on Longitude/Latitude.",
   "initial": "await-capability",
-  "states": ["await-capability", "awaiting-approval", "confirming-control", "leg-w", "leg-s", "leg-e", "arrived"],
+  "states": [
+    "await-capability",
+    "awaiting-approval",
+    "confirming-control",
+    "leg-w",
+    "leg-s",
+    "leg-e",
+    "arrived"
+  ],
   "transitions": [
     {
       "from": "await-capability",

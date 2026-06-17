@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
-import { describe, expect, it } from "vitest";
 import { initWorld, type MessageLogEntry, run, scoreWorld, type World } from "@brain-swap/core";
 import { level22, level22NaiveBrain, level22ReferenceBrain, scenarioFor } from "@brain-swap/levels";
+import { describe, expect, it } from "vitest";
 
 // Level 2.2 "Threading the Fence": reach-hold with a no-fly circle on the direct line.
 // The reference brain dog-legs (west, then a Direction-only UPDATE south) and crawls
@@ -43,16 +43,32 @@ describe("level 2.2 golden run (reference brain)", () => {
       .log.filter((e) => e.from === "MA")
       .map((e) => ({ tick: e.tick, type: e.type, payload: e.payload }));
     expect(sends).toEqual([
-      { tick: 2, type: "MA_ControlRequestMT", payload: { RequestType: "ACQUIRE", CapabilityID: "MULE-01" } },
+      {
+        tick: 2,
+        type: "MA_ControlRequestMT",
+        payload: { RequestType: "ACQUIRE", CapabilityID: "MULE-01" },
+      },
       {
         tick: 4,
         type: "MA_FlightCommandMT",
-        payload: { CommandID: "CMD-1", CommandState: "NEW", CapabilityID: "MULE-01", Heading: 270, Altitude: 3000, Speed: 25 },
+        payload: {
+          CommandID: "CMD-1",
+          CommandState: "NEW",
+          CapabilityID: "MULE-01",
+          Heading: 270,
+          Altitude: 3000,
+          Speed: 25,
+        },
       },
       {
         tick: 18,
         type: "MA_FlightCommandMT",
-        payload: { CommandID: "CMD-1", CommandState: "UPDATE", CapabilityID: "MULE-01", Heading: 180 },
+        payload: {
+          CommandID: "CMD-1",
+          CommandState: "UPDATE",
+          CapabilityID: "MULE-01",
+          Heading: 180,
+        },
       },
     ]);
   });
@@ -73,6 +89,8 @@ describe("level 2.2 negative run (naive straight-line brain)", () => {
     // FA accepted the command — the failure is the breach, not a validation reject.
     expect(w.log.some((e) => e.disposition.kind === "rejected")).toBe(false);
     const cmd = w.log.find((e) => e.type === "MA_FlightCommandStatusMT");
-    expect((cmd?.payload as { CommandProcessingState?: string }).CommandProcessingState).toBe("ACCEPTED");
+    expect((cmd?.payload as { CommandProcessingState?: string }).CommandProcessingState).toBe(
+      "ACCEPTED",
+    );
   });
 });

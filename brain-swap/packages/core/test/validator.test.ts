@@ -1,14 +1,14 @@
-import { describe, expect, it } from "vitest";
 import {
-  type MA_FlightCommandMT,
-  injectMA,
   initWorld,
+  injectMA,
+  type MA_FlightCommandMT,
   makeScenario,
   msg,
   step,
   validateFlightCommand,
   type World,
 } from "@brain-swap/core";
+import { describe, expect, it } from "vitest";
 import { testBody } from "./fixtures.ts";
 
 const command = (over: Partial<MA_FlightCommandMT>): MA_FlightCommandMT => ({
@@ -51,7 +51,10 @@ describe("FA command validator", () => {
 function acquireThenCommand(cmd: MA_FlightCommandMT): World {
   let w = initWorld(makeScenario(testBody));
   w = step(w); // t1: boot delivered
-  w = injectMA(w, msg("MA_ControlRequestMT", "MA", "FA", { RequestType: "ACQUIRE", CapabilityID: "MULE-01" }));
+  w = injectMA(
+    w,
+    msg("MA_ControlRequestMT", "MA", "FA", { RequestType: "ACQUIRE", CapabilityID: "MULE-01" }),
+  );
   w = step(w); // t2: ACQUIRE processed, APPROVED + ControlStatus emitted
   w = step(w); // t3: control granted on MA side
   w = injectMA(w, msg("MA_FlightCommandMT", "MA", "FA", cmd));
@@ -64,7 +67,9 @@ describe("FA validation through the sim", () => {
   it("an ACCEPTED command sets the vehicle target and moves it toward the target", () => {
     let w = acquireThenCommand(command({}));
     const status = w.log.find((e) => e.type === "MA_FlightCommandStatusMT");
-    expect((status?.payload as { CommandProcessingState: string }).CommandProcessingState).toBe("ACCEPTED");
+    expect((status?.payload as { CommandProcessingState: string }).CommandProcessingState).toBe(
+      "ACCEPTED",
+    );
     expect(w.vehicle.target).toEqual({ heading: 270, altitude: 3000, speed: 60 });
 
     const before = w.vehicle.x;
@@ -75,8 +80,12 @@ describe("FA validation through the sim", () => {
   it("an over-ceiling command is REJECTED with the right enum and leaves the vehicle uncommanded", () => {
     const w = acquireThenCommand(command({ Altitude: 20000 }));
     const status = w.log.find((e) => e.type === "MA_FlightCommandStatusMT");
-    expect((status?.payload as { CommandProcessingState: string }).CommandProcessingState).toBe("REJECTED");
-    expect((status?.payload as { ValidationResult: string }).ValidationResult).toBe("PERFORMANCE_LIMIT_EXCEEDED");
+    expect((status?.payload as { CommandProcessingState: string }).CommandProcessingState).toBe(
+      "REJECTED",
+    );
+    expect((status?.payload as { ValidationResult: string }).ValidationResult).toBe(
+      "PERFORMANCE_LIMIT_EXCEEDED",
+    );
     expect(w.vehicle.target).toBeNull();
   });
 });

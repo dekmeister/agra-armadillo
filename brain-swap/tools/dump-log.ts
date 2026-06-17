@@ -40,7 +40,9 @@ function dumpFor(level: any, body: any, brain: any): void {
   for (const e of w.log) {
     process.stdout.write(`"t${e.tick} ${e.from}->${e.to} ${e.type} [${e.disposition.kind}]",\n`);
   }
-  const sends = w.log.filter((e) => e.from === "MA").map((e) => ({ tick: e.tick, type: e.type, payload: e.payload }));
+  const sends = w.log
+    .filter((e) => e.from === "MA")
+    .map((e) => ({ tick: e.tick, type: e.type, payload: e.payload }));
   process.stdout.write(`\nMA sends:\n${JSON.stringify(sends, null, 2)}\n`);
   const v = w.vehicle;
   process.stdout.write(

@@ -2,7 +2,13 @@
 // against the core schemas. Data is authored by hand; these casts are the trust
 // boundary — the fidelity CI polices the catalog, and the golden-run test polices
 // that this data actually composes into a solvable level.
-import { type BodyProfile, type Brain, type LevelDef, makeScenario, type Scenario } from "@brain-swap/core";
+import {
+  type BodyProfile,
+  type Brain,
+  type LevelDef,
+  makeScenario,
+  type Scenario,
+} from "@brain-swap/core";
 
 import ax01Json from "../bodies/ax-01.json";
 import ax02Json from "../bodies/ax-02.json";
@@ -11,27 +17,27 @@ import ax03Json from "../bodies/ax-03.json";
 import level00Json from "../worlds/world-0/level-0.0.json";
 import refBrain00Json from "../worlds/world-0/level-0.0.reference-brain.json";
 import level11Json from "../worlds/world-1/level-1.1.json";
-import refBrain11Json from "../worlds/world-1/level-1.1.reference-brain.json";
 import naiveBrain11Json from "../worlds/world-1/level-1.1.naive-brain.json";
+import refBrain11Json from "../worlds/world-1/level-1.1.reference-brain.json";
 import level12Json from "../worlds/world-1/level-1.2.json";
 import refBrain12Json from "../worlds/world-1/level-1.2.reference-brain.json";
 import level13Json from "../worlds/world-1/level-1.3.json";
-import refBrain13Json from "../worlds/world-1/level-1.3.reference-brain.json";
 import naiveBrain13Json from "../worlds/world-1/level-1.3.naive-brain.json";
+import refBrain13Json from "../worlds/world-1/level-1.3.reference-brain.json";
 import level14Json from "../worlds/world-1/level-1.4.json";
 import refBrain14Json from "../worlds/world-1/level-1.4.reference-brain.json";
 import level16Json from "../worlds/world-1/level-1.6.json";
-import refBrain16Json from "../worlds/world-1/level-1.6.reference-brain.json";
 import naiveBrain16Json from "../worlds/world-1/level-1.6.naive-brain.json";
+import refBrain16Json from "../worlds/world-1/level-1.6.reference-brain.json";
 import level22Json from "../worlds/world-2/level-2.2.json";
-import refBrain22Json from "../worlds/world-2/level-2.2.reference-brain.json";
 import naiveBrain22Json from "../worlds/world-2/level-2.2.naive-brain.json";
+import refBrain22Json from "../worlds/world-2/level-2.2.reference-brain.json";
 import level42Json from "../worlds/world-4/level-4.2.json";
-import refBrain42Json from "../worlds/world-4/level-4.2.reference-brain.json";
 import naiveBrain42Json from "../worlds/world-4/level-4.2.naive-brain.json";
+import refBrain42Json from "../worlds/world-4/level-4.2.reference-brain.json";
 import level43Json from "../worlds/world-4/level-4.3.json";
-import refBrain43Json from "../worlds/world-4/level-4.3.reference-brain.json";
 import naiveBrain43Json from "../worlds/world-4/level-4.3.naive-brain.json";
+import refBrain43Json from "../worlds/world-4/level-4.3.reference-brain.json";
 import level45Json from "../worlds/world-4/level-4.5.json";
 import lockedBrain45Json from "../worlds/world-4/level-4.5.locked-brain.json";
 

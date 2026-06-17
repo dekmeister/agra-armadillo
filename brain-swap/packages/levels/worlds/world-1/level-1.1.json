@@ -10,9 +10,7 @@
     "kind": "hold-control",
     "holdTicks": 30
   },
-  "events": [
-    { "kind": "capability-available", "tick": 12, "capabilityId": "MULE-01" }
-  ],
+  "events": [{ "kind": "capability-available", "tick": 12, "capabilityId": "MULE-01" }],
   "availableMessages": [
     "MA_FlightCapabilityMT",
     "MA_FlightCapabilityStatusMT",

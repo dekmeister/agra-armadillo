@@ -4,14 +4,14 @@
 // center = map + mission/spec; right = the message-log debugger. The composer modal opens
 // over everything while the player is composing a message (the clock is paused then).
 import { useState } from "react";
+import { MessageLogPanel } from "../run/MessageLog.tsx";
+import { BodySpecSheet, MissionCard } from "../run/MissionPanels.tsx";
+import { TacticalMapPanel } from "../run/TacticalMap.tsx";
+import { useStore } from "../store.ts";
 import { ChromeBar } from "./ChromeBar.tsx";
+import { MessageComposer } from "./MessageComposer.tsx";
 import { StatusStrip } from "./StatusStrip.tsx";
 import { TelemetryPanel } from "./TelemetryPanel.tsx";
-import { MessageComposer } from "./MessageComposer.tsx";
-import { TacticalMapPanel } from "../run/TacticalMap.tsx";
-import { MissionCard, BodySpecSheet } from "../run/MissionPanels.tsx";
-import { MessageLogPanel } from "../run/MessageLog.tsx";
-import { useStore } from "../store.ts";
 
 /** Short viewports (landscape tablets ~820px tall) can't fit the map plus both expanded
  * cards, so the cards start collapsed there to keep the map usable. Desktop stays expanded. */
@@ -37,7 +37,13 @@ export function Console() {
           <TacticalMapPanel />
           <div
             data-tour="mission"
-            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, minHeight: 0, overflow: "hidden" }}
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 8,
+              minHeight: 0,
+              overflow: "hidden",
+            }}
           >
             <MissionCard collapsed={!panelsOpen} onToggleCollapse={togglePanels} />
             <BodySpecSheet collapsed={!panelsOpen} onToggleCollapse={togglePanels} />

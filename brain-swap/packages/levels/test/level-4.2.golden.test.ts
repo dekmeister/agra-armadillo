@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
-import { describe, expect, it } from "vitest";
 import { initWorld, type MessageLogEntry, run, scoreWorld, type World } from "@brain-swap/core";
 import { level42, level42NaiveBrain, level42ReferenceBrain, scenarioFor } from "@brain-swap/levels";
+import { describe, expect, it } from "vitest";
 
 // Level 4.2 "The Flinch": a threat pops up on the Ferret's track and FA takes the
 // aircraft with a CAUTION MA_FaultMT. The reference yields — dog-legs south, runs west
@@ -38,15 +38,53 @@ describe("level 4.2 golden run (reference brain)", () => {
       .log.filter((e) => e.from === "MA")
       .map((e) => ({ tick: e.tick, type: e.type, payload: e.payload }));
     expect(sends).toEqual([
-      { tick: 2, type: "MA_ControlRequestMT", payload: { RequestType: "ACQUIRE", CapabilityID: "FERRET-03" } },
+      {
+        tick: 2,
+        type: "MA_ControlRequestMT",
+        payload: { RequestType: "ACQUIRE", CapabilityID: "FERRET-03" },
+      },
       {
         tick: 4,
         type: "MA_FlightCommandMT",
-        payload: { CommandID: "CMD-1", CommandState: "NEW", CapabilityID: "FERRET-03", Heading: 270, Altitude: 3000, Speed: 50 },
+        payload: {
+          CommandID: "CMD-1",
+          CommandState: "NEW",
+          CapabilityID: "FERRET-03",
+          Heading: 270,
+          Altitude: 3000,
+          Speed: 50,
+        },
       },
-      { tick: 12, type: "MA_FlightCommandMT", payload: { CommandID: "CMD-1", CommandState: "UPDATE", CapabilityID: "FERRET-03", Heading: 180 } },
-      { tick: 25, type: "MA_FlightCommandMT", payload: { CommandID: "CMD-1", CommandState: "UPDATE", CapabilityID: "FERRET-03", Heading: 270 } },
-      { tick: 54, type: "MA_FlightCommandMT", payload: { CommandID: "CMD-1", CommandState: "UPDATE", CapabilityID: "FERRET-03", Heading: 0 } },
+      {
+        tick: 12,
+        type: "MA_FlightCommandMT",
+        payload: {
+          CommandID: "CMD-1",
+          CommandState: "UPDATE",
+          CapabilityID: "FERRET-03",
+          Heading: 180,
+        },
+      },
+      {
+        tick: 25,
+        type: "MA_FlightCommandMT",
+        payload: {
+          CommandID: "CMD-1",
+          CommandState: "UPDATE",
+          CapabilityID: "FERRET-03",
+          Heading: 270,
+        },
+      },
+      {
+        tick: 54,
+        type: "MA_FlightCommandMT",
+        payload: {
+          CommandID: "CMD-1",
+          CommandState: "UPDATE",
+          CapabilityID: "FERRET-03",
+          Heading: 0,
+        },
+      },
     ]);
   });
 

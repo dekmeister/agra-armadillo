@@ -5,9 +5,10 @@
 //   • waypoint-sequence — pass each waypoint in order; hold the final one (1.4).
 // Orthogonal to the objective: entering any `level.avoid` circle or event-spawned
 // `World.threats` zone fails the run (breach-check below the kind switch).
-import { type ActiveThreat } from "./events.ts";
-import { isSecondaryController, type FaState } from "../fa/engine.ts";
+
+import { type FaState, isSecondaryController } from "../fa/engine.ts";
 import { distance, type VehicleState } from "../vehicle/pointmass.ts";
+import type { ActiveThreat } from "./events.ts";
 import type { LevelDef, Waypoint, Zone } from "./types.ts";
 
 export interface WinEvaluation {
@@ -54,7 +55,11 @@ export function predicateHolds(level: LevelDef, vehicle: VehicleState): boolean 
 }
 
 /** True if the vehicle is inside any no-fly / threat circle (breach = run fails). */
-function breached(vehicle: VehicleState, level: LevelDef, threats: readonly ActiveThreat[]): boolean {
+function breached(
+  vehicle: VehicleState,
+  level: LevelDef,
+  threats: readonly ActiveThreat[],
+): boolean {
   const zones: Zone[] = [...(level.avoid ?? []), ...threats.map((t) => t.zone)];
   return zones.some((z) => distance(vehicle.x, vehicle.y, z.x, z.y) <= z.radius);
 }
@@ -72,12 +77,24 @@ export function evaluateWin(
     case "reach-hold": {
       const satisfied = inZoneAtAltitude(vehicle, o.zone, o.altitude, o.altitudeTolerance);
       const holdTicks = satisfied ? progress.holdTicks + 1 : 0;
-      return { satisfied, holdTicks, waypointIndex: progress.waypointIndex, won: holdTicks >= o.holdTicks, failed };
+      return {
+        satisfied,
+        holdTicks,
+        waypointIndex: progress.waypointIndex,
+        won: holdTicks >= o.holdTicks,
+        failed,
+      };
     }
     case "hold-control": {
       const satisfied = isSecondaryController(fa, level.capabilityId);
       const holdTicks = satisfied ? progress.holdTicks + 1 : 0;
-      return { satisfied, holdTicks, waypointIndex: progress.waypointIndex, won: holdTicks >= o.holdTicks, failed };
+      return {
+        satisfied,
+        holdTicks,
+        waypointIndex: progress.waypointIndex,
+        won: holdTicks >= o.holdTicks,
+        failed,
+      };
     }
     case "waypoint-sequence": {
       let waypointIndex = progress.waypointIndex;

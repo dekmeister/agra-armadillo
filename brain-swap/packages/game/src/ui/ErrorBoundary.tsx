@@ -22,12 +22,27 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
     const { error } = this.state;
     if (!error) return this.props.children;
     return (
-      <div style={{ padding: 24, color: "#c2cdb0", fontFamily: "IBM Plex Mono, monospace", overflow: "auto", height: "100%" }}>
+      <div
+        style={{
+          padding: 24,
+          color: "#c2cdb0",
+          fontFamily: "IBM Plex Mono, monospace",
+          overflow: "auto",
+          height: "100%",
+        }}
+      >
         <h2 style={{ color: "#e0483a" }}>Console fault</h2>
         <pre style={{ whiteSpace: "pre-wrap", color: "#f2c200" }}>{error.message}</pre>
         <pre style={{ whiteSpace: "pre-wrap", color: "#7d876b", fontSize: 11 }}>{error.stack}</pre>
         <button
-          style={{ marginTop: 12, padding: "6px 12px", background: "#161b13", color: "#c2cdb0", border: "1px solid #3c4632", cursor: "pointer" }}
+          style={{
+            marginTop: 12,
+            padding: "6px 12px",
+            background: "#161b13",
+            color: "#c2cdb0",
+            border: "1px solid #3c4632",
+            cursor: "pointer",
+          }}
           onClick={() => this.setState({ error: null })}
         >
           Dismiss

@@ -2,7 +2,13 @@
   "id": "ref-2.2",
   "_doc": "Dog-leg: handshake, then NEW heading 270 (west) crawling at 25; past the fence's longitude, a Direction-only UPDATE turns south (180) and the vehicle crawls down through the station. Two flight commands; no point ever enters the avoid circle.",
   "initial": "await-capability",
-  "states": ["await-capability", "awaiting-approval", "confirming-control", "leg-west", "leg-south"],
+  "states": [
+    "await-capability",
+    "awaiting-approval",
+    "confirming-control",
+    "leg-west",
+    "leg-south"
+  ],
   "transitions": [
     {
       "from": "await-capability",

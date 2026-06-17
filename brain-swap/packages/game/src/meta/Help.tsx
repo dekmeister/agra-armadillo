@@ -26,18 +26,18 @@ export function Help() {
         <section>
           <h2>The idea</h2>
           <p className="help-p">
-            You <b>are</b> the Mission Autonomy brain. An aircraft's{" "}
-            <b>Flight Autonomy (FA)</b> publishes a live stream of messages over the real A-GRA
-            Vehicle Interface; you read it and send messages back, by hand, in (semi-)realtime. FA
-            always flies the aircraft — it only obeys you once you've properly acquired control, and
-            it rejects anything outside the body's published performance envelope. Pick a mission
-            from <span className="k-cyan">Level Select</span>; each level's <b>Mission Card</b>{" "}
-            states its objective and win condition. The opening missions teach the
-            control-acquisition handshake (<span className="k-cyan">1.1</span>) and your first valid
-            flight command (<span className="k-cyan">1.2</span>); later ones add the performance
-            envelope (<span className="k-cyan">1.3</span>), a hand-flown racetrack
-            (<span className="k-cyan">1.4</span>), and re-flying one brain across airframes
-            (<span className="k-cyan">4.5</span>).
+            You <b>are</b> the Mission Autonomy brain. An aircraft's <b>Flight Autonomy (FA)</b>{" "}
+            publishes a live stream of messages over the real A-GRA Vehicle Interface; you read it
+            and send messages back, by hand, in (semi-)realtime. FA always flies the aircraft — it
+            only obeys you once you've properly acquired control, and it rejects anything outside
+            the body's published performance envelope. Pick a mission from{" "}
+            <span className="k-cyan">Level Select</span>; each level's <b>Mission Card</b> states
+            its objective and win condition. The opening missions teach the control-acquisition
+            handshake (<span className="k-cyan">1.1</span>) and your first valid flight command (
+            <span className="k-cyan">1.2</span>); later ones add the performance envelope (
+            <span className="k-cyan">1.3</span>), a hand-flown racetrack (
+            <span className="k-cyan">1.4</span>), and re-flying one brain across airframes (
+            <span className="k-cyan">4.5</span>).
           </p>
         </section>
 
@@ -64,8 +64,8 @@ export function Help() {
               capability envelope (the numbers FA validates against).
             </li>
             <li>
-              <b>Status strip</b> — your three scores (<span className="k-dim">Ticks · Bus Traffic ·
-              Rejections</span>) versus the level par.
+              <b>Status strip</b> — your three scores (
+              <span className="k-dim">Ticks · Bus Traffic · Rejections</span>) versus the level par.
             </li>
           </ul>
         </section>
@@ -87,16 +87,53 @@ export function Help() {
           <h2>Keyboard shortcuts</h2>
           <table className="help-keys">
             <tbody>
-              <tr><td><kbd>Space</kbd></td><td>Play / Pause</td></tr>
-              <tr><td><kbd>C</kbd></td><td>Compose &amp; send a message (pauses the clock)</td></tr>
-              <tr><td><kbd>→</kbd></td><td>Step forward one tick</td></tr>
-              <tr><td><kbd>R</kbd></td><td>Restart the mission</td></tr>
-              <tr><td><kbd>1</kbd></td><td>1× speed</td></tr>
-              <tr><td><kbd>2</kbd></td><td>2× speed</td></tr>
-              <tr><td><kbd>3</kbd></td><td>8× speed</td></tr>
+              <tr>
+                <td>
+                  <kbd>Space</kbd>
+                </td>
+                <td>Play / Pause</td>
+              </tr>
+              <tr>
+                <td>
+                  <kbd>C</kbd>
+                </td>
+                <td>Compose &amp; send a message (pauses the clock)</td>
+              </tr>
+              <tr>
+                <td>
+                  <kbd>→</kbd>
+                </td>
+                <td>Step forward one tick</td>
+              </tr>
+              <tr>
+                <td>
+                  <kbd>R</kbd>
+                </td>
+                <td>Restart the mission</td>
+              </tr>
+              <tr>
+                <td>
+                  <kbd>1</kbd>
+                </td>
+                <td>1× speed</td>
+              </tr>
+              <tr>
+                <td>
+                  <kbd>2</kbd>
+                </td>
+                <td>2× speed</td>
+              </tr>
+              <tr>
+                <td>
+                  <kbd>3</kbd>
+                </td>
+                <td>8× speed</td>
+              </tr>
             </tbody>
           </table>
-          <p className="help-p k-dim">Shortcuts are disabled while the cursor is in a text field.</p>
+          <p className="help-p k-dim">
+            Shortcuts are disabled while the cursor is in a text field.
+          </p>
         </section>
 
         <section>
@@ -136,7 +173,18 @@ export function Help() {
         </section>
 
         <div className="rfoot">
-          <span className="cert">Fidelity Notes (bottom-center on the console) state exactly what is simplified vs ASK 5.0a.<br /><a href="https://github.com/dekmeister/agra-armadillo" target="_blank" rel="noopener noreferrer">github.com/dekmeister/agra-armadillo</a></span>
+          <span className="cert">
+            Fidelity Notes (bottom-center on the console) state exactly what is simplified vs ASK
+            5.0a.
+            <br />
+            <a
+              href="https://github.com/dekmeister/agra-armadillo"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              github.com/dekmeister/agra-armadillo
+            </a>
+          </span>
           <div className="right">
             <button className="btn" onClick={() => setView("console")}>
               Go to Console

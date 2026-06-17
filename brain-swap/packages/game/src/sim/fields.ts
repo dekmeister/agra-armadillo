@@ -27,7 +27,7 @@ export function buildFieldRows(type: string, payload: unknown): FieldRow[] {
   const p = (payload ?? {}) as Record<string, unknown>;
   const rows: FieldRow[] = [];
   for (const f of meta.fields) {
-    const present = Object.prototype.hasOwnProperty.call(p, f.name);
+    const present = Object.hasOwn(p, f.name);
     const raw = p[f.name];
     const isEnum = f.type === "enum";
     // The single "bad" highlight: a non-VALID ValidationResult on a rejected command.

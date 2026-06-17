@@ -3,14 +3,18 @@
 // panel distills the LATEST value of each decision-relevant field FA has published, plus
 // the live objective-hold progress. (Automated field-watches — auto-pause when a value
 // matches — are deferred; see PLAN_FUTURE.md. For now you watch this panel by eye.)
-import { useMemo } from "react";
+
 import type { MessageLogEntry, MessageTypeName } from "@brain-swap/core";
+import { useMemo } from "react";
 import { useStore } from "../store.ts";
-import { Panel } from "../ui/Panel.tsx";
 import { Identifier } from "../ui/Identifier.tsx";
+import { Panel } from "../ui/Panel.tsx";
 
 /** Latest payload of a given message type in the log up to the playhead, or undefined. */
-function latest(log: readonly MessageLogEntry[], type: MessageTypeName): Record<string, unknown> | undefined {
+function latest(
+  log: readonly MessageLogEntry[],
+  type: MessageTypeName,
+): Record<string, unknown> | undefined {
   for (let i = log.length - 1; i >= 0; i -= 1) {
     if (log[i]!.type === type) return log[i]!.payload as Record<string, unknown>;
   }
@@ -63,9 +67,10 @@ export function TelemetryPanel() {
   const cmdGood = cmdState === "ACCEPTED";
   const cmdBad = cmdState === "REJECTED";
 
-  const holdTarget = level.objective.kind === "reach-hold" || level.objective.kind === "hold-control"
-    ? level.objective.holdTicks
-    : undefined;
+  const holdTarget =
+    level.objective.kind === "reach-hold" || level.objective.kind === "hold-control"
+      ? level.objective.holdTicks
+      : undefined;
 
   return (
     <Panel title="TELEMETRY" titleAccent="FA → MA" meta="LATEST RECEIVED" className="grow">
@@ -85,11 +90,7 @@ export function TelemetryPanel() {
             {t.ctrl ? (isController ? "SECONDARY (you)" : fmt(t.ctrl.SecondaryController)) : "—"}
           </Row>
           <Row label="Last command" good={cmdGood}>
-            {t.cmd ? (
-              <Identifier name={fmt(cmdState)} enumStyle={cmdBad ? "bad" : "enum"} />
-            ) : (
-              "—"
-            )}
+            {t.cmd ? <Identifier name={fmt(cmdState)} enumStyle={cmdBad ? "bad" : "enum"} /> : "—"}
           </Row>
           {cmdBad && t.cmd?.ValidationResult !== undefined && (
             <Row label="↳ reason">
@@ -97,7 +98,9 @@ export function TelemetryPanel() {
             </Row>
           )}
           <Row label="Activity">
-            {t.act ? `alt ${fmt(t.act.Altitude)} · hdg ${fmt(t.act.Heading)} · spd ${fmt(t.act.Speed)}` : "—"}
+            {t.act
+              ? `alt ${fmt(t.act.Altitude)} · hdg ${fmt(t.act.Heading)} · spd ${fmt(t.act.Speed)}`
+              : "—"}
           </Row>
           <Row label="Position">
             {t.pos ? `alt ${fmt(t.pos.Altitude)} · nav ${fmt(t.pos.NavigationSolutionState)}` : "—"}
@@ -126,8 +129,8 @@ export function TelemetryPanel() {
               </>
             ) : (
               <>
-                You are the MA brain. Watch FA above; press <b>Compose</b> (the clock pauses) to send a
-                message. It reaches FA the next tick.
+                You are the MA brain. Watch FA above; press <b>Compose</b> (the clock pauses) to
+                send a message. It reaches FA the next tick.
               </>
             )}
           </div>

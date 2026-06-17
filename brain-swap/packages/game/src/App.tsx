@@ -4,15 +4,15 @@
 // the LIVE EDGE of the run (store.advanceLive → inject pending inputs, then step); it
 // pauses while the player is composing a message.
 import { useEffect } from "react";
-import { useStore, type View } from "./store.ts";
 import { Console } from "./console/Console.tsx";
 import { ComplianceReport } from "./meta/ComplianceReport.tsx";
-import { LevelSelect } from "./meta/LevelSelect.tsx";
 import { Help } from "./meta/Help.tsx";
+import { LevelSelect } from "./meta/LevelSelect.tsx";
 import { MessageCodex } from "./meta/MessageCodex.tsx";
+import { useStore, type View } from "./store.ts";
 import { MobileGate } from "./ui/MobileGate.tsx";
-import { WelcomeOverlay } from "./ui/WelcomeOverlay.tsx";
 import { TutorialCoach } from "./ui/TutorialCoach.tsx";
+import { WelcomeOverlay } from "./ui/WelcomeOverlay.tsx";
 
 /** Ticks advanced per real second at 1× speed. 2×/8× scale this. */
 const TICKS_PER_SECOND = 4;
@@ -118,7 +118,6 @@ export function App() {
           </button>
         ))}
         <div className="strip-space" />
-        
       </div>
       {view === "console" && <Console />}
       {view === "report" && <ComplianceReport />}

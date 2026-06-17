@@ -1,6 +1,7 @@
 // StatusStrip (30px): RunLamp + four MetricReadouts (live, vs level pars).
+
+import { type LevelPars, scoreWorld } from "@brain-swap/core";
 import { useMemo } from "react";
-import { scoreWorld, type LevelPars } from "@brain-swap/core";
 import { useStore } from "../store.ts";
 
 interface MetricSpec {

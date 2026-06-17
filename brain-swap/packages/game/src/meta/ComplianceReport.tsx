@@ -4,11 +4,12 @@
 // demonstrated it, a chronological recap of the player's own sends and FA's verdicts,
 // and the scored metrics vs par. All of this is derived from the player's run via the
 // headless core `evaluateDiagnostics` — never from the reference solution.
-import { useStore } from "../store.ts";
+
+import { evaluateDiagnostics, type ScoredEvent, scoreWorld } from "@brain-swap/core";
 import { finalFrame } from "../sim/timeline.ts";
+import { useStore } from "../store.ts";
 import { WORLDS } from "./levelCatalog.ts";
-import { evaluateDiagnostics, scoreWorld, type ScoredEvent } from "@brain-swap/core";
-import { medals, type Medal } from "./medals.ts";
+import { type Medal, medals } from "./medals.ts";
 
 /** The next playable level after `id` in catalog order, or null if this is the last. */
 function nextPlayableId(id: string): string | null {
@@ -17,7 +18,17 @@ function nextPlayableId(id: string): string | null {
   return i >= 0 && i < playable.length - 1 ? playable[i + 1]!.id : null;
 }
 
-function MetricBar({ label, value, par, medal }: { label: string; value: number; par: number; medal: Medal }) {
+function MetricBar({
+  label,
+  value,
+  par,
+  medal,
+}: {
+  label: string;
+  value: number;
+  par: number;
+  medal: Medal;
+}) {
   const max = Math.max(value, par, 1) * 1.3;
   const over = value > par;
   return (
@@ -32,14 +43,18 @@ function MetricBar({ label, value, par, medal }: { label: string; value: number;
         </span>
       </div>
       <div className="bar">
-        <div className={`fill${over ? " alert" : ""}`} style={{ width: `${(value / max) * 100}%` }} />
+        <div
+          className={`fill${over ? " alert" : ""}`}
+          style={{ width: `${(value / max) * 100}%` }}
+        />
         <div className="partick" style={{ left: `${(par / max) * 100}%` }} title={`par ${par}`} />
       </div>
     </div>
   );
 }
 
-const polarityMark = (p: ScoredEvent["polarity"]): string => (p === "positive" ? "+" : p === "negative" ? "✗" : "·");
+const polarityMark = (p: ScoredEvent["polarity"]): string =>
+  p === "positive" ? "+" : p === "negative" ? "✗" : "·";
 
 export function ComplianceReport() {
   const level = useStore((s) => s.level);
@@ -66,10 +81,28 @@ export function ComplianceReport() {
           <div className="formid">FORM A-GRA/CTR-1.2 · COMPLIANCE TEST RECORD</div>
           <h1>COMPLIANCE TEST REPORT</h1>
           <div className="fields">
-            <div><span className="k">MISSION </span><span className="v">{level.id} · {level.title}</span></div>
-            <div><span className="k">BODY </span><span className="v">{body.name} ({body.id})</span></div>
-            <div><span className="k">STANDARD </span><span className="v">A-GRA VI · ASK 5.0a</span></div>
-            <div><span className="k">RUN </span><span className="v">{w.outcome.toUpperCase()} · {score.ticks} ticks</span></div>
+            <div>
+              <span className="k">MISSION </span>
+              <span className="v">
+                {level.id} · {level.title}
+              </span>
+            </div>
+            <div>
+              <span className="k">BODY </span>
+              <span className="v">
+                {body.name} ({body.id})
+              </span>
+            </div>
+            <div>
+              <span className="k">STANDARD </span>
+              <span className="v">A-GRA VI · ASK 5.0a</span>
+            </div>
+            <div>
+              <span className="k">RUN </span>
+              <span className="v">
+                {w.outcome.toUpperCase()} · {score.ticks} ticks
+              </span>
+            </div>
           </div>
           {w.outcome !== "running" && (
             <div className={`stamp${allPass ? "" : " fail"}`}>{allPass ? "PASS" : "FAIL"}</div>
@@ -79,7 +112,9 @@ export function ComplianceReport() {
         <section>
           <h2>Mission Lesson</h2>
           <div className={`lesson ${diag.lesson.demonstrated ? "ok" : "miss"}`}>
-            <div className="lesson-chip">{diag.lesson.demonstrated ? "✓ DEMONSTRATED" : "✗ NOT DEMONSTRATED"}</div>
+            <div className="lesson-chip">
+              {diag.lesson.demonstrated ? "✓ DEMONSTRATED" : "✗ NOT DEMONSTRATED"}
+            </div>
             <div className="lesson-text">{diag.lesson.lesson}</div>
             <div className="lesson-note">{diag.lesson.note}</div>
           </div>
@@ -109,10 +144,17 @@ export function ComplianceReport() {
           <h2>Metrics vs Par</h2>
           <div className="histos">
             <MetricBar label="Ticks" value={score.ticks} par={pars.ticks} medal={m.t} />
-            <MetricBar label="Rejections" value={score.rejections} par={pars.rejections} medal={m.r} />
+            <MetricBar
+              label="Rejections"
+              value={score.rejections}
+              par={pars.rejections}
+              medal={m.r}
+            />
           </div>
           <div className="secondary-metric">
-            <span className="sm-label">Bus Traffic <span className="k-dim">· secondary</span></span>
+            <span className="sm-label">
+              Bus Traffic <span className="k-dim">· secondary</span>
+            </span>
             <span className={score.busTraffic > pars.busTraffic ? "k-caution" : "k-phos"}>
               {score.busTraffic} <span className="k-dim">/ par {pars.busTraffic}</span>
             </span>
@@ -130,8 +172,18 @@ export function ComplianceReport() {
             Swap is not A-GRA compliance (fidelity note #11).
           </span>
           <div className="right">
-            <button className="btn" onClick={() => setView("select")}>Level Select</button>
-            <button className="btn" onClick={() => { restart(); setView("console"); }}>Retry · Optimize</button>
+            <button className="btn" onClick={() => setView("select")}>
+              Level Select
+            </button>
+            <button
+              className="btn"
+              onClick={() => {
+                restart();
+                setView("console");
+              }}
+            >
+              Retry · Optimize
+            </button>
             <button
               className="btn"
               disabled={!nextId}

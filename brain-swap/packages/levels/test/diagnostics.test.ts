@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import type { Brain, LevelDef } from "@brain-swap/core";
 import { evaluateDiagnostics, initWorld, run, type World } from "@brain-swap/core";
 import {
   level11,
@@ -16,7 +16,7 @@ import {
   level22ReferenceBrain,
   scenarioFor,
 } from "@brain-swap/levels";
-import type { Brain, LevelDef } from "@brain-swap/core";
+import { describe, expect, it } from "vitest";
 
 // After-action diagnostics (packages/core/src/level/diagnostics.ts). The reference
 // brains demonstrate each level's lesson cleanly; the naive bait brains fail it the
@@ -47,7 +47,9 @@ describe("diagnostics — reference brains demonstrate the lesson", () => {
     expect(d.lesson.demonstrated).toBe(true);
     expect(level12.teaches).toBeUndefined();
     expect(d.lesson.lesson.length).toBeGreaterThan(0);
-    expect(d.events.some((e) => e.id === "command-accepted" && e.polarity === "positive")).toBe(true);
+    expect(d.events.some((e) => e.id === "command-accepted" && e.polarity === "positive")).toBe(
+      true,
+    );
   });
 
   it("1.3 envelope: demonstrated, with no rejection in the recap", () => {
@@ -81,7 +83,9 @@ describe("diagnostics — naive brains fail the lesson the documented way", () =
     const d = diag(level13, level13NaiveBrain);
     expect(d.lesson.demonstrated).toBe(false);
     expect(
-      d.events.some((e) => e.id === "command-rejected" && e.detail === "PERFORMANCE_LIMIT_EXCEEDED"),
+      d.events.some(
+        (e) => e.id === "command-rejected" && e.detail === "PERFORMANCE_LIMIT_EXCEEDED",
+      ),
     ).toBe(true);
     expect(d.lesson.note).toContain("PERFORMANCE_LIMIT_EXCEEDED");
   });

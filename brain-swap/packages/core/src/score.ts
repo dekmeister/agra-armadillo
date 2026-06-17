@@ -32,7 +32,8 @@ export function scoreWorld(world: World): Score {
       rejections += 1;
     } else if (
       entry.type === "MA_ControlRequestStatusMT" &&
-      (entry.payload as { ApprovalRequestProcessingState?: string }).ApprovalRequestProcessingState === "REJECTED"
+      (entry.payload as { ApprovalRequestProcessingState?: string })
+        .ApprovalRequestProcessingState === "REJECTED"
     ) {
       rejections += 1;
     }

@@ -1,6 +1,13 @@
-import { describe, expect, it } from "vitest";
-import { aggregateWorst, initWorld, run, type Score, scoreWorld, type World } from "@brain-swap/core";
+import {
+  aggregateWorst,
+  initWorld,
+  run,
+  type Score,
+  scoreWorld,
+  type World,
+} from "@brain-swap/core";
 import { level45, level45LockedBrain, multiBodyScenarios } from "@brain-swap/levels";
+import { describe, expect, it } from "vitest";
 
 // Level 4.5 "Type Certificate": one locked brain, certified across the whole fleet.
 // The brain runs unchanged on AX-01/AX-02/AX-03 and must win on every one; the level
@@ -20,7 +27,14 @@ function lockedSendsFor(capId: string) {
     { type: "MA_ControlRequestMT", payload: { RequestType: "ACQUIRE", CapabilityID: capId } },
     {
       type: "MA_FlightCommandMT",
-      payload: { CommandID: "CMD-1", CommandState: "NEW", CapabilityID: capId, Heading: 270, Altitude: 3000, Speed: 40 },
+      payload: {
+        CommandID: "CMD-1",
+        CommandState: "NEW",
+        CapabilityID: capId,
+        Heading: 270,
+        Altitude: 3000,
+        Speed: 40,
+      },
     },
     {
       type: "MA_FlightCommandMT",

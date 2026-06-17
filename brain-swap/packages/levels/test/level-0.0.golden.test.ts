@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { initWorld, type MessageLogEntry, run, scoreWorld, type World } from "@brain-swap/core";
 import { level00, level00ReferenceBrain, scenarioFor } from "@brain-swap/levels";
+import { describe, expect, it } from "vitest";
 
 // Tutorial level 0.0 "First Flight" reuses 1.2's mission verbatim as a watch-only
 // guided demo. Same definition of done: the reference brain (the demo's script
@@ -71,7 +71,11 @@ describe("level 0.0 golden run (reference brain)", () => {
       .log.filter((e) => e.from === "MA")
       .map((e) => ({ tick: e.tick, type: e.type, payload: e.payload }));
     expect(sends).toEqual([
-      { tick: 2, type: "MA_ControlRequestMT", payload: { RequestType: "ACQUIRE", CapabilityID: "MULE-01" } },
+      {
+        tick: 2,
+        type: "MA_ControlRequestMT",
+        payload: { RequestType: "ACQUIRE", CapabilityID: "MULE-01" },
+      },
       {
         tick: 4,
         type: "MA_FlightCommandMT",

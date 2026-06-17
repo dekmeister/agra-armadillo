@@ -1,7 +1,7 @@
 // Brain interpreter: on each message delivered to MA, find the first matching
 // transition out of the current state (by trigger message type + guard), run its
 // send actions, and move to its target state. First-match-wins keeps it deterministic.
-import { type Message } from "../types.ts";
+import type { Message } from "../types.ts";
 import { buildSendPayload, type EvalContext, evaluateGuard } from "./evaluator.ts";
 import type { Brain } from "./schema.ts";
 

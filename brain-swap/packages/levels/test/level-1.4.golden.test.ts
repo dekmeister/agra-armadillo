@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
-import { describe, expect, it } from "vitest";
 import { initWorld, type MessageLogEntry, run, scoreWorld, type World } from "@brain-swap/core";
 import { level14, level14ReferenceBrain, scenarioFor } from "@brain-swap/levels";
+import { describe, expect, it } from "vitest";
 
 // Level 1.4 "Racetrack by Hand": a four-corner waypoint sequence, steered by
 // Direction-only UPDATEs at position thresholds. The run is long (~290 messages),
@@ -23,7 +23,9 @@ describe("level 1.4 golden run (reference brain)", () => {
   it("the reference brain flies the circuit and wins", () => {
     const w = solve();
     expect(w.outcome).toBe("won");
-    expect(w.waypointIndex).toBe(level14.objective.kind === "waypoint-sequence" ? level14.objective.waypoints.length - 1 : -1);
+    expect(w.waypointIndex).toBe(
+      level14.objective.kind === "waypoint-sequence" ? level14.objective.waypoints.length - 1 : -1,
+    );
     expect(w.holdTicks).toBeGreaterThanOrEqual(level14.objective.holdTicks);
   });
 
@@ -38,26 +40,52 @@ describe("level 1.4 golden run (reference brain)", () => {
       .log.filter((e) => e.from === "MA")
       .map((e) => ({ tick: e.tick, type: e.type, payload: e.payload }));
     expect(sends).toEqual([
-      { tick: 2, type: "MA_ControlRequestMT", payload: { RequestType: "ACQUIRE", CapabilityID: "MULE-01" } },
+      {
+        tick: 2,
+        type: "MA_ControlRequestMT",
+        payload: { RequestType: "ACQUIRE", CapabilityID: "MULE-01" },
+      },
       {
         tick: 4,
         type: "MA_FlightCommandMT",
-        payload: { CommandID: "CMD-1", CommandState: "NEW", CapabilityID: "MULE-01", Heading: 270, Altitude: 3000, Speed: 25 },
+        payload: {
+          CommandID: "CMD-1",
+          CommandState: "NEW",
+          CapabilityID: "MULE-01",
+          Heading: 270,
+          Altitude: 3000,
+          Speed: 25,
+        },
       },
       {
         tick: 47,
         type: "MA_FlightCommandMT",
-        payload: { CommandID: "CMD-1", CommandState: "UPDATE", CapabilityID: "MULE-01", Heading: 180 },
+        payload: {
+          CommandID: "CMD-1",
+          CommandState: "UPDATE",
+          CapabilityID: "MULE-01",
+          Heading: 180,
+        },
       },
       {
         tick: 102,
         type: "MA_FlightCommandMT",
-        payload: { CommandID: "CMD-1", CommandState: "UPDATE", CapabilityID: "MULE-01", Heading: 90 },
+        payload: {
+          CommandID: "CMD-1",
+          CommandState: "UPDATE",
+          CapabilityID: "MULE-01",
+          Heading: 90,
+        },
       },
       {
         tick: 169,
         type: "MA_FlightCommandMT",
-        payload: { CommandID: "CMD-1", CommandState: "UPDATE", CapabilityID: "MULE-01", Heading: 0 },
+        payload: {
+          CommandID: "CMD-1",
+          CommandState: "UPDATE",
+          CapabilityID: "MULE-01",
+          Heading: 0,
+        },
       },
     ]);
   });

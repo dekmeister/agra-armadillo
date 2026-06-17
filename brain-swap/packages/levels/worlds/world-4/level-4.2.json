@@ -28,7 +28,12 @@
   ],
   "maxTicks": 200,
   "events": [
-    { "kind": "spawn-threat", "tick": 2, "threatId": "BANDIT-1", "zone": { "x": -1000, "y": 0, "radius": 250 } }
+    {
+      "kind": "spawn-threat",
+      "tick": 2,
+      "threatId": "BANDIT-1",
+      "zone": { "x": -1000, "y": 0, "radius": 250 }
+    }
   ],
   "pars": { "ticks": 77, "busTraffic": 5, "rejections": 0, "brainSize": 13 },
   "fidelityNotes": [5, 6, 8, 12, 18]

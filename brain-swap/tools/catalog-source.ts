@@ -44,13 +44,7 @@ export const DEFAULT_XSD_PATH = resolve(
   "docs/A-GRA References/A-GRA_MessageDefinitions_v5_0_a.xsd",
 );
 
-const FIELD_TYPES: ReadonlySet<string> = new Set([
-  "string",
-  "number",
-  "boolean",
-  "enum",
-  "object",
-]);
+const FIELD_TYPES: ReadonlySet<string> = new Set(["string", "number", "boolean", "enum", "object"]);
 
 function fail(msg: string): never {
   throw new Error(`catalog: ${msg}`);

@@ -9,8 +9,9 @@
 //   D.  Vehicle integrates one tick.
 //   E.  Level win/fail evaluation.
 // Same scenario ⇒ identical message log, scores, and replay (CLAUDE.md rule #3).
-import { enqueueAll, takeDue } from "./bus.ts";
+
 import { reactToMessage } from "./brain/interpreter.ts";
+import { enqueueAll, takeDue } from "./bus.ts";
 import { faAdvanceApprovals, faCollisionCheck, faHandleInbound, faPublish } from "./fa/engine.ts";
 import { advanceThreats, applyEvents } from "./level/events.ts";
 import { evaluateWin } from "./level/runtime.ts";
@@ -21,8 +22,9 @@ import { initWorld, type Outcome, type Scenario, type World } from "./world.ts";
 /** Capability fields exposed to brain `cap.*` references. */
 function capContext(scenario: Scenario): Record<string, unknown> {
   const levelCapId = scenario.level?.capabilityId;
-  const bodyCap = scenario.body.capabilities.find((c) => c.id === levelCapId) ?? scenario.body.capabilities[0];
-  const capId = bodyCap?.id ?? levelCapId ?? '';
+  const bodyCap =
+    scenario.body.capabilities.find((c) => c.id === levelCapId) ?? scenario.body.capabilities[0];
+  const capId = bodyCap?.id ?? levelCapId ?? "";
   const profile = bodyCap?.profile;
   return {
     CapabilityID: capId,
@@ -119,10 +121,27 @@ export function step(world: World): World {
     else if (tick >= scenario.level.maxTicks) outcome = "failed";
   }
 
-  return { scenario, tick, bus, log, fa, vehicle, ma, outcome, holdTicks, waypointIndex, threats, dynamicEnvelope };
+  return {
+    scenario,
+    tick,
+    bus,
+    log,
+    fa,
+    vehicle,
+    ma,
+    outcome,
+    holdTicks,
+    waypointIndex,
+    threats,
+    dynamicEnvelope,
+  };
 }
 
-function entry(tick: number, m: Message, disposition: MessageLogEntry["disposition"]): MessageLogEntry {
+function entry(
+  tick: number,
+  m: Message,
+  disposition: MessageLogEntry["disposition"],
+): MessageLogEntry {
   return { tick, from: m.from, to: m.to, type: m.type, payload: m.payload, disposition };
 }
 

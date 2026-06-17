@@ -3,7 +3,7 @@
 // numbers actually present on the profile. The send-form CAP palette and the spec sheet
 // bind to exactly these (NOT the mockup's cap.MaxSpeed / cap.MaxTurnRate, which the
 // evaluator can't resolve).
-import { findCapability, type BodyProfile } from "@brain-swap/core";
+import { type BodyProfile, findCapability } from "@brain-swap/core";
 
 export interface CapEntry {
   readonly key: string;

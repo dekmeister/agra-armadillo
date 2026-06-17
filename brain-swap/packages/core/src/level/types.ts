@@ -60,10 +60,7 @@ export interface WaypointSequenceObjective {
   readonly holdTicks: number;
 }
 
-export type Objective =
-  | ReachHoldObjective
-  | HoldControlObjective
-  | WaypointSequenceObjective;
+export type Objective = ReachHoldObjective | HoldControlObjective | WaypointSequenceObjective;
 
 export interface LevelPars {
   readonly ticks: number;

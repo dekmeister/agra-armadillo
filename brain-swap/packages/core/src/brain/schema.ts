@@ -14,10 +14,7 @@ export type Literal = string | number | boolean;
  *   { msg: <field> }  — a field of the triggering message
  *   { cap: <field> }  — a field of the level's controlled capability (e.g. CapabilityID)
  */
-export type ValueExpr =
-  | Literal
-  | { readonly msg: string }
-  | { readonly cap: string };
+export type ValueExpr = Literal | { readonly msg: string } | { readonly cap: string };
 
 /** One optional field guard: <triggering message field> <op> <value>. */
 export interface Guard {

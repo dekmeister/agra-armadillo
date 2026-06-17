@@ -53,7 +53,7 @@ export function approach(current: number, goal: number, maxStep: number): number
 export function turnToward(current: number, goal: number, maxStep: number): number {
   const c = normalizeDeg(current);
   const g = normalizeDeg(goal);
-  let diff = ((g - c + 540) % 360) - 180; // signed shortest delta in (-180, 180]
+  const diff = ((g - c + 540) % 360) - 180; // signed shortest delta in (-180, 180]
   if (Math.abs(diff) <= maxStep) return g;
   return normalizeDeg(c + Math.sign(diff) * maxStep);
 }

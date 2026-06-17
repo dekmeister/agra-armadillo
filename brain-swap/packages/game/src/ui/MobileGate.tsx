@@ -32,8 +32,8 @@ export function MobileGate() {
       <div className="mobile-card">
         <h2>Screen too narrow</h2>
         <p>
-          Brain Swap needs a wide screen for its editor. Open it on a landscape tablet or
-          any desktop browser.
+          Brain Swap needs a wide screen for its editor. Open it on a landscape tablet or any
+          desktop browser.
         </p>
         <button className="btn" onClick={() => setDismissed(true)}>
           Continue anyway

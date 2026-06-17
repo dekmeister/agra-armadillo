@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import {
   type BodyProfile,
   type FlightModel,
@@ -6,9 +5,10 @@ import {
   integrate,
   makeScenario,
   run,
-  validateFlightCommand,
   type VehicleState,
+  validateFlightCommand,
 } from "@brain-swap/core";
+import { describe, expect, it } from "vitest";
 
 // Fuel/endurance core (Phase 3): deterministic burn in integrate(), fuel-out → failed
 // in the sim, and FA's endurance pre-check in the validator. The Bingo golden covers
@@ -20,7 +20,13 @@ function fuelBody(over: Partial<BodyProfile["fuel"] & object> = {}): BodyProfile
   return {
     id: "fb",
     name: "FuelBird",
-    capabilities: [{ id: "FB-1", type: "HSA_CSA", profile: { minAltitude: 0, maxAltitude: 9000, minAirspeed: 10, maxAirspeed: 100 } }],
+    capabilities: [
+      {
+        id: "FB-1",
+        type: "HSA_CSA",
+        profile: { minAltitude: 0, maxAltitude: 9000, minAirspeed: 10, maxAirspeed: 100 },
+      },
+    ],
     flight,
     control: { approvalLatencyTicks: 0 },
     publish: { positionIntervalTicks: 0, activityIntervalTicks: 0, navigationIntervalTicks: 5 },
@@ -31,7 +37,15 @@ function fuelBody(over: Partial<BodyProfile["fuel"] & object> = {}): BodyProfile
 
 describe("fuel burn (integrate)", () => {
   it("burns the U-curve minBurn + burnQuad*(speed-bestSpeed)^2 per tick, floored at zero", () => {
-    const v: VehicleState = { x: 0, y: 0, altitude: 3000, heading: 270, speed: 10, target: null, fuel: 100 };
+    const v: VehicleState = {
+      x: 0,
+      y: 0,
+      altitude: 3000,
+      heading: 270,
+      speed: 10,
+      target: null,
+      fuel: 100,
+    };
     const after = integrate(v, flight, fuelBody().fuel);
     expect(after.fuel).toBe(100 - (3 + 0.01 * (10 - 30) ** 2)); // 100 - 7 = 93
     // The minimum is at bestSpeed, not at the slowest speed: speed 30 burns less than speed 10.
@@ -58,7 +72,13 @@ describe("fuel-out fails the run", () => {
       title: "Fuel Out",
       body: "fb",
       capabilityId: "FB-1",
-      objective: { kind: "reach-hold" as const, zone: { x: -100000, y: 0, radius: 100 }, altitude: 3000, altitudeTolerance: 50, holdTicks: 5 },
+      objective: {
+        kind: "reach-hold" as const,
+        zone: { x: -100000, y: 0, radius: 100 },
+        altitude: 3000,
+        altitudeTolerance: 50,
+        holdTicks: 5,
+      },
       maxTicks: 1000,
     };
     const w = run(initWorld(makeScenario(body, { brain: null, level })), 1000);
@@ -69,9 +89,30 @@ describe("fuel-out fails the run", () => {
 });
 
 describe("endurance pre-check (validateFlightCommand)", () => {
-  const body = fuelBody({ capacity: 540, minBurn: 4, bestSpeed: 32, burnQuad: 0.02, minEnduranceTicks: 60 });
-  const veh = (fuel: number): VehicleState => ({ x: 0, y: 0, altitude: 3000, heading: 270, speed: 0, target: null, fuel });
-  const cmd = (Speed: number) => ({ CommandID: "C", CommandState: "NEW" as const, CapabilityID: "FB-1", Heading: 270, Altitude: 3000, Speed });
+  const body = fuelBody({
+    capacity: 540,
+    minBurn: 4,
+    bestSpeed: 32,
+    burnQuad: 0.02,
+    minEnduranceTicks: 60,
+  });
+  const veh = (fuel: number): VehicleState => ({
+    x: 0,
+    y: 0,
+    altitude: 3000,
+    heading: 270,
+    speed: 0,
+    target: null,
+    fuel,
+  });
+  const cmd = (Speed: number) => ({
+    CommandID: "C",
+    CommandState: "NEW" as const,
+    CapabilityID: "FB-1",
+    Heading: 270,
+    Altitude: 3000,
+    Speed,
+  });
 
   it("rejects a command whose speed leaves less than the endurance reserve", () => {
     // burn(90) = 4 + 0.02*(58)^2 ≈ 71.3 → 540/71.3 ≈ 7.6 ticks < 60 → reject.

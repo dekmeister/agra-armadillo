@@ -1,16 +1,16 @@
-import { describe, expect, it } from "vitest";
 import {
   type BodyProfile,
+  isSecondaryController,
   type LevelDef,
   type MessageLogEntry,
-  type ScriptedInput,
-  isSecondaryController,
+  makeScenario,
   msg,
   replayScript,
-  makeScenario,
+  type ScriptedInput,
   validateFlightCommand,
   type World,
 } from "@brain-swap/core";
+import { describe, expect, it } from "vitest";
 
 // Deterministic mission-events system (Phase 1). A level carries a `events` schedule;
 // each event fires in Phase A′ of the step that advances the world to its `tick`,
@@ -24,7 +24,11 @@ const body: BodyProfile = {
   id: "test",
   name: "Test Heron",
   capabilities: [
-    { id: "TEST-01", type: "HSA_CSA", profile: { minAltitude: 0, maxAltitude: 8000, minAirspeed: 20, maxAirspeed: 60 } },
+    {
+      id: "TEST-01",
+      type: "HSA_CSA",
+      profile: { minAltitude: 0, maxAltitude: 8000, minAirspeed: 20, maxAirspeed: 60 },
+    },
   ],
   flight: { maxTurnRateDeg: 5, maxClimbRate: 50, maxAccel: 20 },
   control: { approvalLatencyTicks: 0 },
@@ -46,7 +50,10 @@ function levelWith(events: LevelDef["events"]): LevelDef {
   };
 }
 
-const acquire = msg("MA_ControlRequestMT", "MA", "FA", { RequestType: "ACQUIRE", CapabilityID: "TEST-01" });
+const acquire = msg("MA_ControlRequestMT", "MA", "FA", {
+  RequestType: "ACQUIRE",
+  CapabilityID: "TEST-01",
+});
 const cmdAlt = (alt: number) =>
   msg("MA_FlightCommandMT", "MA", "FA", {
     CommandID: "CMD-1",
@@ -108,7 +115,9 @@ describe("mission events — degrade-envelope", () => {
 
   it("the same command is accepted against the body's static envelope (proves it was the degrade)", () => {
     expect(validateFlightCommand(body, cmdAlt(6000).payload).accepted).toBe(true);
-    expect(validateFlightCommand(body, cmdAlt(6000).payload, { maxAltitude: 5000 }).accepted).toBe(false);
+    expect(validateFlightCommand(body, cmdAlt(6000).payload, { maxAltitude: 5000 }).accepted).toBe(
+      false,
+    );
   });
 
   it("is deterministic: two replays are byte-identical (log + overlay)", () => {
@@ -126,7 +135,12 @@ describe("mission events — capability-unavailable", () => {
     { tick: 4, message: cmdAlt(3000) }, // delivered t5, after the pull at t4
   ];
   const events: LevelDef["events"] = [
-    { kind: "capability-unavailable", tick: 4, capabilityId: "TEST-01", reason: "TEMPORARILY_UNAVAILABLE" },
+    {
+      kind: "capability-unavailable",
+      tick: 4,
+      capabilityId: "TEST-01",
+      reason: "TEMPORARILY_UNAVAILABLE",
+    },
   ];
   const final = () =>
     replayScript(makeScenario(body, { level: levelWith(events) }), script, 6).at(-1)!;
@@ -134,7 +148,9 @@ describe("mission events — capability-unavailable", () => {
   it("signals TEMPORARILY_UNAVAILABLE, drops MA control, and ignores commands on the pulled cap", () => {
     const w = final();
     const status = w.log.filter((e) => e.type === "MA_FlightCapabilityStatusMT").at(-1)!;
-    expect((status.payload as { Availability: string }).Availability).toBe("TEMPORARILY_UNAVAILABLE");
+    expect((status.payload as { Availability: string }).Availability).toBe(
+      "TEMPORARILY_UNAVAILABLE",
+    );
 
     expect(isSecondaryController(w.fa, "TEST-01")).toBe(false);
     expect(w.fa.unavailableCaps["TEST-01"]).toBe("TEMPORARILY_UNAVAILABLE");
@@ -147,7 +163,13 @@ describe("mission events — capability-unavailable", () => {
 
 describe("mission events — spawn-threat / despawn-threat", () => {
   const events: LevelDef["events"] = [
-    { kind: "spawn-threat", tick: 2, threatId: "T1", zone: { x: 100, y: 0, radius: 50 }, velocity: { vx: 1, vy: 0 } },
+    {
+      kind: "spawn-threat",
+      tick: 2,
+      threatId: "T1",
+      zone: { x: 100, y: 0, radius: 50 },
+      velocity: { vx: 1, vy: 0 },
+    },
     { kind: "despawn-threat", tick: 5, threatId: "T1" },
   ];
   const frames = () => replayScript(makeScenario(body, { level: levelWith(events) }), [], 7);
@@ -167,7 +189,11 @@ describe("mission events — spawn-threat / despawn-threat", () => {
 
 describe("mission events — eventless levels are unaffected", () => {
   it("a level with no events carries an empty overlay every tick", () => {
-    const f = replayScript(makeScenario(body, { level: levelWith(undefined) }), [{ tick: 1, message: acquire }], 4);
+    const f = replayScript(
+      makeScenario(body, { level: levelWith(undefined) }),
+      [{ tick: 1, message: acquire }],
+      4,
+    );
     for (const w of f) {
       expect(w.threats).toEqual([]);
       expect(w.dynamicEnvelope).toEqual({});

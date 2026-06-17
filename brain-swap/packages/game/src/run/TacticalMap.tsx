@@ -4,15 +4,25 @@
 //
 // Camera: screenX = worldX*scale + offX ; screenY = -worldY*scale + offY. The user can
 // pan (drag) and zoom (wheel) within clamped bounds; "Fit" resets to frame everything.
-import { useEffect, useRef, useState } from "react";
+
+import type { LevelDef, World, Zone } from "@brain-swap/core";
 import { Application, Graphics } from "pixi.js";
+import { useEffect, useRef, useState } from "react";
 import { useStore } from "../store.ts";
 import { Panel } from "../ui/Panel.tsx";
 import { color, colorNum } from "../ui/tokens.ts";
-import type { LevelDef, World, Zone } from "@brain-swap/core";
 
-interface Bounds { minX: number; maxX: number; minY: number; maxY: number; }
-interface Cam { scale: number; offX: number; offY: number; }
+interface Bounds {
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+}
+interface Cam {
+  scale: number;
+  offX: number;
+  offY: number;
+}
 
 /** Zones to draw/frame for any objective kind (none for hold-control). */
 function objectiveZones(level: LevelDef): readonly Zone[] {
@@ -63,10 +73,16 @@ function fitCamera(b: Bounds, W: number, H: number): Cam {
 function clampPan(cam: Cam, b: Bounds, W: number, H: number): void {
   const loX = -b.maxX * cam.scale;
   const hiX = W - b.minX * cam.scale;
-  cam.offX = loX <= hiX ? Math.min(Math.max(cam.offX, loX), hiX) : W / 2 - ((b.minX + b.maxX) / 2) * cam.scale;
+  cam.offX =
+    loX <= hiX
+      ? Math.min(Math.max(cam.offX, loX), hiX)
+      : W / 2 - ((b.minX + b.maxX) / 2) * cam.scale;
   const loY = b.minY * cam.scale;
   const hiY = H + b.maxY * cam.scale;
-  cam.offY = loY <= hiY ? Math.min(Math.max(cam.offY, loY), hiY) : H / 2 + ((b.minY + b.maxY) / 2) * cam.scale;
+  cam.offY =
+    loY <= hiY
+      ? Math.min(Math.max(cam.offY, loY), hiY)
+      : H / 2 + ((b.minY + b.maxY) / 2) * cam.scale;
 }
 
 function dashedCircle(g: Graphics, cx: number, cy: number, r: number, col: number) {
@@ -98,7 +114,13 @@ export function TacticalMapPanel() {
   );
   const drawRef = useRef<() => void>(() => {});
 
-  boundsRef.current = worldBounds(level, body.start.x, body.start.y, world.vehicle.x, world.vehicle.y);
+  boundsRef.current = worldBounds(
+    level,
+    body.start.x,
+    body.start.y,
+    world.vehicle.x,
+    world.vehicle.y,
+  );
 
   const size = (): { W: number; H: number } => {
     const app = appRef.current;
@@ -132,7 +154,10 @@ export function TacticalMapPanel() {
     // no-fly / threat zone(s) (dashed red circle, faint red fill) — drawn under the
     // objective so the green stays legible where they overlap.
     for (const z of avoidZones(level, world)) {
-      g.circle(sx(z.x), sy(z.y), z.radius * cam.scale).fill({ color: colorNum(color.warn), alpha: 0.08 });
+      g.circle(sx(z.x), sy(z.y), z.radius * cam.scale).fill({
+        color: colorNum(color.warn),
+        alpha: 0.08,
+      });
       dashedCircle(g, sx(z.x), sy(z.y), z.radius * cam.scale, colorNum(color.warn));
     }
 
@@ -163,9 +188,12 @@ export function TacticalMapPanel() {
     const L = 9;
     const Wd = 5;
     g.poly([
-      ax + fx * L, ay + fy * L,
-      ax - fx * L * 0.5 + px * Wd, ay - fy * L * 0.5 + py * Wd,
-      ax - fx * L * 0.5 - px * Wd, ay - fy * L * 0.5 - py * Wd,
+      ax + fx * L,
+      ay + fy * L,
+      ax - fx * L * 0.5 + px * Wd,
+      ay - fy * L * 0.5 + py * Wd,
+      ax - fx * L * 0.5 - px * Wd,
+      ay - fy * L * 0.5 - py * Wd,
     ]).fill({ color: colorNum(color.cyan) });
   }
 
@@ -350,14 +378,17 @@ export function TacticalMapPanel() {
           {cmdAlt !== undefined && (
             <span className="amark cmd" style={{ top: altPct(cmdAlt) }} title={`CMD ${cmdAlt} m`} />
           )}
-          <span className="amark act" style={{ top: altPct(actAlt) }} title={`ACT ${Math.round(actAlt)} m`} />
+          <span
+            className="amark act"
+            style={{ top: altPct(actAlt) }}
+            title={`ACT ${Math.round(actAlt)} m`}
+          />
         </div>
         {cursor !== null && (
           <div className="map-coords">
             LAT {cursor.y.toFixed(0)} · LON {cursor.x.toFixed(0)}
           </div>
         )}
-        
       </div>
     </Panel>
   );

@@ -45,7 +45,16 @@ export interface MA_FlightCommandMT {
 export interface MA_FlightCommandStatusMT {
   CommandID: string;
   CommandProcessingState: "RECEIVED" | "ACCEPTED" | "REJECTED" | "CANCELED";
-  ValidationResult?: "FLIGHT_COMMAND_VALID" | "PERFORMANCE_LIMIT_EXCEEDED" | "CAPABILITY_NOT_SUPPORTED" | "VIOLATION_ENDURANCE" | "VIOLATION_GEOFENCE" | "VIOLATION_AIR_TRAFFIC" | "VIOLATION_TERRAIN" | "INVALID_WAYPOINT" | "INVALID_CURVE";
+  ValidationResult?:
+    | "FLIGHT_COMMAND_VALID"
+    | "PERFORMANCE_LIMIT_EXCEEDED"
+    | "CAPABILITY_NOT_SUPPORTED"
+    | "VIOLATION_ENDURANCE"
+    | "VIOLATION_GEOFENCE"
+    | "VIOLATION_AIR_TRAFFIC"
+    | "VIOLATION_TERRAIN"
+    | "INVALID_WAYPOINT"
+    | "INVALID_CURVE";
 }
 
 export interface MA_FlightActivityMT {
@@ -115,245 +124,226 @@ export interface CatalogMessageMeta {
 
 /** Runtime metadata for every Tier-1 message, keyed by type name. */
 export const MESSAGE_CATALOG = {
-  "MA_FlightCapabilityMT": {
-    "name": "MA_FlightCapabilityMT",
-    "tier": 1,
-    "direction": "FA->MA",
-    "citation": "VI Vol §1.2.2.4 Control Mode Authorization",
-    "summary": "FA advertises a commandable flight capability and its per-mode performance envelope. The envelope FA advertises here is exactly what its validator enforces later — the pedagogical contract (docs/04).",
-    "fields": [
+  MA_FlightCapabilityMT: {
+    name: "MA_FlightCapabilityMT",
+    tier: 1,
+    direction: "FA->MA",
+    citation: "VI Vol §1.2.2.4 Control Mode Authorization",
+    summary:
+      "FA advertises a commandable flight capability and its per-mode performance envelope. The envelope FA advertises here is exactly what its validator enforces later — the pedagogical contract (docs/04).",
+    fields: [
       {
-        "name": "CapabilityID",
-        "path": "MessageData.Capability.CapabilityID",
-        "type": "string",
-        "required": true
+        name: "CapabilityID",
+        path: "MessageData.Capability.CapabilityID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "CapabilityType",
-        "path": "MessageData.Capability.CapabilityType",
-        "type": "enum",
-        "values": [
-          "HSA_CSA"
-        ],
-        "required": true
+        name: "CapabilityType",
+        path: "MessageData.Capability.CapabilityType",
+        type: "enum",
+        values: ["HSA_CSA"],
+        required: true,
       },
       {
-        "name": "MinAltitude",
-        "path": "MessageData.Capability.FlightCapabilityPerformanceProfile.HSA_CSA_PerformanceProfile.MinAltitude",
-        "type": "number",
-        "required": false
+        name: "MinAltitude",
+        path: "MessageData.Capability.FlightCapabilityPerformanceProfile.HSA_CSA_PerformanceProfile.MinAltitude",
+        type: "number",
+        required: false,
       },
       {
-        "name": "MaxAltitude",
-        "path": "MessageData.Capability.FlightCapabilityPerformanceProfile.HSA_CSA_PerformanceProfile.MaxAltitude",
-        "type": "number",
-        "required": false
+        name: "MaxAltitude",
+        path: "MessageData.Capability.FlightCapabilityPerformanceProfile.HSA_CSA_PerformanceProfile.MaxAltitude",
+        type: "number",
+        required: false,
       },
       {
-        "name": "MinAirspeed",
-        "path": "MessageData.Capability.FlightCapabilityPerformanceProfile.HSA_CSA_PerformanceProfile.MinAirspeed",
-        "type": "number",
-        "required": false
+        name: "MinAirspeed",
+        path: "MessageData.Capability.FlightCapabilityPerformanceProfile.HSA_CSA_PerformanceProfile.MinAirspeed",
+        type: "number",
+        required: false,
       },
       {
-        "name": "MaxAirspeed",
-        "path": "MessageData.Capability.FlightCapabilityPerformanceProfile.HSA_CSA_PerformanceProfile.MaxAirspeed",
-        "type": "number",
-        "required": false
-      }
-    ]
+        name: "MaxAirspeed",
+        path: "MessageData.Capability.FlightCapabilityPerformanceProfile.HSA_CSA_PerformanceProfile.MaxAirspeed",
+        type: "number",
+        required: false,
+      },
+    ],
   },
-  "MA_FlightCapabilityStatusMT": {
-    "name": "MA_FlightCapabilityStatusMT",
-    "tier": 1,
-    "direction": "FA->MA",
-    "citation": "VI Vol §1.2.2.4 Control Mode Authorization (readiness)",
-    "summary": "FA signals whether an advertised capability is ready to be controlled.",
-    "fields": [
+  MA_FlightCapabilityStatusMT: {
+    name: "MA_FlightCapabilityStatusMT",
+    tier: 1,
+    direction: "FA->MA",
+    citation: "VI Vol §1.2.2.4 Control Mode Authorization (readiness)",
+    summary: "FA signals whether an advertised capability is ready to be controlled.",
+    fields: [
       {
-        "name": "CapabilityID",
-        "path": "MessageData.CapabilityStatus.CapabilityID",
-        "type": "string",
-        "required": true
+        name: "CapabilityID",
+        path: "MessageData.CapabilityStatus.CapabilityID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "Availability",
-        "path": "MessageData.CapabilityStatus.AvailabilityInfo.Availability",
-        "type": "enum",
-        "values": [
-          "AVAILABLE",
-          "UNAVAILABLE",
-          "TEMPORARILY_UNAVAILABLE"
-        ],
-        "required": true
-      }
-    ]
+        name: "Availability",
+        path: "MessageData.CapabilityStatus.AvailabilityInfo.Availability",
+        type: "enum",
+        values: ["AVAILABLE", "UNAVAILABLE", "TEMPORARILY_UNAVAILABLE"],
+        required: true,
+      },
+    ],
   },
-  "MA_ControlRequestMT": {
-    "name": "MA_ControlRequestMT",
-    "tier": 1,
-    "direction": "MA->FA",
-    "citation": "VI Vol §1.2.2.7 Receive Control Request",
-    "summary": "MA requests control of a capability. The game correlates the request to a capability by CapabilityID (fidelity lie #4: the real assignment links via Controllee/ControlType; correlation semantics preserved, format shortened).",
-    "fields": [
+  MA_ControlRequestMT: {
+    name: "MA_ControlRequestMT",
+    tier: 1,
+    direction: "MA->FA",
+    citation: "VI Vol §1.2.2.7 Receive Control Request",
+    summary:
+      "MA requests control of a capability. The game correlates the request to a capability by CapabilityID (fidelity lie #4: the real assignment links via Controllee/ControlType; correlation semantics preserved, format shortened).",
+    fields: [
       {
-        "name": "RequestType",
-        "path": "MessageData.RequestType",
-        "type": "enum",
-        "values": [
-          "ACQUIRE",
-          "RELEASE"
-        ],
-        "required": true
+        name: "RequestType",
+        path: "MessageData.RequestType",
+        type: "enum",
+        values: ["ACQUIRE", "RELEASE"],
+        required: true,
       },
       {
-        "name": "CapabilityID",
-        "path": "MessageData.ControlAssignment.CapabilityID",
-        "type": "string",
-        "required": true
-      }
-    ]
+        name: "CapabilityID",
+        path: "MessageData.ControlAssignment.CapabilityID",
+        type: "string",
+        required: true,
+      },
+    ],
   },
-  "MA_ControlRequestStatusMT": {
-    "name": "MA_ControlRequestStatusMT",
-    "tier": 1,
-    "direction": "FA->MA",
-    "citation": "VI Vol §1.2.2.7 Receive Control Request (status)",
-    "summary": "FA approves, defers (PENDING), or rejects a control request.",
-    "fields": [
+  MA_ControlRequestStatusMT: {
+    name: "MA_ControlRequestStatusMT",
+    tier: 1,
+    direction: "FA->MA",
+    citation: "VI Vol §1.2.2.7 Receive Control Request (status)",
+    summary: "FA approves, defers (PENDING), or rejects a control request.",
+    fields: [
       {
-        "name": "CapabilityID",
-        "path": "MessageData.ControlAssignment.CapabilityID",
-        "type": "string",
-        "required": true
+        name: "CapabilityID",
+        path: "MessageData.ControlAssignment.CapabilityID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "ApprovalRequestProcessingState",
-        "path": "MessageData.ApprovalRequestProcessingState",
-        "type": "enum",
-        "values": [
-          "APPROVED",
-          "PENDING",
-          "REJECTED",
-          "CANCELED"
-        ],
-        "required": true
-      }
-    ]
+        name: "ApprovalRequestProcessingState",
+        path: "MessageData.ApprovalRequestProcessingState",
+        type: "enum",
+        values: ["APPROVED", "PENDING", "REJECTED", "CANCELED"],
+        required: true,
+      },
+    ],
   },
-  "ControlStatusMT": {
-    "name": "ControlStatusMT",
-    "tier": 1,
-    "direction": "FA->MA",
-    "citation": "VI Vol §1.2.6.2 Publish Control Status",
-    "summary": "Who FA is listening to per capability. FA is always PrimaryController; MA is at most SecondaryController. Commands are honored only while MA appears as the SecondaryController for that capability (fidelity lie #8).",
-    "fields": [
+  ControlStatusMT: {
+    name: "ControlStatusMT",
+    tier: 1,
+    direction: "FA->MA",
+    citation: "VI Vol §1.2.6.2 Publish Control Status",
+    summary:
+      "Who FA is listening to per capability. FA is always PrimaryController; MA is at most SecondaryController. Commands are honored only while MA appears as the SecondaryController for that capability (fidelity lie #8).",
+    fields: [
       {
-        "name": "CapabilityID",
-        "path": "MessageData.ControlType.CapabilityControl.CapabilityID",
-        "type": "string",
-        "required": true
+        name: "CapabilityID",
+        path: "MessageData.ControlType.CapabilityControl.CapabilityID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "PrimaryController",
-        "path": "MessageData.ControlType.CapabilityControl.PrimaryController",
-        "type": "string",
-        "required": false
+        name: "PrimaryController",
+        path: "MessageData.ControlType.CapabilityControl.PrimaryController",
+        type: "string",
+        required: false,
       },
       {
-        "name": "SecondaryController",
-        "path": "MessageData.ControlType.CapabilityControl.SecondaryController.SystemID",
-        "type": "string",
-        "required": false
-      }
-    ]
+        name: "SecondaryController",
+        path: "MessageData.ControlType.CapabilityControl.SecondaryController.SystemID",
+        type: "string",
+        required: false,
+      },
+    ],
   },
-  "MA_FlightCommandMT": {
-    "name": "MA_FlightCommandMT",
-    "tier": 1,
-    "direction": "MA->FA",
-    "citation": "VI Vol §1.2.2.2 Control by HSA/CSA Command",
-    "summary": "Persistent HSA/CSA flight vector command. HSA has no completion state — the brain infers arrival from position reports (the 1.2 lesson).",
-    "fields": [
+  MA_FlightCommandMT: {
+    name: "MA_FlightCommandMT",
+    tier: 1,
+    direction: "MA->FA",
+    citation: "VI Vol §1.2.2.2 Control by HSA/CSA Command",
+    summary:
+      "Persistent HSA/CSA flight vector command. HSA has no completion state — the brain infers arrival from position reports (the 1.2 lesson).",
+    fields: [
       {
-        "name": "CommandID",
-        "path": "MessageData.Command.Capability.CommandID",
-        "type": "string",
-        "required": true
+        name: "CommandID",
+        path: "MessageData.Command.Capability.CommandID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "CommandState",
-        "path": "MessageData.Command.Capability.CommandState",
-        "type": "enum",
-        "values": [
-          "NEW",
-          "UPDATE",
-          "CANCEL"
-        ],
-        "required": true
+        name: "CommandState",
+        path: "MessageData.Command.Capability.CommandState",
+        type: "enum",
+        values: ["NEW", "UPDATE", "CANCEL"],
+        required: true,
       },
       {
-        "name": "CapabilityID",
-        "path": "MessageData.Command.Capability.CapabilityID",
-        "type": "string",
-        "required": true
+        name: "CapabilityID",
+        path: "MessageData.Command.Capability.CapabilityID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "Altitude",
-        "path": "MessageData.Command.Capability.FlightControlMode.HSA_CSA.Altitude",
-        "type": "number",
-        "required": false
+        name: "Altitude",
+        path: "MessageData.Command.Capability.FlightControlMode.HSA_CSA.Altitude",
+        type: "number",
+        required: false,
       },
       {
-        "name": "Speed",
-        "path": "MessageData.Command.Capability.FlightControlMode.HSA_CSA.Speed",
-        "type": "number",
-        "required": false
+        name: "Speed",
+        path: "MessageData.Command.Capability.FlightControlMode.HSA_CSA.Speed",
+        type: "number",
+        required: false,
       },
       {
-        "name": "Heading",
-        "path": "MessageData.Command.Capability.FlightControlMode.HSA_CSA.Direction.Heading",
-        "type": "number",
-        "required": false
+        name: "Heading",
+        path: "MessageData.Command.Capability.FlightControlMode.HSA_CSA.Direction.Heading",
+        type: "number",
+        required: false,
       },
       {
-        "name": "Course",
-        "path": "MessageData.Command.Capability.FlightControlMode.HSA_CSA.Direction.Course",
-        "type": "number",
-        "required": false
-      }
-    ]
+        name: "Course",
+        path: "MessageData.Command.Capability.FlightControlMode.HSA_CSA.Direction.Course",
+        type: "number",
+        required: false,
+      },
+    ],
   },
-  "MA_FlightCommandStatusMT": {
-    "name": "MA_FlightCommandStatusMT",
-    "tier": 1,
-    "direction": "FA->MA",
-    "citation": "VI Vol §1.2.2.2 Control by HSA/CSA Command (status)",
-    "summary": "FA accepts or rejects a flight command; rejection carries a ValidationResult reason.",
-    "fields": [
+  MA_FlightCommandStatusMT: {
+    name: "MA_FlightCommandStatusMT",
+    tier: 1,
+    direction: "FA->MA",
+    citation: "VI Vol §1.2.2.2 Control by HSA/CSA Command (status)",
+    summary: "FA accepts or rejects a flight command; rejection carries a ValidationResult reason.",
+    fields: [
       {
-        "name": "CommandID",
-        "path": "MessageData.CommandID",
-        "type": "string",
-        "required": true
+        name: "CommandID",
+        path: "MessageData.CommandID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "CommandProcessingState",
-        "path": "MessageData.CommandProcessingState",
-        "type": "enum",
-        "values": [
-          "RECEIVED",
-          "ACCEPTED",
-          "REJECTED",
-          "CANCELED"
-        ],
-        "required": true
+        name: "CommandProcessingState",
+        path: "MessageData.CommandProcessingState",
+        type: "enum",
+        values: ["RECEIVED", "ACCEPTED", "REJECTED", "CANCELED"],
+        required: true,
       },
       {
-        "name": "ValidationResult",
-        "path": "MessageData.CannotComplyDetails.ValidationResult",
-        "type": "enum",
-        "values": [
+        name: "ValidationResult",
+        path: "MessageData.CannotComplyDetails.ValidationResult",
+        type: "enum",
+        values: [
           "FLIGHT_COMMAND_VALID",
           "PERFORMANCE_LIMIT_EXCEEDED",
           "CAPABILITY_NOT_SUPPORTED",
@@ -362,152 +352,156 @@ export const MESSAGE_CATALOG = {
           "VIOLATION_AIR_TRAFFIC",
           "VIOLATION_TERRAIN",
           "INVALID_WAYPOINT",
-          "INVALID_CURVE"
+          "INVALID_CURVE",
         ],
-        "required": false
-      }
-    ]
+        required: false,
+      },
+    ],
   },
-  "MA_FlightActivityMT": {
-    "name": "MA_FlightActivityMT",
-    "tier": 1,
-    "direction": "FA->MA",
-    "citation": "VI Vol §1.2.6.8 Receive Vehicle State Data (activity)",
-    "summary": "FA reports the active flight activity resulting from an accepted command.",
-    "fields": [
+  MA_FlightActivityMT: {
+    name: "MA_FlightActivityMT",
+    tier: 1,
+    direction: "FA->MA",
+    citation: "VI Vol §1.2.6.8 Receive Vehicle State Data (activity)",
+    summary: "FA reports the active flight activity resulting from an accepted command.",
+    fields: [
       {
-        "name": "ActivityID",
-        "path": "MessageData.Activity.ActivityID",
-        "type": "string",
-        "required": true
+        name: "ActivityID",
+        path: "MessageData.Activity.ActivityID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "Altitude",
-        "path": "MessageData.Activity.VehicleCommandState.Altitude",
-        "type": "number",
-        "required": false
+        name: "Altitude",
+        path: "MessageData.Activity.VehicleCommandState.Altitude",
+        type: "number",
+        required: false,
       },
       {
-        "name": "Heading",
-        "path": "MessageData.Activity.VehicleCommandState.Heading",
-        "type": "number",
-        "required": false
+        name: "Heading",
+        path: "MessageData.Activity.VehicleCommandState.Heading",
+        type: "number",
+        required: false,
       },
       {
-        "name": "Speed",
-        "path": "MessageData.Activity.VehicleCommandState.Speed",
-        "type": "number",
-        "required": false
-      }
-    ]
+        name: "Speed",
+        path: "MessageData.Activity.VehicleCommandState.Speed",
+        type: "number",
+        required: false,
+      },
+    ],
   },
-  "MA_PositionReportDetailedMT": {
-    "name": "MA_PositionReportDetailedMT",
-    "tier": 1,
-    "direction": "FA->MA",
-    "citation": "VI Vol §1.2.6.8 Receive Vehicle State Data (position)",
-    "summary": "Periodic ownship state. The brain consumes this to know where it is and whether it has arrived (win conditions are world-state, never message-sent).",
-    "fields": [
+  MA_PositionReportDetailedMT: {
+    name: "MA_PositionReportDetailedMT",
+    tier: 1,
+    direction: "FA->MA",
+    citation: "VI Vol §1.2.6.8 Receive Vehicle State Data (position)",
+    summary:
+      "Periodic ownship state. The brain consumes this to know where it is and whether it has arrived (win conditions are world-state, never message-sent).",
+    fields: [
       {
-        "name": "Latitude",
-        "path": "MessageData.PositionReportData.Kinematics.Position.Latitude",
-        "type": "number",
-        "required": false
+        name: "Latitude",
+        path: "MessageData.PositionReportData.Kinematics.Position.Latitude",
+        type: "number",
+        required: false,
       },
       {
-        "name": "Longitude",
-        "path": "MessageData.PositionReportData.Kinematics.Position.Longitude",
-        "type": "number",
-        "required": false
+        name: "Longitude",
+        path: "MessageData.PositionReportData.Kinematics.Position.Longitude",
+        type: "number",
+        required: false,
       },
       {
-        "name": "Altitude",
-        "path": "MessageData.PositionReportData.Kinematics.Position.Altitude",
-        "type": "number",
-        "required": false
+        name: "Altitude",
+        path: "MessageData.PositionReportData.Kinematics.Position.Altitude",
+        type: "number",
+        required: false,
       },
       {
-        "name": "NavigationSolutionState",
-        "path": "MessageData.PositionReportData.NavigationSolutionState",
-        "type": "enum",
-        "values": [
-          "ALIGNING",
-          "FREE_INERTIAL",
-          "GPS",
-          "BLENDED"
-        ],
-        "required": false
-      }
-    ]
+        name: "NavigationSolutionState",
+        path: "MessageData.PositionReportData.NavigationSolutionState",
+        type: "enum",
+        values: ["ALIGNING", "FREE_INERTIAL", "GPS", "BLENDED"],
+        required: false,
+      },
+    ],
   },
-  "MA_FaultMT": {
-    "name": "MA_FaultMT",
-    "tier": 1,
-    "direction": "FA->MA",
-    "citation": "VI Vol §1.2.6 Receive Vehicle State Data (fault information)",
-    "summary": "FA reports a subsystem fault. Used here for the collision-avoidance interrupt: when MA commands a vector into a threat, FA takes the aircraft and raises a CAUTION fault. Real MA_SubsystemFaultType also carries FaultState/ComponentID — pruned to the fields the player reads (fidelity lie #5).",
-    "fields": [
+  MA_FaultMT: {
+    name: "MA_FaultMT",
+    tier: 1,
+    direction: "FA->MA",
+    citation: "VI Vol §1.2.6 Receive Vehicle State Data (fault information)",
+    summary:
+      "FA reports a subsystem fault. Used here for the collision-avoidance interrupt: when MA commands a vector into a threat, FA takes the aircraft and raises a CAUTION fault. Real MA_SubsystemFaultType also carries FaultState/ComponentID — pruned to the fields the player reads (fidelity lie #5).",
+    fields: [
       {
-        "name": "FaultID",
-        "path": "MessageData.FaultInformation.FaultID",
-        "type": "string",
-        "required": true
+        name: "FaultID",
+        path: "MessageData.FaultInformation.FaultID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "Severity",
-        "path": "MessageData.FaultInformation.Severity",
-        "type": "enum",
-        "values": [
-          "NOMINAL",
-          "ADVISORY",
-          "CAUTION",
-          "WARNING",
-          "FAILED"
-        ],
-        "required": true
+        name: "Severity",
+        path: "MessageData.FaultInformation.Severity",
+        type: "enum",
+        values: ["NOMINAL", "ADVISORY", "CAUTION", "WARNING", "FAILED"],
+        required: true,
       },
       {
-        "name": "FaultCode",
-        "path": "MessageData.FaultInformation.FaultCode",
-        "type": "string",
-        "required": false
+        name: "FaultCode",
+        path: "MessageData.FaultInformation.FaultCode",
+        type: "string",
+        required: false,
       },
       {
-        "name": "FaultDescription",
-        "path": "MessageData.FaultInformation.FaultDescription",
-        "type": "string",
-        "required": false
+        name: "FaultDescription",
+        path: "MessageData.FaultInformation.FaultDescription",
+        type: "string",
+        required: false,
       },
       {
-        "name": "CapabilityID",
-        "path": "MessageData.FaultInformation.CapabilityID",
-        "type": "string",
-        "required": false
-      }
-    ]
+        name: "CapabilityID",
+        path: "MessageData.FaultInformation.CapabilityID",
+        type: "string",
+        required: false,
+      },
+    ],
   },
-  "NavigationReportMT": {
-    "name": "NavigationReportMT",
-    "tier": 1,
-    "direction": "FA->MA",
-    "citation": "VI Vol §1.2.6.8 Receive Vehicle State Data (endurance)",
-    "summary": "Periodic ownship endurance. FA publishes remaining fuel (mass, kg) and percent of capacity; the brain reads it to fly a sustainable profile (the Bingo lesson). Real Endurance carries Fuel/Duration/DurationEnd/Percent — pruned here to flat Fuel + Percent (fidelity lie #5).",
-    "fields": [
+  NavigationReportMT: {
+    name: "NavigationReportMT",
+    tier: 1,
+    direction: "FA->MA",
+    citation: "VI Vol §1.2.6.8 Receive Vehicle State Data (endurance)",
+    summary:
+      "Periodic ownship endurance. FA publishes remaining fuel (mass, kg) and percent of capacity; the brain reads it to fly a sustainable profile (the Bingo lesson). Real Endurance carries Fuel/Duration/DurationEnd/Percent — pruned here to flat Fuel + Percent (fidelity lie #5).",
+    fields: [
       {
-        "name": "Fuel",
-        "path": "MessageData.Endurance.Fuel",
-        "type": "number",
-        "required": false
+        name: "Fuel",
+        path: "MessageData.Endurance.Fuel",
+        type: "number",
+        required: false,
       },
       {
-        "name": "Percent",
-        "path": "MessageData.Endurance.Percent",
-        "type": "number",
-        "required": false
-      }
-    ]
-  }
+        name: "Percent",
+        path: "MessageData.Endurance.Percent",
+        type: "number",
+        required: false,
+      },
+    ],
+  },
 } as const satisfies Record<MessageTypeName, CatalogMessageMeta>;
 
 /** All Tier-1 message type names, in catalog order. */
-export const MESSAGE_TYPE_NAMES = ["MA_FlightCapabilityMT","MA_FlightCapabilityStatusMT","MA_ControlRequestMT","MA_ControlRequestStatusMT","ControlStatusMT","MA_FlightCommandMT","MA_FlightCommandStatusMT","MA_FlightActivityMT","MA_PositionReportDetailedMT","MA_FaultMT","NavigationReportMT"] as const satisfies readonly MessageTypeName[];
+export const MESSAGE_TYPE_NAMES = [
+  "MA_FlightCapabilityMT",
+  "MA_FlightCapabilityStatusMT",
+  "MA_ControlRequestMT",
+  "MA_ControlRequestStatusMT",
+  "ControlStatusMT",
+  "MA_FlightCommandMT",
+  "MA_FlightCommandStatusMT",
+  "MA_FlightActivityMT",
+  "MA_PositionReportDetailedMT",
+  "MA_FaultMT",
+  "NavigationReportMT",
+] as const satisfies readonly MessageTypeName[];

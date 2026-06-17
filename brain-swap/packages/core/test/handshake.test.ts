@@ -1,16 +1,16 @@
-import { describe, expect, it } from "vitest";
 import {
   type BodyProfile,
+  initWorld,
+  injectMA,
+  isSecondaryController,
   type LevelDef,
   type MessageLogEntry,
-  injectMA,
-  initWorld,
-  isSecondaryController,
   makeScenario,
   msg,
   step,
   type World,
 } from "@brain-swap/core";
+import { describe, expect, it } from "vitest";
 
 // AX-01-flavoured test body: instant approval, publication disabled so the golden
 // handshake log is just the control-acquisition flow (VI §1.2.2.4 + §1.2.2.7).
@@ -64,9 +64,10 @@ describe("control-acquisition handshake (golden log)", () => {
     expect(isSecondaryController(w.fa, "MULE-01")).toBe(true);
 
     const status = w.log.find((e) => e.type === "MA_ControlRequestStatusMT");
-    expect((status?.payload as { ApprovalRequestProcessingState: string }).ApprovalRequestProcessingState).toBe(
-      "APPROVED",
-    );
+    expect(
+      (status?.payload as { ApprovalRequestProcessingState: string })
+        .ApprovalRequestProcessingState,
+    ).toBe("APPROVED");
     const ctrl = w.log.find((e) => e.type === "ControlStatusMT");
     expect((ctrl?.payload as { SecondaryController?: string }).SecondaryController).toBe("MA");
   });
@@ -116,7 +117,9 @@ describe("delayed capability availability", () => {
     let w = initWorld(makeScenario(body, { level: delayedLevel }));
     w = step(w); // t1: boot status delivered
     const boot = w.log.find((e) => e.type === "MA_FlightCapabilityStatusMT");
-    expect((boot?.payload as { Availability: string }).Availability).toBe("TEMPORARILY_UNAVAILABLE");
+    expect((boot?.payload as { Availability: string }).Availability).toBe(
+      "TEMPORARILY_UNAVAILABLE",
+    );
 
     w = step(w); // t2
     w = step(w); // t3: capability-available event fires (AVAILABLE enqueued, delivered t4)
@@ -133,9 +136,10 @@ describe("delayed capability availability", () => {
     w = step(w); // t3: REJECTED status delivered
 
     const status = w.log.find((e) => e.type === "MA_ControlRequestStatusMT");
-    expect((status?.payload as { ApprovalRequestProcessingState: string }).ApprovalRequestProcessingState).toBe(
-      "REJECTED",
-    );
+    expect(
+      (status?.payload as { ApprovalRequestProcessingState: string })
+        .ApprovalRequestProcessingState,
+    ).toBe("REJECTED");
     expect(isSecondaryController(w.fa, "MULE-01")).toBe(false);
   });
 
@@ -147,8 +151,9 @@ describe("delayed capability availability", () => {
     w = step(w); // APPROVED delivered
     expect(isSecondaryController(w.fa, "MULE-01")).toBe(true);
     const status = w.log.find((e) => e.type === "MA_ControlRequestStatusMT");
-    expect((status?.payload as { ApprovalRequestProcessingState: string }).ApprovalRequestProcessingState).toBe(
-      "APPROVED",
-    );
+    expect(
+      (status?.payload as { ApprovalRequestProcessingState: string })
+        .ApprovalRequestProcessingState,
+    ).toBe("APPROVED");
   });
 });

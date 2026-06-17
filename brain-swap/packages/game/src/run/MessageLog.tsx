@@ -1,15 +1,16 @@
 // The MESSAGE LOG pillar (right column) + the InspectorPanel that drops in at its bottom.
 // This is the debugger (docs/04). Bound to the live bus: world.log up to the playhead.
 // Non-collapsible by design — hiding the log defeats the game's premise (handoff).
+
+import type { MessageLogEntry, MessageTypeName } from "@brain-swap/core";
 import { useEffect, useMemo, useRef } from "react";
+import { hintFor } from "../meta/hints.ts";
+import { buildFieldRows } from "../sim/fields.ts";
 import { useStore } from "../store.ts";
-import { Identifier } from "../ui/Identifier.tsx";
 import { DispositionBadge } from "../ui/DispositionBadge.tsx";
+import { Identifier } from "../ui/Identifier.tsx";
 import { Panel } from "../ui/Panel.tsx";
 import { badgeFor } from "../ui/tokens.ts";
-import { buildFieldRows } from "../sim/fields.ts";
-import { hintFor } from "../meta/hints.ts";
-import type { MessageLogEntry, MessageTypeName } from "@brain-swap/core";
 
 // FA's timer-driven publications — see faPublish() in core/src/fa/engine.ts.
 const PERIODIC_TYPES = new Set<MessageTypeName>([
@@ -30,7 +31,8 @@ export function MessageLogPanel() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const visible = useMemo(
-    () => log.map((e, i) => ({ e, i })).filter(({ e }) => showPeriodic || !PERIODIC_TYPES.has(e.type)),
+    () =>
+      log.map((e, i) => ({ e, i })).filter(({ e }) => showPeriodic || !PERIODIC_TYPES.has(e.type)),
     [log, showPeriodic],
   );
   const hiddenCount = log.length - visible.length;

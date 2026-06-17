@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
-import { describe, expect, it } from "vitest";
 import { initWorld, type MessageLogEntry, run, scoreWorld, type World } from "@brain-swap/core";
 import { level16, level16NaiveBrain, level16ReferenceBrain, scenarioFor } from "@brain-swap/levels";
+import { describe, expect, it } from "vitest";
 
 // Level 1.6 "Bingo": a distant station on a thin tank. FA validates commands against
 // endurance, not just the envelope. The reference cruises at a sustainable speed that
@@ -47,11 +47,22 @@ describe("level 1.6 golden run (reference brain)", () => {
       .log.filter((e) => e.from === "MA")
       .map((e) => ({ tick: e.tick, type: e.type, payload: e.payload }));
     expect(sends).toEqual([
-      { tick: 2, type: "MA_ControlRequestMT", payload: { RequestType: "ACQUIRE", CapabilityID: "HERON-02" } },
+      {
+        tick: 2,
+        type: "MA_ControlRequestMT",
+        payload: { RequestType: "ACQUIRE", CapabilityID: "HERON-02" },
+      },
       {
         tick: 7,
         type: "MA_FlightCommandMT",
-        payload: { CommandID: "CMD-1", CommandState: "NEW", CapabilityID: "HERON-02", Heading: 270, Altitude: 3000, Speed: 35 },
+        payload: {
+          CommandID: "CMD-1",
+          CommandState: "NEW",
+          CapabilityID: "HERON-02",
+          Heading: 270,
+          Altitude: 3000,
+          Speed: 35,
+        },
       },
     ]);
   });
@@ -75,6 +86,8 @@ describe("level 1.6 negative run (naive max-throttle brain)", () => {
         (e.payload as { CommandProcessingState?: string }).CommandProcessingState === "REJECTED",
     );
     expect(rejected).toBeDefined();
-    expect((rejected!.payload as { ValidationResult?: string }).ValidationResult).toBe("VIOLATION_ENDURANCE");
+    expect((rejected!.payload as { ValidationResult?: string }).ValidationResult).toBe(
+      "VIOLATION_ENDURANCE",
+    );
   });
 });

@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { initWorld, type MessageLogEntry, run, scoreWorld, type World } from "@brain-swap/core";
 import { level13, level13NaiveBrain, level13ReferenceBrain, scenarioFor } from "@brain-swap/levels";
+import { describe, expect, it } from "vitest";
 
 // Level 1.3 "Envelope": reach-hold at the Heron's ceiling. Only a brain that reads
 // cap.MaxAltitude reaches the band; a hardcoded over-ceiling altitude is rejected.
@@ -78,7 +78,11 @@ describe("level 1.3 golden run (reference brain)", () => {
       .log.filter((e) => e.from === "MA")
       .map((e) => ({ tick: e.tick, type: e.type, payload: e.payload }));
     expect(sends).toEqual([
-      { tick: 2, type: "MA_ControlRequestMT", payload: { RequestType: "ACQUIRE", CapabilityID: "HERON-02" } },
+      {
+        tick: 2,
+        type: "MA_ControlRequestMT",
+        payload: { RequestType: "ACQUIRE", CapabilityID: "HERON-02" },
+      },
       {
         tick: 7,
         type: "MA_FlightCommandMT",
@@ -94,7 +98,12 @@ describe("level 1.3 golden run (reference brain)", () => {
       {
         tick: 17,
         type: "MA_FlightCommandMT",
-        payload: { CommandID: "CMD-1", CommandState: "UPDATE", CapabilityID: "HERON-02", Speed: 25 },
+        payload: {
+          CommandID: "CMD-1",
+          CommandState: "UPDATE",
+          CapabilityID: "HERON-02",
+          Speed: 25,
+        },
       },
     ]);
   });

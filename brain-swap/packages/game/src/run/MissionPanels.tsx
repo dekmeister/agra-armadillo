@@ -1,8 +1,9 @@
 // MissionCard + BodySpecSheet (center column, under the map).
-import { useStore } from "../store.ts";
-import { Panel } from "../ui/Panel.tsx";
-import { Identifier } from "../ui/Identifier.tsx";
+
 import { capEntries } from "../sim/caps.ts";
+import { useStore } from "../store.ts";
+import { Identifier } from "../ui/Identifier.tsx";
+import { Panel } from "../ui/Panel.tsx";
 
 interface CollapseProps {
   collapsed?: boolean;
@@ -33,8 +34,8 @@ export function MissionCard({ collapsed, onToggleCollapse }: CollapseProps) {
             {!level.brief && (
               <div className="obj">
                 <span className="k-dim">OBJECTIVE — </span>
-                Fly to the objective zone at ({o.zone.x}, {o.zone.y}) m (radius {o.zone.radius} m) and
-                hold at {o.altitude} m (±{o.altitudeTolerance} m).
+                Fly to the objective zone at ({o.zone.x}, {o.zone.y}) m (radius {o.zone.radius} m)
+                and hold at {o.altitude} m (±{o.altitudeTolerance} m).
               </div>
             )}
             <div className="win">
@@ -43,7 +44,8 @@ export function MissionCard({ collapsed, onToggleCollapse }: CollapseProps) {
           </>
         ) : o.kind === "hold-control" ? (
           <div className="win">
-            WIN ▸ hold secondary control of {level.capabilityId} for {o.holdTicks} consecutive ticks.
+            WIN ▸ hold secondary control of {level.capabilityId} for {o.holdTicks} consecutive
+            ticks.
           </div>
         ) : (
           <div className="win">
@@ -52,8 +54,8 @@ export function MissionCard({ collapsed, onToggleCollapse }: CollapseProps) {
         )}
         {avoidCount > 0 && (
           <div className="win k-warn">
-            CAUTION ▸ stay clear of {avoidCount} no-fly zone{avoidCount > 1 ? "s" : ""} — entering one
-            ends the mission.
+            CAUTION ▸ stay clear of {avoidCount} no-fly zone{avoidCount > 1 ? "s" : ""} — entering
+            one ends the mission.
           </div>
         )}
       </div>
@@ -115,7 +117,9 @@ export function BodySpecSheet({ collapsed, onToggleCollapse }: CollapseProps) {
                 {Math.round(fuelNow!)} / {fuelModel.capacity} kg · {Math.round(fuelPct)}%
               </span>
             </div>
-            <div style={{ height: 4, background: "var(--k-line)", border: "1px solid var(--k-line2)" }}>
+            <div
+              style={{ height: 4, background: "var(--k-line)", border: "1px solid var(--k-line2)" }}
+            >
               <div
                 style={{
                   height: "100%",

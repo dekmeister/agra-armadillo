@@ -6,18 +6,19 @@
 // were a state-machine concept). Only required-field presence is validated client-side;
 // envelope violations are deliberately allowed through so FA can reject them, teaching
 // the player to recognise and handle REJECTED responses.
-import { useEffect, useMemo, useRef, useState } from "react";
+
 import {
   catalogEntry,
   type Message,
   type MessageLogEntry,
   type MessageTypeName,
 } from "@brain-swap/core";
-import { useStore } from "../store.ts";
-import { Panel } from "../ui/Panel.tsx";
-import { Identifier } from "../ui/Identifier.tsx";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { parseLiteral } from "../sim/format.ts";
+import { useStore } from "../store.ts";
+import { Identifier } from "../ui/Identifier.tsx";
 import { numericKeyDown, numericPaste } from "../ui/inputFilters.ts";
+import { Panel } from "../ui/Panel.tsx";
 
 const NO_MESSAGES: readonly MessageTypeName[] = [];
 
@@ -256,7 +257,12 @@ function FieldForm({
 
   return (
     <div className="modal-scrim" onClick={onCancel}>
-      <div className="modal" data-tour="composer" onClick={(e) => e.stopPropagation()} onKeyDown={onFormKey}>
+      <div
+        className="modal"
+        data-tour="composer"
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={onFormKey}
+      >
         <Panel title="SEND" titleAccent={messageType} meta="COMPOSE FIELDS">
           <div className="mbody" style={{ display: "block" }}>
             <div className="fieldlist">
@@ -330,9 +336,7 @@ function FieldForm({
               key={flashTick}
               className={`vsum${valid ? "" : " bad"}${flashTick > 0 && !valid ? " flash" : ""}`}
             >
-              {valid
-                ? "all required fields satisfied"
-                : errors.join(" · ")}
+              {valid ? "all required fields satisfied" : errors.join(" · ")}
             </span>
             <div className="right">
               {onBack && (

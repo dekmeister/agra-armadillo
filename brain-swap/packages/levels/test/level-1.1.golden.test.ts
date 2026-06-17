@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { initWorld, type MessageLogEntry, run, scoreWorld, type World } from "@brain-swap/core";
 import { level11, level11NaiveBrain, level11ReferenceBrain, scenarioFor } from "@brain-swap/levels";
+import { describe, expect, it } from "vitest";
 
 // Level 1.1 "Handshake": the control-acquisition handshake in isolation (no flight).
 // Win = MA is the secondary controller of MULE-01 for 30 consecutive ticks.
@@ -20,7 +20,10 @@ const project = (log: readonly MessageLogEntry[]): string[] =>
 const GOLDEN_LOG = [
   "t1 FA->MA MA_FlightCapabilityMT [delivered]",
   "t1 FA->MA MA_FlightCapabilityStatusMT [delivered]",
-  ...Array.from({ length: 11 }, (_, i) => `t${i + 2} FA->MA MA_PositionReportDetailedMT [delivered]`),
+  ...Array.from(
+    { length: 11 },
+    (_, i) => `t${i + 2} FA->MA MA_PositionReportDetailedMT [delivered]`,
+  ),
   "t13 FA->MA MA_FlightCapabilityStatusMT [delivered]",
   "t13 FA->MA MA_PositionReportDetailedMT [delivered]",
   "t14 MA->FA MA_ControlRequestMT [delivered]",
@@ -28,7 +31,10 @@ const GOLDEN_LOG = [
   "t15 FA->MA MA_ControlRequestStatusMT [delivered]",
   "t15 FA->MA ControlStatusMT [delivered]",
   "t15 FA->MA MA_PositionReportDetailedMT [delivered]",
-  ...Array.from({ length: 28 }, (_, i) => `t${i + 16} FA->MA MA_PositionReportDetailedMT [delivered]`),
+  ...Array.from(
+    { length: 28 },
+    (_, i) => `t${i + 16} FA->MA MA_PositionReportDetailedMT [delivered]`,
+  ),
 ];
 
 describe("level 1.1 golden run (reference brain)", () => {
@@ -47,7 +53,11 @@ describe("level 1.1 golden run (reference brain)", () => {
       .log.filter((e) => e.from === "MA")
       .map((e) => ({ tick: e.tick, type: e.type, payload: e.payload }));
     expect(sends).toEqual([
-      { tick: 14, type: "MA_ControlRequestMT", payload: { RequestType: "ACQUIRE", CapabilityID: "MULE-01" } },
+      {
+        tick: 14,
+        type: "MA_ControlRequestMT",
+        payload: { RequestType: "ACQUIRE", CapabilityID: "MULE-01" },
+      },
     ]);
   });
 

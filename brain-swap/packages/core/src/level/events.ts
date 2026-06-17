@@ -87,7 +87,9 @@ export interface EventOverlay {
 export function advanceThreats(threats: readonly ActiveThreat[]): readonly ActiveThreat[] {
   if (!threats.some((t) => t.velocity)) return threats;
   return threats.map((t) =>
-    t.velocity ? { ...t, zone: { ...t.zone, x: t.zone.x + t.velocity.vx, y: t.zone.y + t.velocity.vy } } : t,
+    t.velocity
+      ? { ...t, zone: { ...t.zone, x: t.zone.x + t.velocity.vx, y: t.zone.y + t.velocity.vy } }
+      : t,
   );
 }
 
@@ -150,7 +152,9 @@ export function applyEvents(
 
   const due = events
     .filter((e) => e.tick === tick)
-    .sort((a, b) => KIND_ORDER[a.kind] - KIND_ORDER[b.kind] || eventId(a).localeCompare(eventId(b)));
+    .sort(
+      (a, b) => KIND_ORDER[a.kind] - KIND_ORDER[b.kind] || eventId(a).localeCompare(eventId(b)),
+    );
   if (due.length === 0) return { fa, overlay, outbound: [] };
 
   let dynamicEnvelope = overlay.dynamicEnvelope;

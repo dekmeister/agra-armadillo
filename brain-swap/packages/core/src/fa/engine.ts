@@ -8,18 +8,23 @@
 //     secondary controller (fidelity lie #8 — FA isn't listening, no NACK invented).
 //   • Receive Vehicle State Data (VI §1.2.6.8): periodic position + activity reports.
 import { type BodyProfile, type CapabilityProfile, findCapability } from "../body.ts";
+import type { ActiveThreat } from "../level/events.ts";
+import type { MA_ControlRequestMT, MA_FlightCommandMT } from "../messages/index.ts";
 import {
   DELIVERED,
+  type Disposition,
   FA_SYSTEM_ID,
   IGNORED_NOT_CONTROLLER,
   MA_SYSTEM_ID,
-  type Disposition,
   type Message,
   msg,
 } from "../types.ts";
-import { type FlightTarget, headingAwayFrom, pathEntersZone, type VehicleState } from "../vehicle/pointmass.ts";
-import type { ActiveThreat } from "../level/events.ts";
-import type { MA_ControlRequestMT, MA_FlightCommandMT } from "../messages/index.ts";
+import {
+  type FlightTarget,
+  headingAwayFrom,
+  pathEntersZone,
+  type VehicleState,
+} from "../vehicle/pointmass.ts";
 import { validateFlightCommand } from "./validator.ts";
 
 export interface FaState {
@@ -99,10 +104,7 @@ function controlStatus(capabilityId: string, secondary: string | null): Message 
   });
 }
 
-function approvalStatus(
-  capabilityId: string,
-  state: "APPROVED" | "PENDING" | "REJECTED",
-): Message {
+function approvalStatus(capabilityId: string, state: "APPROVED" | "PENDING" | "REJECTED"): Message {
   return msg("MA_ControlRequestStatusMT", "FA", "MA", {
     CapabilityID: capabilityId,
     ApprovalRequestProcessingState: state,
@@ -161,7 +163,14 @@ export function faHandleInbound(
     case "MA_ControlRequestMT":
       return handleControlRequest(body, fa, message.payload as MA_ControlRequestMT);
     case "MA_FlightCommandMT":
-      return handleFlightCommand(body, fa, message.payload as MA_FlightCommandMT, dynamicEnvelope, vehicle, threats);
+      return handleFlightCommand(
+        body,
+        fa,
+        message.payload as MA_FlightCommandMT,
+        dynamicEnvelope,
+        vehicle,
+        threats,
+      );
     default:
       return { fa, outbound: [], disposition: DELIVERED };
   }
@@ -230,7 +239,12 @@ function handleFlightCommand(
   // Collision hold: while FA is holding the aircraft clear of a threat, it accepts a
   // command only if the new vector also clears every threat; otherwise it rejects with
   // VIOLATION_AIR_TRAFFIC. A clear command yields control back (releases the hold).
-  if (fa.collisionFault !== null && body.collisionLookaheadTicks !== undefined && vehicle && cmd.CommandState !== "CANCEL") {
+  if (
+    fa.collisionFault !== null &&
+    body.collisionLookaheadTicks !== undefined &&
+    vehicle &&
+    cmd.CommandState !== "CANCEL"
+  ) {
     const h = cmd.Heading ?? vehicle.heading;
     const s = cmd.Speed ?? vehicle.speed;
     const stillDangerous = threats.some((t) =>
@@ -309,7 +323,12 @@ export function faPublish(
   // Endurance report — only for fuel-bearing bodies with a navigation interval set.
   let navigationTicker = fa.navigationTicker + 1;
   const navInterval = body.publish.navigationIntervalTicks ?? 0;
-  if (body.fuel !== undefined && vehicle.fuel !== undefined && navInterval > 0 && navigationTicker >= navInterval) {
+  if (
+    body.fuel !== undefined &&
+    vehicle.fuel !== undefined &&
+    navInterval > 0 &&
+    navigationTicker >= navInterval
+  ) {
     navigationTicker = 0;
     const pct = body.fuel.capacity > 0 ? (vehicle.fuel / body.fuel.capacity) * 100 : 0;
     outbound.push(
@@ -341,7 +360,9 @@ export function faCollisionCheck(
   const lookahead = body.collisionLookaheadTicks;
   if (lookahead === undefined) return { fa, outbound: [] };
   if (threats.length === 0) {
-    return fa.collisionFault !== null ? { fa: { ...fa, collisionFault: null }, outbound: [] } : { fa, outbound: [] };
+    return fa.collisionFault !== null
+      ? { fa: { ...fa, collisionFault: null }, outbound: [] }
+      : { fa, outbound: [] };
   }
   // Only intervene once MA is actively flying a commanded vector — FA doesn't seize an
   // aircraft no one is steering toward a hazard (target null = no MA command in effect).
@@ -360,11 +381,16 @@ export function faCollisionCheck(
       msg("MA_FaultMT", "FA", "MA", {
         FaultID: faultId,
         Severity: "CAUTION",
-        FaultDescription: "Collision avoidance: commanded vector enters a hazard zone. FA holding clear.",
+        FaultDescription:
+          "Collision avoidance: commanded vector enters a hazard zone. FA holding clear.",
         CapabilityID: body.capabilities[0]?.id ?? "",
       }),
     );
     next = { ...fa, collisionFault: danger.id, faultSeq: fa.faultSeq + 1 };
   }
-  return { fa: next, outbound, targetOverride: { heading: headingAwayFrom(vehicle.x, vehicle.y, danger.zone) } };
+  return {
+    fa: next,
+    outbound,
+    targetOverride: { heading: headingAwayFrom(vehicle.x, vehicle.y, danger.zone) },
+  };
 }
