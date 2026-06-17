@@ -19,14 +19,20 @@ export function scoreWorld(world: World): Score {
   let rejections = 0;
   for (const entry of world.log) {
     if (entry.from === "MA") busTraffic += 1;
-    // Rejections (docs/01): commands ignored while not the controller, plus commands
-    // FA rejected. Command rejections are carried in the status payload, not the
-    // delivery disposition, so check both.
+    // Rejections (docs/01): commands ignored while not the controller, plus MA sends
+    // FA rejected — a flight command (PERFORMANCE_LIMIT_EXCEEDED, …) or an ACQUIRE
+    // issued before the capability advertised AVAILABLE (level 1.1). Rejections are
+    // carried in the status payload, not the delivery disposition, so check both.
     if (entry.disposition.kind === "ignored-not-controller") {
       rejections += 1;
     } else if (
       entry.type === "MA_FlightCommandStatusMT" &&
       (entry.payload as { CommandProcessingState?: string }).CommandProcessingState === "REJECTED"
+    ) {
+      rejections += 1;
+    } else if (
+      entry.type === "MA_ControlRequestStatusMT" &&
+      (entry.payload as { ApprovalRequestProcessingState?: string }).ApprovalRequestProcessingState === "REJECTED"
     ) {
       rejections += 1;
     }

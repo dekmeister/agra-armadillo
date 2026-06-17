@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   type BodyProfile,
+  type LevelDef,
   type MessageLogEntry,
   injectMA,
   initWorld,
@@ -94,5 +95,60 @@ describe("control-acquisition handshake (golden log)", () => {
 
   it("is deterministic: identical log across two independent runs", () => {
     expect(project(runHandshake().log)).toEqual(project(runHandshake().log));
+  });
+});
+
+// Control Mode Authorization readiness (VI §1.2.2.4): a capability with a scheduled
+// `capability-available` event boots TEMPORARILY_UNAVAILABLE and only goes AVAILABLE
+// when the event fires; ACQUIRE before then is REJECTED (level 1.1 uses tick 12).
+describe("delayed capability availability", () => {
+  const delayedLevel: LevelDef = {
+    id: "test-delay",
+    title: "Delay",
+    body: "test",
+    capabilityId: "MULE-01",
+    objective: { kind: "hold-control", holdTicks: 5 },
+    events: [{ kind: "capability-available", tick: 3, capabilityId: "MULE-01" }],
+    maxTicks: 50,
+  };
+
+  it("boots the capability TEMPORARILY_UNAVAILABLE until the event fires", () => {
+    let w = initWorld(makeScenario(body, { level: delayedLevel }));
+    w = step(w); // t1: boot status delivered
+    const boot = w.log.find((e) => e.type === "MA_FlightCapabilityStatusMT");
+    expect((boot?.payload as { Availability: string }).Availability).toBe("TEMPORARILY_UNAVAILABLE");
+
+    w = step(w); // t2
+    w = step(w); // t3: capability-available event fires (AVAILABLE enqueued, delivered t4)
+    w = step(w); // t4: AVAILABLE delivered
+    const avails = w.log.filter((e) => e.type === "MA_FlightCapabilityStatusMT");
+    expect((avails.at(-1)?.payload as { Availability: string }).Availability).toBe("AVAILABLE");
+  });
+
+  it("REJECTS an ACQUIRE issued before the capability is AVAILABLE", () => {
+    let w = initWorld(makeScenario(body, { level: delayedLevel }));
+    w = step(w); // t1: boot delivered (still unavailable)
+    w = injectMA(w, acquire); // enqueued t1, delivered t2 — before the t3 event
+    w = step(w); // t2: FA receives ACQUIRE while unavailable
+    w = step(w); // t3: REJECTED status delivered
+
+    const status = w.log.find((e) => e.type === "MA_ControlRequestStatusMT");
+    expect((status?.payload as { ApprovalRequestProcessingState: string }).ApprovalRequestProcessingState).toBe(
+      "REJECTED",
+    );
+    expect(isSecondaryController(w.fa, "MULE-01")).toBe(false);
+  });
+
+  it("APPROVES an ACQUIRE issued after the capability goes AVAILABLE", () => {
+    let w = initWorld(makeScenario(body, { level: delayedLevel }));
+    for (let i = 0; i < 4; i += 1) w = step(w); // through t4: AVAILABLE now delivered
+    w = injectMA(w, acquire);
+    w = step(w); // FA receives ACQUIRE (now available) → APPROVED
+    w = step(w); // APPROVED delivered
+    expect(isSecondaryController(w.fa, "MULE-01")).toBe(true);
+    const status = w.log.find((e) => e.type === "MA_ControlRequestStatusMT");
+    expect((status?.payload as { ApprovalRequestProcessingState: string }).ApprovalRequestProcessingState).toBe(
+      "APPROVED",
+    );
   });
 });

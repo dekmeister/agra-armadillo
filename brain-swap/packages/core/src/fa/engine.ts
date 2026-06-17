@@ -63,7 +63,11 @@ export function isSecondaryController(fa: FaState, capabilityId: string): boolea
 
 // --- message builders -------------------------------------------------------
 
-function capabilityAdvert(body: BodyProfile): Message[] {
+/** Availability a capability boots with (default AVAILABLE; a capability with a
+ *  scheduled `capability-available` event boots TEMPORARILY_UNAVAILABLE — see initWorld). */
+type Unavailable = Readonly<Record<string, "TEMPORARILY_UNAVAILABLE" | "UNAVAILABLE">>;
+
+function capabilityAdvert(body: BodyProfile, unavailable: Unavailable = {}): Message[] {
   const out: Message[] = [];
   for (const cap of body.capabilities) {
     const p = cap.profile;
@@ -80,7 +84,7 @@ function capabilityAdvert(body: BodyProfile): Message[] {
     out.push(
       msg("MA_FlightCapabilityStatusMT", "FA", "MA", {
         CapabilityID: cap.id,
-        Availability: "AVAILABLE",
+        Availability: unavailable[cap.id] ?? "AVAILABLE",
       }),
     );
   }
@@ -105,9 +109,10 @@ function approvalStatus(
   });
 }
 
-/** Messages FA publishes at boot (enqueued at tick 0, delivered at tick 1). */
-export function faBootMessages(body: BodyProfile): Message[] {
-  return capabilityAdvert(body);
+/** Messages FA publishes at boot (enqueued at tick 0, delivered at tick 1). Caps in
+ *  `unavailable` boot TEMPORARILY_UNAVAILABLE/UNAVAILABLE rather than AVAILABLE. */
+export function faBootMessages(body: BodyProfile, unavailable: Unavailable = {}): Message[] {
+  return capabilityAdvert(body, unavailable);
 }
 
 // --- per-tick phases --------------------------------------------------------
@@ -182,6 +187,11 @@ function handleControlRequest(
 
   // ACQUIRE
   if (!cap) {
+    return { fa, outbound: [approvalStatus(capId, "REJECTED")], disposition: DELIVERED };
+  }
+  // FA isn't ready to authorize control of a capability it hasn't advertised AVAILABLE
+  // (Control Mode Authorization, VI §1.2.2.4): an early ACQUIRE is REJECTED.
+  if (fa.unavailableCaps[capId] !== undefined) {
     return { fa, outbound: [approvalStatus(capId, "REJECTED")], disposition: DELIVERED };
   }
   const latency = body.control.approvalLatencyTicks;

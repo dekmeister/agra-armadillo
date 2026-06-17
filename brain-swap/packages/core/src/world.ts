@@ -50,15 +50,22 @@ export function makeScenario(
   return { body, brain: opts.brain ?? null, level: opts.level ?? null };
 }
 
-/** Tick-0 world: FA boot advertisements enqueued (delivered at tick 1), vehicle at start. */
+/** Tick-0 world: FA boot advertisements enqueued (delivered at tick 1), vehicle at start.
+ *  A capability with a scheduled `capability-available` event boots TEMPORARILY_UNAVAILABLE
+ *  (FA isn't ready yet; ACQUIRE is REJECTED until the event fires AVAILABLE). */
 export function initWorld(scenario: Scenario): World {
-  const bus = enqueueAll(emptyBus(), faBootMessages(scenario.body), 0);
+  const unavailable: Record<string, "TEMPORARILY_UNAVAILABLE"> = {};
+  for (const e of scenario.level?.events ?? []) {
+    if (e.kind === "capability-available") unavailable[e.capabilityId] = "TEMPORARILY_UNAVAILABLE";
+  }
+  const bus = enqueueAll(emptyBus(), faBootMessages(scenario.body, unavailable), 0);
+  const fa = Object.keys(unavailable).length > 0 ? { ...initFaState(), unavailableCaps: unavailable } : initFaState();
   return {
     scenario,
     tick: 0,
     bus,
     log: [],
-    fa: initFaState(),
+    fa,
     vehicle: initVehicle(scenario.level?.start ?? scenario.body.start, scenario.body.fuel?.capacity),
     ma: { brainState: scenario.brain ? scenario.brain.initial : null },
     outcome: "running",

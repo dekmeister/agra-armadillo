@@ -69,9 +69,12 @@ The built versions are deliberately simplified against the design copy (see
 - **1.1 Handshake. [Built]** Acquire HSA capability control: wait for
   `MA_FlightCapabilityStatusMT` AVAILABLE → `MA_ControlRequestMT` (ACQUIRE, correct
   CapabilityID) → handle APPROVED → confirm via next `ControlStatusMT` showing you
-  as SecondaryController. Win: hold secondary control 30 ticks. The level's bait:
-  sending `MA_FlightCommandMT` first — FA silently drops it (it isn't listening),
-  and the log shows why.
+  as SecondaryController. Win: hold secondary control 30 ticks. FA advertises the
+  capability **TEMPORARILY_UNAVAILABLE at boot and AVAILABLE only at tick 12** (a
+  `capability-available` event, modelling Control Mode Authorization readiness, VI
+  §1.2.2.4): ACQUIRE before then is **REJECTED**. Two baits, both visible in the log:
+  an impatient early ACQUIRE (REJECTED) and sending `MA_FlightCommandMT` before
+  holding control — FA silently drops it (it isn't listening, lie #8).
 - **1.2 First Valid HSA Command.** Fly heading 270° at 3 000 m to a zone. Full
   cycle: command → ACCEPTED → consume `MA_FlightActivityMT` and
   `MA_PositionReportDetailedMT` to detect arrival (HSA has no completion state —

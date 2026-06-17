@@ -83,6 +83,10 @@ function rejectionReasons(log: readonly MessageLogEntry[]): RejectionReason[] {
 const hasIgnored = (log: readonly MessageLogEntry[]): boolean =>
   log.some((e) => e.disposition.kind === "ignored-not-controller");
 
+/** An ACQUIRE FA refused — e.g. issued before the capability advertised AVAILABLE (1.1). */
+const hasControlRejection = (log: readonly MessageLogEntry[]): boolean =>
+  log.some((e) => e.type === "MA_ControlRequestStatusMT" && pay(e).ApprovalRequestProcessingState === "REJECTED");
+
 const hasAccepted = (log: readonly MessageLogEntry[]): boolean =>
   log.some((e) => e.type === "MA_FlightCommandStatusMT" && pay(e).CommandProcessingState === "ACCEPTED");
 
@@ -118,6 +122,9 @@ function faults(world: World, level: LevelDef): Fault[] {
   const log = world.log;
   const found: Fault[] = [];
 
+  if (hasControlRejection(log)) {
+    found.push({ note: "Your ACQUIRE was REJECTED — wait for the capability to advertise AVAILABLE before requesting control." });
+  }
   if (hasIgnored(log)) {
     found.push({ note: "You commanded before holding control — FA ignored it (not the controller)." });
   }

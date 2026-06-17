@@ -42,6 +42,16 @@ export interface CapabilityUnavailableEvent {
   readonly reason: "TEMPORARILY_UNAVAILABLE" | "UNAVAILABLE";
 }
 
+/** Make a capability available: FA advertises AVAILABLE and starts honouring ACQUIRE.
+ *  A capability that has one of these scheduled boots TEMPORARILY_UNAVAILABLE (see
+ *  `initWorld`) — modelling Control Mode Authorization readiness (VI §1.2.2.4): FA
+ *  signals ready only when it is, and ACQUIRE before then is REJECTED. */
+export interface CapabilityAvailableEvent {
+  readonly kind: "capability-available";
+  readonly tick: number;
+  readonly capabilityId: string;
+}
+
 /** Introduce a threat zone (optionally moving) into the world. */
 export interface SpawnThreatEvent {
   readonly kind: "spawn-threat";
@@ -61,6 +71,7 @@ export interface DespawnThreatEvent {
 export type MissionEvent =
   | DegradeEnvelopeEvent
   | CapabilityUnavailableEvent
+  | CapabilityAvailableEvent
   | SpawnThreatEvent
   | DespawnThreatEvent;
 
@@ -85,6 +96,7 @@ function eventId(e: MissionEvent): string {
   switch (e.kind) {
     case "degrade-envelope":
     case "capability-unavailable":
+    case "capability-available":
       return e.capabilityId;
     case "spawn-threat":
     case "despawn-threat":
@@ -95,8 +107,9 @@ function eventId(e: MissionEvent): string {
 const KIND_ORDER: Record<MissionEvent["kind"], number> = {
   "degrade-envelope": 0,
   "capability-unavailable": 1,
-  "spawn-threat": 2,
-  "despawn-threat": 3,
+  "capability-available": 2,
+  "spawn-threat": 3,
+  "despawn-threat": 4,
 };
 
 /** Drop undefined fields so the stored profile / payload stays a clean object. */
@@ -175,6 +188,20 @@ export function applyEvents(
           msg("MA_FlightCapabilityStatusMT", "FA", "MA", {
             CapabilityID: e.capabilityId,
             Availability: e.reason,
+          }),
+        );
+        break;
+      }
+      case "capability-available": {
+        if (e.capabilityId in unavailableCaps) {
+          const next = { ...unavailableCaps };
+          delete next[e.capabilityId];
+          unavailableCaps = next;
+        }
+        outbound.push(
+          msg("MA_FlightCapabilityStatusMT", "FA", "MA", {
+            CapabilityID: e.capabilityId,
+            Availability: "AVAILABLE",
           }),
         );
         break;

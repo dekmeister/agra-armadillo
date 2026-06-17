@@ -3,13 +3,16 @@
   "title": "Handshake",
   "body": "ax-01",
   "capabilityId": "MULE-01",
-  "brief": "Acquire secondary control of the HSA capability and hold it.",
-  "teaches": "The control-acquisition handshake: wait for the capability to advertise AVAILABLE, then ACQUIRE. FA silently ignores flight commands until you are the secondary controller (VI Vol §1.2.2.2).",
+  "brief": "Acquire secondary control of the HSA capability and hold it. FA isn't ready at boot — wait for it to advertise AVAILABLE before you ACQUIRE.",
+  "teaches": "The control-acquisition handshake: FA advertises the capability TEMPORARILY_UNAVAILABLE at boot and signals AVAILABLE only once it is ready (VI Vol §1.2.2.4) — ACQUIRE before then is REJECTED. Wait for AVAILABLE, then ACQUIRE. FA also silently ignores flight commands until you are the secondary controller (VI Vol §1.2.2.2).",
   "objective": {
-    "_doc": "No flight. Win = MA is the secondary controller of MULE-01 for 30 consecutive ticks (hold-control).",
+    "_doc": "No flight. Win = MA is the secondary controller of MULE-01 for 30 consecutive ticks (hold-control). FA advertises MULE-01 AVAILABLE only at tick 12 (capability-available event); ACQUIRE before then is REJECTED, an early flight command is ignored.",
     "kind": "hold-control",
     "holdTicks": 30
   },
+  "events": [
+    { "kind": "capability-available", "tick": 12, "capabilityId": "MULE-01" }
+  ],
   "availableMessages": [
     "MA_FlightCapabilityMT",
     "MA_FlightCapabilityStatusMT",
@@ -22,6 +25,6 @@
     "MA_PositionReportDetailedMT"
   ],
   "maxTicks": 80,
-  "pars": { "ticks": 31, "busTraffic": 1, "rejections": 0, "brainSize": 3 },
+  "pars": { "ticks": 43, "busTraffic": 1, "rejections": 0, "brainSize": 3 },
   "fidelityNotes": [8]
 }

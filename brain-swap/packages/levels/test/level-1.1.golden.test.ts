@@ -14,42 +14,21 @@ function solve(brain = level11ReferenceBrain): World {
 const project = (log: readonly MessageLogEntry[]): string[] =>
   log.map((e) => `t${e.tick} ${e.from}->${e.to} ${e.type} [${e.disposition.kind}]`);
 
+// FA advertises MULE-01 TEMPORARILY_UNAVAILABLE at boot and AVAILABLE only at tick 12
+// (capability-available event → status delivered t13). The reference brain waits for
+// AVAILABLE, ACQUIREs at t14, is APPROVED at t15, and holds 30 ticks to win at t43.
 const GOLDEN_LOG = [
   "t1 FA->MA MA_FlightCapabilityMT [delivered]",
   "t1 FA->MA MA_FlightCapabilityStatusMT [delivered]",
-  "t2 MA->FA MA_ControlRequestMT [delivered]",
-  "t2 FA->MA MA_PositionReportDetailedMT [delivered]",
-  "t3 FA->MA MA_ControlRequestStatusMT [delivered]",
-  "t3 FA->MA ControlStatusMT [delivered]",
-  "t3 FA->MA MA_PositionReportDetailedMT [delivered]",
-  "t4 FA->MA MA_PositionReportDetailedMT [delivered]",
-  "t5 FA->MA MA_PositionReportDetailedMT [delivered]",
-  "t6 FA->MA MA_PositionReportDetailedMT [delivered]",
-  "t7 FA->MA MA_PositionReportDetailedMT [delivered]",
-  "t8 FA->MA MA_PositionReportDetailedMT [delivered]",
-  "t9 FA->MA MA_PositionReportDetailedMT [delivered]",
-  "t10 FA->MA MA_PositionReportDetailedMT [delivered]",
-  "t11 FA->MA MA_PositionReportDetailedMT [delivered]",
-  "t12 FA->MA MA_PositionReportDetailedMT [delivered]",
+  ...Array.from({ length: 11 }, (_, i) => `t${i + 2} FA->MA MA_PositionReportDetailedMT [delivered]`),
+  "t13 FA->MA MA_FlightCapabilityStatusMT [delivered]",
   "t13 FA->MA MA_PositionReportDetailedMT [delivered]",
+  "t14 MA->FA MA_ControlRequestMT [delivered]",
   "t14 FA->MA MA_PositionReportDetailedMT [delivered]",
+  "t15 FA->MA MA_ControlRequestStatusMT [delivered]",
+  "t15 FA->MA ControlStatusMT [delivered]",
   "t15 FA->MA MA_PositionReportDetailedMT [delivered]",
-  "t16 FA->MA MA_PositionReportDetailedMT [delivered]",
-  "t17 FA->MA MA_PositionReportDetailedMT [delivered]",
-  "t18 FA->MA MA_PositionReportDetailedMT [delivered]",
-  "t19 FA->MA MA_PositionReportDetailedMT [delivered]",
-  "t20 FA->MA MA_PositionReportDetailedMT [delivered]",
-  "t21 FA->MA MA_PositionReportDetailedMT [delivered]",
-  "t22 FA->MA MA_PositionReportDetailedMT [delivered]",
-  "t23 FA->MA MA_PositionReportDetailedMT [delivered]",
-  "t24 FA->MA MA_PositionReportDetailedMT [delivered]",
-  "t25 FA->MA MA_PositionReportDetailedMT [delivered]",
-  "t26 FA->MA MA_PositionReportDetailedMT [delivered]",
-  "t27 FA->MA MA_PositionReportDetailedMT [delivered]",
-  "t28 FA->MA MA_PositionReportDetailedMT [delivered]",
-  "t29 FA->MA MA_PositionReportDetailedMT [delivered]",
-  "t30 FA->MA MA_PositionReportDetailedMT [delivered]",
-  "t31 FA->MA MA_PositionReportDetailedMT [delivered]",
+  ...Array.from({ length: 28 }, (_, i) => `t${i + 16} FA->MA MA_PositionReportDetailedMT [delivered]`),
 ];
 
 describe("level 1.1 golden run (reference brain)", () => {
@@ -68,7 +47,7 @@ describe("level 1.1 golden run (reference brain)", () => {
       .log.filter((e) => e.from === "MA")
       .map((e) => ({ tick: e.tick, type: e.type, payload: e.payload }));
     expect(sends).toEqual([
-      { tick: 2, type: "MA_ControlRequestMT", payload: { RequestType: "ACQUIRE", CapabilityID: "MULE-01" } },
+      { tick: 14, type: "MA_ControlRequestMT", payload: { RequestType: "ACQUIRE", CapabilityID: "MULE-01" } },
     ]);
   });
 
