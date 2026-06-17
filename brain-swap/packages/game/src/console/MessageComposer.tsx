@@ -3,13 +3,12 @@
 // typeahead over the level's sendable, MA→FA, types — the player won't know every name
 // by heart), then fill its fields. Values are literals only (the player reads the
 // telemetry/log and types what they want — there are no msg./cap. captures here, those
-// were a state-machine concept). Validation mirrors FA exactly like the old send form:
-// required fields populated + Altitude/Speed within the advertised envelope
-// (packages/core/src/fa/validator.ts).
+// were a state-machine concept). Only required-field presence is validated client-side;
+// envelope violations are deliberately allowed through so FA can reject them, teaching
+// the player to recognise and handle REJECTED responses.
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   catalogEntry,
-  findCapability,
   type Message,
   type MessageLogEntry,
   type MessageTypeName,
@@ -216,30 +215,10 @@ function FieldForm({
   // Bumped on each rejected Enter to re-trigger the "mandatory items" flash (key remount).
   const [flashTick, setFlashTick] = useState(0);
 
-  const capProfile = findCapability(body, capabilityId)?.profile;
-
-  // Validation mirrors FA: required populated + envelope on a flight command.
+  // Only block on missing required fields — envelope violations are FA's job to reject.
   const errors: string[] = [];
   for (const f of fields) {
     if (f.required && (values[f.name] ?? "").trim() === "") errors.push(`${f.name} required`);
-  }
-  const num = (name: string): number | undefined => {
-    const v = values[name];
-    if (!v || v.trim() === "") return undefined;
-    const n = Number(v);
-    return Number.isNaN(n) ? undefined : n;
-  };
-  if (messageType === "MA_FlightCommandMT" && capProfile) {
-    const alt = num("Altitude");
-    if (alt !== undefined) {
-      if (capProfile.maxAltitude !== undefined && alt > capProfile.maxAltitude) errors.push("Altitude > MaxAltitude");
-      if (capProfile.minAltitude !== undefined && alt < capProfile.minAltitude) errors.push("Altitude < MinAltitude");
-    }
-    const spd = num("Speed");
-    if (spd !== undefined) {
-      if (capProfile.maxAirspeed !== undefined && spd > capProfile.maxAirspeed) errors.push("Speed > MaxAirspeed");
-      if (capProfile.minAirspeed !== undefined && spd < capProfile.minAirspeed) errors.push("Speed < MinAirspeed");
-    }
   }
   const valid = errors.length === 0;
 
@@ -352,7 +331,7 @@ function FieldForm({
               className={`vsum${valid ? "" : " bad"}${flashTick > 0 && !valid ? " flash" : ""}`}
             >
               {valid
-                ? "all required fields satisfied · values within advertised envelope"
+                ? "all required fields satisfied"
                 : errors.join(" · ")}
             </span>
             <div className="right">
