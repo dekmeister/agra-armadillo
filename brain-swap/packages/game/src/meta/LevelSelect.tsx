@@ -4,25 +4,7 @@
 import { useStore } from "../store.ts";
 import { WORLDS, type LevelEntry } from "./levelCatalog.ts";
 import { levelById } from "@brain-swap/levels";
-import type { LevelPars, Score } from "@brain-swap/core";
-
-type Medal = "gold" | "silver" | "none";
-
-/** gold ≤ par, silver ≤ 1.5×par (or par+1), else unearned. */
-function medal(value: number, par: number): Medal {
-  if (value <= par) return "gold";
-  if (value <= Math.max(par * 1.5, par + 1)) return "silver";
-  return "none";
-}
-
-function medals(score: Score | undefined, pars: LevelPars | undefined): { t: Medal; b: Medal; r: Medal } {
-  if (!score || !pars) return { t: "none", b: "none", r: "none" };
-  return {
-    t: medal(score.ticks, pars.ticks),
-    b: medal(score.busTraffic, pars.busTraffic),
-    r: medal(score.rejections, pars.rejections),
-  };
-}
+import { medals } from "./medals.ts";
 
 export function LevelSelect() {
   const selectLevel = useStore((s) => s.selectLevel);

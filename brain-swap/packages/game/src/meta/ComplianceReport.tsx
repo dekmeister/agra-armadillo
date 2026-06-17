@@ -1,12 +1,14 @@
-// Score screen styled as a formal Compliance Test Report (docs/01, docs/05 step 7).
-// PASS/FAIL is derived from the run's final message log (which Tier-1 VI interactions were
-// exercised and succeeded); metrics are shown vs level pars. NOTE: real population
-// histograms are a docs/05-deferred feature (item 6) — we show honest metric-vs-par bars,
-// not a fabricated distribution.
+// End-of-run screen, styled as a compliance test record (docs/01 "Scoring"). It is an
+// After-Action Debrief, not a checklist: PASS/FAIL is the mission objective
+// (outcome === "won"); below it, the level's ONE lesson + whether the player
+// demonstrated it, a chronological recap of the player's own sends and FA's verdicts,
+// and the scored metrics vs par. All of this is derived from the player's run via the
+// headless core `evaluateDiagnostics` — never from the reference solution.
 import { useStore } from "../store.ts";
 import { finalFrame } from "../sim/timeline.ts";
 import { WORLDS } from "./levelCatalog.ts";
-import { scoreWorld, type MessageLogEntry } from "@brain-swap/core";
+import { evaluateDiagnostics, scoreWorld, type ScoredEvent } from "@brain-swap/core";
+import { medals, type Medal } from "./medals.ts";
 
 /** The next playable level after `id` in catalog order, or null if this is the last. */
 function nextPlayableId(id: string): string | null {
@@ -15,55 +17,16 @@ function nextPlayableId(id: string): string | null {
   return i >= 0 && i < playable.length - 1 ? playable[i + 1]!.id : null;
 }
 
-interface InteractionRow {
-  vi: string;
-  name: string;
-  pass: boolean;
-}
-
-function deriveInteractions(log: readonly MessageLogEntry[]): InteractionRow[] {
-  const has = (pred: (e: MessageLogEntry) => boolean) => log.some(pred);
-  const payload = (e: MessageLogEntry) => e.payload as Record<string, unknown>;
-  return [
-    {
-      vi: "§1.2.2.4",
-      name: "Control Mode Authorization",
-      pass:
-        has((e) => e.type === "MA_FlightCapabilityMT") &&
-        has((e) => e.type === "MA_FlightCapabilityStatusMT" && payload(e).Availability === "AVAILABLE"),
-    },
-    {
-      vi: "§1.2.2.7",
-      name: "Receive Control Request",
-      pass:
-        has((e) => e.type === "MA_ControlRequestMT") &&
-        has((e) => e.type === "MA_ControlRequestStatusMT" && payload(e).ApprovalRequestProcessingState === "APPROVED"),
-    },
-    {
-      vi: "§1.2.6.2",
-      name: "Publish Control Status",
-      pass: has((e) => e.type === "ControlStatusMT" && payload(e).SecondaryController === "MA"),
-    },
-    {
-      vi: "§1.2.2.2",
-      name: "Control by HSA/CSA Command",
-      pass: has((e) => e.type === "MA_FlightCommandStatusMT" && payload(e).CommandProcessingState === "ACCEPTED"),
-    },
-    {
-      vi: "§1.2.6.8",
-      name: "Receive Vehicle State Data",
-      pass: has((e) => e.type === "MA_PositionReportDetailedMT"),
-    },
-  ];
-}
-
-function MetricBar({ label, value, par }: { label: string; value: number; par: number }) {
+function MetricBar({ label, value, par, medal }: { label: string; value: number; par: number; medal: Medal }) {
   const max = Math.max(value, par, 1) * 1.3;
   const over = value > par;
   return (
     <div className="histo">
       <div className="ht">
-        <span>{label}</span>
+        <span>
+          {label}
+          <span className={`metricmedal ${medal}`}>{medal === "none" ? "—" : medal}</span>
+        </span>
         <span className={over ? "k-caution" : "k-phos"}>
           {value} <span className="k-dim">/ par {par}</span>
         </span>
@@ -76,21 +39,24 @@ function MetricBar({ label, value, par }: { label: string; value: number; par: n
   );
 }
 
+const polarityMark = (p: ScoredEvent["polarity"]): string => (p === "positive" ? "+" : p === "negative" ? "✗" : "·");
+
 export function ComplianceReport() {
   const level = useStore((s) => s.level);
   const body = useStore((s) => s.body);
   const timeline = useStore((s) => s.timeline);
+  const script = useStore((s) => s.script);
   const setView = useStore((s) => s.setView);
   const restart = useStore((s) => s.restart);
   const selectLevel = useStore((s) => s.selectLevel);
 
   const w = finalFrame(timeline);
   const score = scoreWorld(w);
-  const interactions = deriveInteractions(w.log);
-  // The stamp reflects the mission outcome; the table below is an informational record of
-  // which Tier-1 interactions the run exercised (not every level uses all of them).
+  const diag = evaluateDiagnostics(w, script, level);
+  // The stamp reflects the mission objective; the lesson + recap below are the debrief.
   const allPass = w.outcome === "won";
   const pars = level.pars ?? { ticks: 0, busTraffic: 0, rejections: 0, brainSize: 0 };
+  const m = medals(score, pars);
   const nextId = nextPlayableId(level.id);
 
   return (
@@ -111,37 +77,50 @@ export function ComplianceReport() {
         </div>
 
         <section>
-          <h2>Tier-1 Interactions Exercised</h2>
-          <table className="itable">
-            <thead>
-              <tr><th style={{ width: 80 }}>VI ID</th><th>Interaction</th><th style={{ width: 70 }}>Exercised</th></tr>
-            </thead>
-            <tbody>
-              {interactions.map((i) => (
-                <tr key={i.vi}>
-                  <td className="k-dim">{i.vi}</td>
-                  <td>{i.name}</td>
-                  <td><span className={i.pass ? "pass" : "k-dim"}>{i.pass ? "✓ yes" : "—"}</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <h2>Mission Lesson</h2>
+          <div className={`lesson ${diag.lesson.demonstrated ? "ok" : "miss"}`}>
+            <div className="lesson-chip">{diag.lesson.demonstrated ? "✓ DEMONSTRATED" : "✗ NOT DEMONSTRATED"}</div>
+            <div className="lesson-text">{diag.lesson.lesson}</div>
+            <div className="lesson-note">{diag.lesson.note}</div>
+          </div>
+        </section>
+
+        <section>
+          <h2>After-Action Recap</h2>
+          <ul className="recap">
+            {diag.events.map((e, i) => (
+              <li key={i} className={`recap-row ${e.polarity}`}>
+                <span className="recap-tick">{e.tick != null ? `t${e.tick}` : ""}</span>
+                <span className="recap-mark">{polarityMark(e.polarity)}</span>
+                <span className="recap-label">
+                  {e.label}
+                  {e.detail ? <span className="recap-detail"> · {e.detail}</span> : null}
+                </span>
+              </li>
+            ))}
+          </ul>
           <div className="k-dim" style={{ fontSize: 9, marginTop: 6 }}>
-            Not every mission uses all five — e.g. the handshake level (1.1) never issues a flight
-            command. The PASS/FAIL stamp above reflects the mission objective.
+            Your sends and FA's verdicts only — FA's periodic telemetry is omitted. The PASS/FAIL
+            stamp above reflects the mission objective.
           </div>
         </section>
 
         <section>
           <h2>Metrics vs Par</h2>
           <div className="histos">
-            <MetricBar label="Ticks" value={score.ticks} par={pars.ticks} />
-            <MetricBar label="Bus Traffic" value={score.busTraffic} par={pars.busTraffic} />
-            <MetricBar label="Rejections" value={score.rejections} par={pars.rejections} />
+            <MetricBar label="Ticks" value={score.ticks} par={pars.ticks} medal={m.t} />
+            <MetricBar label="Rejections" value={score.rejections} par={pars.rejections} medal={m.r} />
+          </div>
+          <div className="secondary-metric">
+            <span className="sm-label">Bus Traffic <span className="k-dim">· secondary</span></span>
+            <span className={score.busTraffic > pars.busTraffic ? "k-caution" : "k-phos"}>
+              {score.busTraffic} <span className="k-dim">/ par {pars.busTraffic}</span>
+            </span>
+            <span className={`metricmedal ${m.b}`}>{m.b === "none" ? "—" : m.b}</span>
           </div>
           <div className="k-dim" style={{ fontSize: 9, marginTop: 8 }}>
-            Population histograms with percentile ranking are deferred (docs/05 §6). Bars show your
-            run against the level par.
+            Ticks and Rejections are the headline metrics; Bus Traffic is a secondary efficiency
+            medal. Bars show your run against the level par.
           </div>
         </section>
 

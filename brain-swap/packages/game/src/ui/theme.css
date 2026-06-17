@@ -320,6 +320,34 @@ select, input.field {
 .report .rfoot .cert { font-size: 11.5px; color: var(--k-olive); }
 .report .rfoot .right { margin-left: auto; display: flex; gap: 8px; }
 
+/* ---- After-Action Debrief: lesson band + recap ---- */
+.report .lesson { margin-top: 8px; border: 1px solid var(--k-line2); border-left-width: 3px; padding: 10px 12px; background: var(--k-panel); }
+.report .lesson.ok { border-left-color: var(--k-green); }
+.report .lesson.miss { border-left-color: var(--k-warn); }
+.report .lesson .lesson-chip { font-family: var(--cond); font-weight: 700; font-size: 12px; letter-spacing: .1em; display: inline-block; padding: 1px 8px; margin-bottom: 7px; }
+.report .lesson.ok .lesson-chip { color: var(--k-black); background: var(--k-green); }
+.report .lesson.miss .lesson-chip { color: #fff; background: var(--k-warn); }
+.report .lesson .lesson-text { font-size: 14px; color: var(--k-phos); line-height: 1.5; }
+.report .lesson .lesson-note { font-size: 12.5px; color: var(--k-dim); margin-top: 6px; }
+
+.recap { list-style: none; margin: 8px 0 0; padding: 0; font-size: 12.5px; }
+.recap .recap-row { display: grid; grid-template-columns: 42px 16px 1fr; gap: 6px; padding: 2px 4px; border-bottom: 1px solid #1a1f15; }
+.recap .recap-tick { color: var(--k-dim); }
+.recap .recap-mark { text-align: center; font-weight: 700; }
+.recap .recap-row.positive .recap-mark { color: var(--k-green); }
+.recap .recap-row.negative .recap-mark { color: var(--k-warn); }
+.recap .recap-row.neutral .recap-mark { color: var(--k-dim); }
+.recap .recap-row.positive .recap-label { color: var(--k-phos); }
+.recap .recap-row.negative .recap-label { color: var(--k-caution); }
+.recap .recap-row.neutral .recap-label { color: var(--k-dim); }
+.recap .recap-detail { color: var(--k-dim); }
+
+.metricmedal { font-family: var(--cond); font-weight: 700; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; padding: 0 5px; margin-left: 6px; border: 1px solid var(--k-line2); color: var(--k-dim); }
+.metricmedal.gold { background: var(--k-amber); color: var(--k-black); border-color: var(--k-amber); }
+.metricmedal.silver { background: var(--k-dim); color: var(--k-black); border-color: var(--k-dim); }
+.secondary-metric { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: 12.5px; }
+.secondary-metric .sm-label { font-family: var(--cond); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--k-dim); }
+
 .worlds { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; width: 100%; max-width: 1320px; }
 .worldcol .wh { border-bottom: 1px solid var(--k-line); padding-bottom: 6px; margin-bottom: 8px; }
 .worldcol .wh .wn { font-family: var(--stencil); font-size: 20px; color: var(--k-amber); }

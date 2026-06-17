@@ -12,6 +12,7 @@ export * from "./brain/interpreter.ts";
 export * from "./level/types.ts";
 export * from "./level/events.ts";
 export * from "./level/runtime.ts";
+export * from "./level/diagnostics.ts";
 export * from "./world.ts";
 export * from "./sim.ts";
 export * from "./score.ts";

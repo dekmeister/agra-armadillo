@@ -43,12 +43,32 @@ shape mis-taught the MA as a simple program. The brain interpreter survives in
 `packages/core` only to derive each level's reference script. Future assists — e.g.
 automated field-watches that auto-pause on a matching value — are in `PLAN_FUTURE.md`.)*
 
-**Scoring (multi-metric, per-level pars).**
-- **Ticks** — mission time.
-- **Bus traffic** — MA→VI messages sent (rewards partial HSA updates, route reuse).
+**Scoring (per-level pars + an after-action debrief).**
+- **Ticks** — mission time. *(headline metric)*
 - **Rejections** — rejected commands + ignored-while-not-controller sends (rewards
   reading the performance profile instead of probing FA by trial and error).
+  *(headline metric)*
+- **Bus traffic** — MA→VI messages sent (rewards partial HSA updates, route reuse).
+  *(secondary efficiency medal)*
 - *(Brain size was dropped with the state-machine editor — nothing to size now.)*
+
+The end-of-run **Compliance Test Report** is an **After-Action Debrief**, not a
+checklist (`packages/game/src/meta/ComplianceReport.tsx`, driven by the headless,
+deterministic `evaluateDiagnostics` in `packages/core/src/level/diagnostics.ts`):
+- **PASS/FAIL** is the mission objective (`outcome === "won"`).
+- Every level conveys **one lesson**. The debrief shows that lesson (the level's
+  `teaches` copy, surfaced here) and a **DEMONSTRATED / NOT DEMONSTRATED** verdict. The
+  verdict is signal-based, not keyed on level id: a run is *demonstrated* iff it won
+  with no fault signals — commanded-before-control (`ignored-not-controller`), any
+  command rejection (the real `MA_ValidationResultEnum` reasons), a no-fly/threat
+  breach, or — for the racetrack — busting the bus-traffic par.
+- An **after-action recap** lists the player's own sends and FA's verdicts
+  (approved/accepted green, rejected/ignored/breach red), derived from `world.log` +
+  the recorded `script` — never from the reference solution (the reference brain stays
+  test-only; it sources `pars` and proves solvability, and is not in the game bundle).
+- All of this is computed from the player's run, so an empty or sloppy brain visibly
+  fails the relevant lesson. The `ScoredEvent` model carries a `points` field that is
+  0 for the derived defaults — the seam for future authored, per-level +/- point events.
 
 **Win conditions** are world-state based (reach zone, hold pattern N ticks, land at
 the stored divert field), never "message sent" — forcing the brain to consume
