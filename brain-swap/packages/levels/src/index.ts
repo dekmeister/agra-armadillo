@@ -8,6 +8,8 @@ import ax01Json from "../bodies/ax-01.json";
 import ax02Json from "../bodies/ax-02.json";
 import ax03Json from "../bodies/ax-03.json";
 
+import level00Json from "../worlds/world-0/level-0.0.json";
+import refBrain00Json from "../worlds/world-0/level-0.0.reference-brain.json";
 import level11Json from "../worlds/world-1/level-1.1.json";
 import refBrain11Json from "../worlds/world-1/level-1.1.reference-brain.json";
 import naiveBrain11Json from "../worlds/world-1/level-1.1.naive-brain.json";
@@ -39,6 +41,9 @@ export const ax02 = ax02Json as unknown as BodyProfile;
 export const ax03 = ax03Json as unknown as BodyProfile;
 
 // --- Levels + brains --------------------------------------------------------
+export const level00 = level00Json as unknown as LevelDef;
+export const level00ReferenceBrain = refBrain00Json as unknown as Brain;
+
 export const level11 = level11Json as unknown as LevelDef;
 export const level11ReferenceBrain = refBrain11Json as unknown as Brain;
 export const level11NaiveBrain = naiveBrain11Json as unknown as Brain;
@@ -97,6 +102,7 @@ export interface LevelBundle {
  * their primary `body` in the single-body game; the locked brain is the reference.
  */
 export const LEVELS: Record<string, LevelBundle> = {
+  "0.0": { level: level00, referenceBrain: level00ReferenceBrain },
   "1.1": { level: level11, referenceBrain: level11ReferenceBrain },
   "1.2": { level: level12, referenceBrain: level12ReferenceBrain },
   "1.3": { level: level13, referenceBrain: level13ReferenceBrain },

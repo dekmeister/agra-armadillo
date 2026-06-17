@@ -418,3 +418,25 @@ kbd { display: inline-block; font-family: var(--mono); font-size: 12px; backgrou
 .btn.big { width: 100%; padding: 9px; font-family: var(--cond); font-weight: 700; letter-spacing: .1em; text-transform: uppercase; font-size: 14px; }
 .fieldlist .fl-row.pick { width: 100%; text-align: left; cursor: pointer; font: inherit; color: var(--k-phos); }
 .fieldlist .fl-row.pick:hover, .fieldlist .fl-row.pick.on { border-color: var(--k-amber); background: rgba(224,163,34,.08); }
+
+/* --- Tutorial coachmarks (TutorialCoach) --- */
+/* Non-modal: the layer doesn't capture clicks, so Play et al. stay usable; only the
+   popover itself is interactive. */
+.coach-layer { position: fixed; inset: 0; z-index: 120; pointer-events: none; }
+.coach-ring {
+  position: fixed; pointer-events: none; border: 2px solid var(--k-amber);
+  border-radius: 4px; box-shadow: 0 0 0 9999px rgba(5,7,5,.5), 0 0 14px rgba(224,163,34,.5);
+  transition: left .18s ease, top .18s ease, width .18s ease, height .18s ease;
+}
+.coach-pop {
+  position: fixed; pointer-events: auto; background: var(--k-panel);
+  border: 1px solid var(--k-line2); box-shadow: inset 0 0 0 1px #0c0f0a, 0 6px 22px rgba(0,0,0,.5);
+  padding: 13px; transition: left .18s ease, top .18s ease;
+}
+.coach-title { font-family: var(--cond); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--k-amber); font-size: 13px; }
+.coach-body { margin: 7px 0 0; font-size: 13px; line-height: 1.5; color: var(--k-phos); }
+.coach-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; }
+.coach-nav { display: flex; gap: 6px; }
+.coach-dots { display: flex; gap: 5px; justify-content: center; margin-top: 10px; }
+.coach-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--k-line2); }
+.coach-dot.on { background: var(--k-amber); }

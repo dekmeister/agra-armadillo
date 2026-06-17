@@ -7,6 +7,8 @@ export interface LevelEntry {
   name: string;
   playable?: boolean;
   capstone?: boolean;
+  /** A guided watch-only demo level (drives a coachmark tour; see TutorialCoach). */
+  tutorial?: boolean;
 }
 export interface WorldEntry {
   no: string;
@@ -16,12 +18,9 @@ export interface WorldEntry {
 
 export const WORLDS: WorldEntry[] = [
   {
-    no: "W0",
-    name: "Listen Before You Speak",
-    levels: [
-      { id: "0.1", name: "First Contact" },
-      { id: "0.2", name: "Spec Sheet" },
-    ],
+    no: "T",
+    name: "Tutorial",
+    levels: [{ id: "0.0", name: "First Flight", playable: true, tutorial: true }],
   },
   {
     no: "W1",
@@ -69,3 +68,8 @@ export const WORLDS: WorldEntry[] = [
     ],
   },
 ];
+
+/** True if the level id is a guided watch-only tutorial demo (see TutorialCoach). */
+export function isTutorialLevel(id: string): boolean {
+  return WORLDS.some((w) => w.levels.some((l) => l.id === id && l.tutorial));
+}

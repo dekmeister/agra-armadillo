@@ -12,6 +12,7 @@ export function ChromeBar() {
   const body = useStore((s) => s.body);
   const running = useStore((s) => s.running);
   const composing = useStore((s) => s.composing);
+  const tutorial = useStore((s) => s.tutorial);
   const speed = useStore((s) => s.speed);
   const playhead = useStore((s) => s.playhead);
   const togglePlay = useStore((s) => s.togglePlay);
@@ -36,7 +37,7 @@ export function ChromeBar() {
           </div>
         </div>
 
-        <div className="region transport">
+        <div className="region transport" data-tour="transport">
           <button
             className={`iconbtn${running ? " playing" : ""}`}
             onClick={togglePlay}
@@ -50,7 +51,12 @@ export function ChromeBar() {
           <button className="iconbtn" onClick={stepOne} title="Step one tick [→]">
             ⏭
           </button>
-          <button className="btn sm on" onClick={openComposer} disabled={composing} title="Compose & send [C]">
+          <button
+            className="btn sm on"
+            onClick={openComposer}
+            disabled={composing || tutorial}
+            title={tutorial ? "Disabled during the tutorial demo" : "Compose & send [C]"}
+          >
             ✎ Send
           </button>
           <div className="seg">

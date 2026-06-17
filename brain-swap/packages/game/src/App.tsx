@@ -12,6 +12,7 @@ import { Help } from "./meta/Help.tsx";
 import { MessageCodex } from "./meta/MessageCodex.tsx";
 import { MobileGate } from "./ui/MobileGate.tsx";
 import { WelcomeOverlay } from "./ui/WelcomeOverlay.tsx";
+import { TutorialCoach } from "./ui/TutorialCoach.tsx";
 
 /** Ticks advanced per real second at 1× speed. 2×/8× scale this. */
 const TICKS_PER_SECOND = 4;
@@ -32,6 +33,7 @@ function useKeyboardShortcuts() {
           break;
         case "c":
         case "C":
+          if (st.tutorial) break; // watch-only tutorial demo — composing is disabled
           e.preventDefault();
           st.openComposer(); // compose a message to send (pauses the clock)
           break;
@@ -123,6 +125,7 @@ export function App() {
       {view === "select" && <LevelSelect />}
       {view === "codex" && <MessageCodex />}
       {view === "help" && <Help />}
+      {view === "console" && <TutorialCoach />}
       <MobileGate />
       <WelcomeOverlay />
     </div>

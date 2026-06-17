@@ -119,7 +119,7 @@ function Typeahead({
 
   return (
     <div className="modal-scrim" onClick={onCancel}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+      <div className="modal" data-tour="composer" onClick={(e) => e.stopPropagation()}>
         <Panel title="SEND" titleAccent="MESSAGE" meta="PICK MESSAGE TYPE">
           <div className="mbody" style={{ display: "block" }}>
             <input
@@ -277,7 +277,7 @@ function FieldForm({
 
   return (
     <div className="modal-scrim" onClick={onCancel}>
-      <div className="modal" onClick={(e) => e.stopPropagation()} onKeyDown={onFormKey}>
+      <div className="modal" data-tour="composer" onClick={(e) => e.stopPropagation()} onKeyDown={onFormKey}>
         <Panel title="SEND" titleAccent={messageType} meta="COMPOSE FIELDS">
           <div className="mbody" style={{ display: "block" }}>
             <div className="fieldlist">

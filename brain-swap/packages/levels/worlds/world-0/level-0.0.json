@@ -1,0 +1,30 @@
+{
+  "id": "0.0",
+  "title": "First Flight",
+  "body": "ax-01",
+  "capabilityId": "MULE-01",
+  "brief": "Welcome. This is a guided demo — just press Play and watch. You are the Mission Autonomy (MA) brain: you read Flight Autonomy's live stream and send it messages. Here the mission solves itself so you can see the whole loop end to end.",
+  "teaches": "The realtime MA→FA loop at a glance: wait for the capability to advertise AVAILABLE, ACQUIRE secondary control, command a heading and altitude, then read position reports to know you've arrived and hold. Every panel on the console plays a part — telemetry to read FA, the map to watch the vehicle, and the log to see each message.",
+  "objective": {
+    "_doc": "Same mission as 1.2 (reused verbatim): fly heading 270 to the zone and hold at 3000 m. Used as a watch-only tutorial demo; the reference brain drives it.",
+    "kind": "reach-hold",
+    "zone": { "x": -900, "y": 0, "radius": 150 },
+    "altitude": 3000,
+    "altitudeTolerance": 50,
+    "holdTicks": 10
+  },
+  "availableMessages": [
+    "MA_FlightCapabilityMT",
+    "MA_FlightCapabilityStatusMT",
+    "MA_ControlRequestMT",
+    "MA_ControlRequestStatusMT",
+    "ControlStatusMT",
+    "MA_FlightCommandMT",
+    "MA_FlightCommandStatusMT",
+    "MA_FlightActivityMT",
+    "MA_PositionReportDetailedMT"
+  ],
+  "maxTicks": 200,
+  "pars": { "ticks": 22, "busTraffic": 3, "rejections": 0, "brainSize": 9 },
+  "fidelityNotes": [2, 3, 6, 8, 12, 13]
+}

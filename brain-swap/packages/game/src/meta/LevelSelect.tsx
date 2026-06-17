@@ -1,4 +1,4 @@
-// Level Select — five world columns (W0–W4). Playable levels (catalog `playable` flag, backed
+// Level Select — five columns (Tutorial + W1–W4). Playable levels (catalog `playable` flag, backed
 // by the @brain-swap/levels registry) load on click via selectLevel; the rest are locked.
 // Medals (T/B/R = Ticks / Bus / Rejections) bind to persisted best scores vs each level's par.
 import { useStore } from "../store.ts";

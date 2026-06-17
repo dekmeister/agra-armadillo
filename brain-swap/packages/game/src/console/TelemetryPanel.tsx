@@ -45,6 +45,7 @@ export function TelemetryPanel() {
   const level = useStore((s) => s.level);
   const openComposer = useStore((s) => s.openComposer);
   const composing = useStore((s) => s.composing);
+  const tutorial = useStore((s) => s.tutorial);
 
   const log = world.log;
   const t = useMemo(() => {
@@ -109,12 +110,26 @@ export function TelemetryPanel() {
         </div>
 
         <div className="tele-foot">
-          <button className="btn on big" onClick={openComposer} disabled={composing}>
+          <button
+            className="btn on big"
+            data-tour="compose"
+            onClick={openComposer}
+            disabled={composing || tutorial}
+          >
             ✎ Compose &amp; Send [C]
           </button>
           <div className="k-dim" style={{ fontSize: 9, marginTop: 6, lineHeight: 1.4 }}>
-            You are the MA brain. Watch FA above; press <b>Compose</b> (the clock pauses) to send a
-            message. It reaches FA the next tick.
+            {tutorial ? (
+              <>
+                This is a guided demo. Just press <b>▶ Play</b> and watch the mission solve itself —
+                composing is disabled here.
+              </>
+            ) : (
+              <>
+                You are the MA brain. Watch FA above; press <b>Compose</b> (the clock pauses) to send a
+                message. It reaches FA the next tick.
+              </>
+            )}
           </div>
         </div>
       </div>

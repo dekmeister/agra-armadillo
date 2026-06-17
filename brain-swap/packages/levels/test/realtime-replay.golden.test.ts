@@ -14,6 +14,8 @@ import {
   type World,
 } from "@brain-swap/core";
 import {
+  level00,
+  level00ReferenceBrain,
   level11,
   level11ReferenceBrain,
   level12,
@@ -55,6 +57,7 @@ interface Case {
 }
 
 const CASES: Case[] = [
+  { id: "0.0", level: level00, brain: level00ReferenceBrain },
   { id: "1.1", level: level11, brain: level11ReferenceBrain },
   { id: "1.2", level: level12, brain: level12ReferenceBrain },
   { id: "1.3", level: level13, brain: level13ReferenceBrain },

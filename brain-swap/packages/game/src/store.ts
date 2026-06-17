@@ -8,11 +8,13 @@
 import { create } from "zustand";
 import {
   type BodyProfile,
+  extractScript,
   injectMA,
   initWorld,
   type LevelDef,
   makeScenario,
   type Message,
+  run,
   type Score,
   type Scenario,
   scoreWorld,
@@ -21,6 +23,7 @@ import {
   type World,
 } from "@brain-swap/core";
 import { bodyById, levelById } from "@brain-swap/levels";
+import { isTutorialLevel } from "./meta/levelCatalog.ts";
 import { finalFrame } from "./sim/timeline.ts";
 
 const DEFAULT_LEVEL_ID = "1.2";
@@ -63,6 +66,13 @@ interface StoreState {
   composing: boolean;
   /** Next CommandID sequence number to prefill in the composer (CMD-1, CMD-2, …). */
   commandSeq: number;
+
+  // Tutorial demo: a guided, watch-only level. `demoScript` is the reference
+  // solution derived headlessly on select; `advanceLive` injects it as the live
+  // edge advances so pressing Play replays the solve. While `tutorial` is true the
+  // compose affordances are disabled (the player only watches).
+  tutorial: boolean;
+  demoScript: ScriptedInput[];
 
   selectedLogIndex: number | null;
   showPeriodic: boolean;
@@ -108,6 +118,21 @@ function maxStepsFor(level: LevelDef): number {
   return level.maxTicks ?? HARD_CEILING;
 }
 
+/**
+ * Derive a tutorial level's watch-only demo script: run the reference brain
+ * headlessly and extract the MA→FA inputs it sent. Pure (no DOM / RNG / clock —
+ * CLAUDE.md rule #3). The store injects these via `injectMA` as the live edge
+ * advances, exactly as a player's recorded session would replay.
+ */
+function deriveDemoScript(levelId: string): ScriptedInput[] {
+  if (!isTutorialLevel(levelId)) return [];
+  const bundle = levelById(levelId);
+  if (!bundle) return [];
+  const { level, referenceBrain } = bundle;
+  const scenario = makeScenario(bodyById(level.body), { brain: referenceBrain, level });
+  return extractScript([run(initWorld(scenario), maxStepsFor(level))]);
+}
+
 export const useStore = create<StoreState>((set, get) => {
   const initialLevel = levelById(DEFAULT_LEVEL_ID)!.level;
   const initialBody = bodyById(initialLevel.body);
@@ -127,6 +152,9 @@ export const useStore = create<StoreState>((set, get) => {
     pendingInputs: [],
     composing: false,
     commandSeq: 1,
+
+    tutorial: isTutorialLevel(DEFAULT_LEVEL_ID),
+    demoScript: deriveDemoScript(DEFAULT_LEVEL_ID),
 
     selectedLogIndex: null,
     showPeriodic: false,
@@ -154,6 +182,8 @@ export const useStore = create<StoreState>((set, get) => {
         pendingInputs: [],
         composing: false,
         commandSeq: 1,
+        tutorial: isTutorialLevel(levelId),
+        demoScript: deriveDemoScript(levelId),
         view: "console",
         selectedLogIndex: null,
       });
@@ -206,6 +236,7 @@ export const useStore = create<StoreState>((set, get) => {
       let script = state.script;
       let pending = state.pendingInputs;
       let next = frames; // becomes a fresh array on first append
+      const demo = state.demoScript;
       let stepped = 0;
       for (let k = 0; k < nTicks && w.outcome === "running" && w.tick < cap; k += 1) {
         if (pending.length > 0) {
@@ -215,6 +246,16 @@ export const useStore = create<StoreState>((set, get) => {
             w = injectMA(w, m);
           }
           pending = [];
+        }
+        // Tutorial demo: inject the reference solution's inputs for this tick. Record
+        // them in `script` too (like the player's own sends) so the after-action recap
+        // reads the demo's exchange, and replaying the session reproduces the solve.
+        for (const input of demo) {
+          if (input.tick === w.tick) {
+            script = script === state.script ? [...script] : script;
+            script.push({ tick: w.tick, message: input.message });
+            w = injectMA(w, input.message);
+          }
         }
         w = step(w);
         next = next === frames ? [...frames] : next;

@@ -55,6 +55,19 @@ The built versions are deliberately simplified against the design copy (see
   profile-driven brain (reads `cap.MaxAltitude`/`MaxAirspeed`/`MinAirspeed`) ports
   unchanged across AX-01/02/03 — the role the removed standalone 4.1 used to fill.
 
+## Tutorial — First Flight (1 level)
+
+- **0.0 First Flight. [Built]** A standalone, watch-only onboarding demo (its own
+  "Tutorial" group in the level select, separate from World 0). It reuses 1.2's
+  mission verbatim (AX-01, fly heading 270 to the zone and hold at 3000 m); the
+  player just presses **Play** and the mission solves itself while a 4-step coachmark
+  tour points at the console regions (telemetry / map / log / transport). Implemented
+  as a client-side "demo auto-play": the store derives an input script from the
+  reference brain (`extractScript`) and injects it through the normal `advanceLive`
+  inject→step path, so the demo is deterministic and golden-tested exactly like every
+  other level. Compose is disabled while the tutorial is active. Teaches: the realtime
+  MA→FA loop end to end, and what each console region does.
+
 ## World 0 — Listen Before You Speak (2 levels)
 
 - **0.1 First Contact.** No commands available. Goal: light a panel lamp when

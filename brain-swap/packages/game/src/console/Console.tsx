@@ -30,17 +30,20 @@ export function Console() {
       <ChromeBar />
       <StatusStrip />
       <div className="grid">
-        <div className="col">
+        <div className="col" data-tour="telemetry">
           <TelemetryPanel />
         </div>
         <div className="col">
           <TacticalMapPanel />
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, minHeight: 0, overflow: "hidden" }}>
+          <div
+            data-tour="mission"
+            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, minHeight: 0, overflow: "hidden" }}
+          >
             <MissionCard collapsed={!panelsOpen} onToggleCollapse={togglePanels} />
             <BodySpecSheet collapsed={!panelsOpen} onToggleCollapse={togglePanels} />
           </div>
         </div>
-        <div className="col">
+        <div className="col" data-tour="log">
           <MessageLogPanel />
         </div>
       </div>

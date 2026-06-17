@@ -7,12 +7,18 @@ import { useStore } from "../store.ts";
 
 export function WelcomeOverlay() {
   const setView = useStore((s) => s.setView);
+  const selectLevel = useStore((s) => s.selectLevel);
   const [dismissed, setDismissed] = useState(false);
 
   if (dismissed) return null;
 
   const go = (view: "select" | "help") => {
     setView(view);
+    setDismissed(true);
+  };
+
+  const startTutorial = () => {
+    selectLevel("0.0"); // routes to the console; the coachmark tour appears there
     setDismissed(true);
   };
 
@@ -32,6 +38,9 @@ export function WelcomeOverlay() {
           <b>Help</b> page walks through the control-acquisition handshake step by step.
         </p>
         <div className="welcome-actions">
+          <button className="btn big on" onClick={startTutorial}>
+            Start tutorial
+          </button>
           <button className="btn big" onClick={() => go("select")}>
             Pick a mission
           </button>

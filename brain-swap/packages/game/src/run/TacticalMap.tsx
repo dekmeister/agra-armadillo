@@ -328,7 +328,7 @@ export function TacticalMapPanel() {
 
   return (
     <Panel title="TACTICAL" titleAccent="MAP" className="grow">
-      <div className="map-wrap">
+      <div className="map-wrap" data-tour="map">
         <div className="map-canvas" ref={hostRef} />
         {world.outcome !== "running" && (
           <div className={`map-verdict ${world.outcome === "won" ? "pass" : "fail"}`}>
