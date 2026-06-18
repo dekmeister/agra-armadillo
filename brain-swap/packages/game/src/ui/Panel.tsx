@@ -32,6 +32,7 @@ export function Panel({
         {meta ? <span className="meta">{meta}</span> : null}
         {onToggleCollapse ? (
           <button
+            type="button"
             className={`ph-collapse${meta ? "" : " push"}`}
             onClick={onToggleCollapse}
             title={collapsed ? "Expand" : "Collapse"}

@@ -25,7 +25,7 @@ export function FidelityNotesModal({ onClose }: { onClose: () => void }) {
         </Panel>
         <div className="mfoot">
           <div className="right">
-            <button className="btn" onClick={onClose}>
+            <button type="button" className="btn" onClick={onClose}>
               Close
             </button>
           </div>

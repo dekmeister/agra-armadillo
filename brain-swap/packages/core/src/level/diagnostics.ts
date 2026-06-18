@@ -91,11 +91,6 @@ const hasControlRejection = (log: readonly MessageLogEntry[]): boolean =>
       pay(e).ApprovalRequestProcessingState === "REJECTED",
   );
 
-const hasAccepted = (log: readonly MessageLogEntry[]): boolean =>
-  log.some(
-    (e) => e.type === "MA_FlightCommandStatusMT" && pay(e).CommandProcessingState === "ACCEPTED",
-  );
-
 // `step` collapses three distinct failures into outcome "failed" (sim.ts): a no-fly /
 // threat breach (stops early), running the fuel dry, and hitting maxTicks. Tease them
 // apart so the debrief names the real cause.

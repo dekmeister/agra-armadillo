@@ -114,6 +114,7 @@ export function TelemetryPanel() {
 
         <div className="tele-foot">
           <button
+            type="button"
             className="btn on big"
             data-tour="compose"
             onClick={openComposer}

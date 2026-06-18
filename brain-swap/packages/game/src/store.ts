@@ -300,7 +300,7 @@ export const useStore = create<StoreState>((set, get) => {
       const prev = get().bestScores[levelId];
       // Keep the best winning run by ticks; otherwise record the attempt only if none exists.
       let next = prev;
-      if (won && (!prev || !prev.won || score.ticks < prev.score.ticks)) {
+      if (won && (!prev?.won || score.ticks < prev.score.ticks)) {
         next = { score, won: true };
       } else if (!prev) {
         next = { score, won };

@@ -43,19 +43,21 @@ export function ChromeBar() {
 
         <div className="region transport" data-tour="transport">
           <button
+            type="button"
             className={`iconbtn${running ? " playing" : ""}`}
             onClick={togglePlay}
             title={running ? "Pause [Space]" : "Play [Space]"}
           >
             {running ? "❚❚" : "▶"}
           </button>
-          <button className="iconbtn" onClick={restart} title="Restart [R]">
+          <button type="button" className="iconbtn" onClick={restart} title="Restart [R]">
             ■
           </button>
-          <button className="iconbtn" onClick={stepOne} title="Step one tick [→]">
+          <button type="button" className="iconbtn" onClick={stepOne} title="Step one tick [→]">
             ⏭
           </button>
           <button
+            type="button"
             className="btn sm on"
             onClick={openComposer}
             disabled={composing || tutorial}
@@ -67,6 +69,7 @@ export function ChromeBar() {
             {SPEEDS.map(([s, key]) => (
               <button
                 key={s}
+                type="button"
                 className={speed === s ? "on" : ""}
                 onClick={() => setSpeed(s)}
                 title={`${s}× speed [${key}]`}
@@ -80,7 +83,7 @@ export function ChromeBar() {
             <span className="num">{String(playhead).padStart(4, "0")}</span>
           </div>
           {notes.length > 0 && (
-            <button className="btn sm" onClick={() => setFidOpen(true)}>
+            <button type="button" className="btn sm" onClick={() => setFidOpen(true)}>
               ⚠ FIDELITY ({notes.length})
             </button>
           )}

@@ -123,8 +123,8 @@ export function ComplianceReport() {
         <section>
           <h2>After-Action Recap</h2>
           <ul className="recap">
-            {diag.events.map((e, i) => (
-              <li key={i} className={`recap-row ${e.polarity}`}>
+            {diag.events.map((e) => (
+              <li key={`${e.tick ?? "x"}-${e.polarity}-${e.label}`} className={`recap-row ${e.polarity}`}>
                 <span className="recap-tick">{e.tick != null ? `t${e.tick}` : ""}</span>
                 <span className="recap-mark">{polarityMark(e.polarity)}</span>
                 <span className="recap-label">
@@ -172,10 +172,11 @@ export function ComplianceReport() {
             Swap is not A-GRA compliance (fidelity note #11).
           </span>
           <div className="right">
-            <button className="btn" onClick={() => setView("select")}>
+            <button type="button" className="btn" onClick={() => setView("select")}>
               Level Select
             </button>
             <button
+              type="button"
               className="btn"
               onClick={() => {
                 restart();
@@ -185,6 +186,7 @@ export function ComplianceReport() {
               Retry · Optimize
             </button>
             <button
+              type="button"
               className="btn"
               disabled={!nextId}
               title={nextId ? `Go to level ${nextId}` : "No further playable levels"}

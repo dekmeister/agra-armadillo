@@ -201,6 +201,7 @@ export function TacticalMapPanel() {
   drawRef.current = draw;
 
   // Create the Pixi app once; wire pan/zoom on its canvas. StrictMode-safe.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: one-time Pixi setup on mount
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
@@ -319,13 +320,12 @@ export function TacticalMapPanel() {
         gRef.current = null;
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Redraw on data / playhead change (camera is preserved).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: draw reads latest data via drawRef — these are trigger deps
   useEffect(() => {
     draw();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playhead, timeline, level, body, world]);
 
   const fitView = () => {
@@ -363,10 +363,10 @@ export function TacticalMapPanel() {
             {world.outcome === "won" ? "PASS" : "FAIL"}
           </div>
         )}
-        <button className="btn sm map-centre" onClick={centreView} title="Centre on the aircraft">
+        <button type="button" className="btn sm map-centre" onClick={centreView} title="Centre on the aircraft">
           ✛ Centre
         </button>
-        <button className="btn sm map-fit" onClick={fitView} title="Frame the whole mission area">
+        <button type="button" className="btn sm map-fit" onClick={fitView} title="Frame the whole mission area">
           ⤢ Fit
         </button>
         <div className="alt-tape">

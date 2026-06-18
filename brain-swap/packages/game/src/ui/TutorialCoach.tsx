@@ -65,6 +65,7 @@ export function TutorialCoach() {
   const [rect, setRect] = useState<DOMRect | null>(null);
 
   // Reset the tour whenever the (tutorial) level changes, so re-selecting 0.0 reruns it.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: levelId and tutorial are trigger deps — removing them would break the reset
   useEffect(() => {
     setStep(0);
     setDismissed(false);
@@ -83,6 +84,7 @@ export function TutorialCoach() {
   }, [active, step]);
 
   // Measure the current step's anchor (and re-measure on resize/scroll).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: step is redundant (current already reflects it) but harmless
   useLayoutEffect(() => {
     if (!active || !current) return;
     const measure = () => {
@@ -137,21 +139,21 @@ export function TutorialCoach() {
         <div className="coach-title">{current.title}</div>
         <p className="coach-body">{current.body}</p>
         <div className="coach-actions">
-          <button className="btn ghost sm" onClick={close}>
+          <button type="button" className="btn ghost sm" onClick={close}>
             Skip
           </button>
           <div className="coach-nav">
             {step > 0 && (
-              <button className="btn sm" onClick={() => setStep((s) => s - 1)}>
+              <button type="button" className="btn sm" onClick={() => setStep((s) => s - 1)}>
                 Back
               </button>
             )}
             {last ? (
-              <button className="btn sm on" onClick={close}>
+              <button type="button" className="btn sm on" onClick={close}>
                 Got it
               </button>
             ) : (
-              <button className="btn sm on" onClick={() => setStep((s) => s + 1)}>
+              <button type="button" className="btn sm on" onClick={() => setStep((s) => s + 1)}>
                 Next
               </button>
             )}

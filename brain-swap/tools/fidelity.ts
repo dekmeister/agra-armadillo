@@ -32,8 +32,9 @@ export function collectTokens(): Token[] {
 export function buildXsdNameIndex(xsd: string): Set<string> {
   const index = new Set<string>();
   const re = /(?:name|value)="([A-Za-z0-9_]+)"/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(xsd)) !== null) index.add(m[1]!);
+  for (let m = re.exec(xsd); m !== null; m = re.exec(xsd)) {
+    index.add(m[1]!);
+  }
   return index;
 }
 

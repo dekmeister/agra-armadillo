@@ -5,7 +5,7 @@ import type { LevelPars, Score } from "@brain-swap/core";
 
 export type Medal = "gold" | "silver" | "none";
 
-export function medal(value: number, par: number): Medal {
+function medal(value: number, par: number): Medal {
   if (value <= par) return "gold";
   if (value <= Math.max(par * 1.5, par + 1)) return "silver";
   return "none";

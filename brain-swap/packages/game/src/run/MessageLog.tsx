@@ -43,6 +43,7 @@ export function MessageLogPanel() {
     (showPeriodic || !PERIODIC_TYPES.has(log[selected]!.type));
 
   // Auto-scroll to newest while running.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: log.length is a trigger dep, not read inside
   useEffect(() => {
     if (running && scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [running, log.length]);
@@ -52,6 +53,7 @@ export function MessageLogPanel() {
       <div className="log-fill">
         <div className="log-controls">
           <button
+            type="button"
             className="log-toggle"
             onClick={toggleShowPeriodic}
             title="Periodic FA publications: position + activity reports"
@@ -126,7 +128,7 @@ function Inspector({ entry }: { entry: MessageLogEntry }) {
     <div className="inspector">
       <div className="ihead">
         <Identifier name={entry.type} />
-        <button className="x" onClick={() => selectLog(null)} title="Close">
+        <button type="button" className="x" onClick={() => selectLog(null)} title="Close">
           ✕
         </button>
       </div>

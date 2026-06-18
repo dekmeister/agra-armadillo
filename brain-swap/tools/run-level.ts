@@ -22,7 +22,6 @@ function main(): void {
 
   // Re-run, printing per-tick (cheap; determinism guarantees identical output).
   let r = initWorld(scenario);
-  let i = 0;
   while (r.outcome === "running" && r.tick < maxTicks) {
     const prevLen = r.log.length;
     r = step(r);
@@ -33,7 +32,6 @@ function main(): void {
         ).padEnd(13)} ${r.ma.brainState ?? "-"}\n`,
       );
     }
-    i += 1;
   }
 
   const v = w.vehicle;

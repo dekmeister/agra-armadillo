@@ -111,6 +111,7 @@ export function App() {
         {NAV.map((n) => (
           <button
             key={n.id}
+            type="button"
             className={`nav${view === n.id ? " on" : ""}`}
             onClick={() => setView(n.id)}
           >

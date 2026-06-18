@@ -186,7 +186,7 @@ export function Help() {
             </a>
           </span>
           <div className="right">
-            <button className="btn" onClick={() => setView("console")}>
+            <button type="button" className="btn" onClick={() => setView("console")}>
               Go to Console
             </button>
           </div>

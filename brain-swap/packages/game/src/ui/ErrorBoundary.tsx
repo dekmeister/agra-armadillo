@@ -35,6 +35,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
         <pre style={{ whiteSpace: "pre-wrap", color: "#f2c200" }}>{error.message}</pre>
         <pre style={{ whiteSpace: "pre-wrap", color: "#7d876b", fontSize: 11 }}>{error.stack}</pre>
         <button
+          type="button"
           style={{
             marginTop: 12,
             padding: "6px 12px",

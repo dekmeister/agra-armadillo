@@ -38,16 +38,16 @@ export function WelcomeOverlay() {
           <b>Help</b> page walks through the control-acquisition handshake step by step.
         </p>
         <div className="welcome-actions">
-          <button className="btn big on" onClick={startTutorial}>
+          <button type="button" className="btn big on" onClick={startTutorial}>
             Start tutorial
           </button>
-          <button className="btn big" onClick={() => go("select")}>
+          <button type="button" className="btn big" onClick={() => go("select")}>
             Pick a mission
           </button>
-          <button className="btn" onClick={() => go("help")}>
+          <button type="button" className="btn" onClick={() => go("help")}>
             How to play
           </button>
-          <button className="btn ghost" onClick={() => setDismissed(true)}>
+          <button type="button" className="btn ghost" onClick={() => setDismissed(true)}>
             Dismiss
           </button>
         </div>

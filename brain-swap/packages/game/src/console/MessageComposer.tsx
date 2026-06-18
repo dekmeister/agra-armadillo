@@ -143,6 +143,7 @@ function Typeahead({
               {matches.map((m, i) => (
                 <button
                   key={m}
+                  type="button"
                   className={`fl-row pick${i === idx ? " on" : ""}`}
                   onClick={() => onPick(m)}
                   onMouseEnter={() => setHi(i)}
@@ -158,7 +159,7 @@ function Typeahead({
           <div className="mfoot">
             <span className="vsum">↑/↓ to choose · Enter to select · Esc to cancel</span>
             <div className="right">
-              <button className="btn" onClick={onCancel}>
+              <button type="button" className="btn" onClick={onCancel}>
                 Cancel
               </button>
             </div>
@@ -171,8 +172,8 @@ function Typeahead({
 
 function FieldForm({
   messageType,
-  body,
-  capabilityId,
+  body: _body,
+  capabilityId: _capabilityId,
   commandSeq,
   heldCapabilityId,
   onBack,
@@ -340,14 +341,14 @@ function FieldForm({
             </span>
             <div className="right">
               {onBack && (
-                <button className="btn" onClick={onBack}>
+                <button type="button" className="btn" onClick={onBack}>
                   ◂ Type [Esc]
                 </button>
               )}
-              <button className="btn" onClick={onCancel}>
+              <button type="button" className="btn" onClick={onCancel}>
                 {onBack ? "Cancel" : "Cancel [Esc]"}
               </button>
-              <button className="btn on" onClick={send} disabled={!valid}>
+              <button type="button" className="btn on" onClick={send} disabled={!valid}>
                 Send ▸ [↵]
               </button>
             </div>

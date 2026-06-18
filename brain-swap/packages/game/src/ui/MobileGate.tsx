@@ -35,7 +35,7 @@ export function MobileGate() {
           Brain Swap needs a wide screen for its editor. Open it on a landscape tablet or any
           desktop browser.
         </p>
-        <button className="btn" onClick={() => setDismissed(true)}>
+        <button type="button" className="btn" onClick={() => setDismissed(true)}>
           Continue anyway
         </button>
       </div>

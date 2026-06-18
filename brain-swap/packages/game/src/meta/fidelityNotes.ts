@@ -7,7 +7,7 @@ export interface FidelityNote {
   body: string;
 }
 
-export const FIDELITY_NOTES: FidelityNote[] = [
+const FIDELITY_NOTES: FidelityNote[] = [
   {
     index: 1,
     title: "FA collapses the safety-critical side",

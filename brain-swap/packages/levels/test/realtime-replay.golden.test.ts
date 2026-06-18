@@ -91,7 +91,7 @@ describe("realtime replay — every level is solvable by hand", () => {
   for (const c of CASES) {
     // multiBodyScenarios covers single-body levels (one scenario) and 4.5 (one per airframe).
     const scenarios = multiBodyScenarios(c.level, c.brain);
-    scenarios.forEach((brainScenario, i) => {
+    scenarios.forEach((brainScenario, _i) => {
       const tag = scenarios.length > 1 ? `${c.id} · ${brainScenario.body.id}` : c.id;
       const maxSteps = MAX_STEPS(c.level);
 
