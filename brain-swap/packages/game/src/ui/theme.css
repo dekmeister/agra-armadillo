@@ -558,10 +558,17 @@ button {
   overflow-y: auto;
 }
 .logrow {
+  appearance: none;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  text-align: left;
   display: grid;
   grid-template-columns: 48px 60px 1fr;
   gap: 4px;
   padding: 4px 9px;
+  background: none;
+  border: 0;
   border-bottom: 1px solid #1a1f15;
   cursor: pointer;
   border-left: 2px solid transparent;
@@ -1458,6 +1465,12 @@ input.field {
   color: var(--k-dim);
 }
 .levelcard {
+  appearance: none;
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
   border: 1px solid var(--k-line);
   background: var(--k-panel);
   padding: 8px;

@@ -36,9 +36,11 @@ export function LevelSelect() {
                 const m = medals(slot?.score, levelById(lv.id)?.level.pars);
                 const status = !lv.playable ? "locked" : slot?.won ? "cleared" : "▶ resume";
                 return (
-                  <div
+                  <button
+                    type="button"
                     key={lv.id}
                     className={`levelcard${lv.playable ? "" : " locked"}${lv.id === currentLevelId ? " current" : ""}`}
+                    disabled={!lv.playable}
                     onClick={() => openLevel(lv)}
                   >
                     <div className="lid">{lv.id}</div>
@@ -52,7 +54,7 @@ export function LevelSelect() {
                     </div>
                     <div className="lstatus">{status}</div>
                     {lv.capstone && <div className="capstone">◆ Capstone · zero edits</div>}
-                  </div>
+                  </button>
                 );
               })}
             </div>

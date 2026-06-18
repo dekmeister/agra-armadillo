@@ -124,7 +124,10 @@ export function ComplianceReport() {
           <h2>After-Action Recap</h2>
           <ul className="recap">
             {diag.events.map((e) => (
-              <li key={`${e.tick ?? "x"}-${e.polarity}-${e.label}`} className={`recap-row ${e.polarity}`}>
+              <li
+                key={`${e.tick ?? "x"}-${e.polarity}-${e.label}`}
+                className={`recap-row ${e.polarity}`}
+              >
                 <span className="recap-tick">{e.tick != null ? `t${e.tick}` : ""}</span>
                 <span className="recap-mark">{polarityMark(e.polarity)}</span>
                 <span className="recap-label">

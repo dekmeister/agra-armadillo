@@ -9,7 +9,11 @@ export function FidelityNotesModal({ onClose }: { onClose: () => void }) {
   const notes = notesFor(indices);
   if (notes.length === 0) return null;
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: backdrop scrim; the modal's Close button is the keyboard-accessible control
+    // biome-ignore lint/a11y/useKeyWithClickEvents: backdrop scrim; the modal's Close button is the keyboard-accessible control
     <div className="modal-scrim" onClick={onClose}>
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: stops backdrop dismiss on inner clicks; not an interactive control */}
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents: stops backdrop dismiss on inner clicks; not an interactive control */}
       <div className="modal narrow" onClick={(e) => e.stopPropagation()}>
         <Panel title="FIDELITY" titleAccent="NOTES">
           <div className="datalist" style={{ gap: 6 }}>

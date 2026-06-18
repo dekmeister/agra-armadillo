@@ -118,12 +118,17 @@ function Typeahead({
   };
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: backdrop scrim; Escape cancels and the Cancel button is the keyboard control
+    // biome-ignore lint/a11y/useKeyWithClickEvents: backdrop scrim; Escape cancels and the Cancel button is the keyboard control
     <div className="modal-scrim" onClick={onCancel}>
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: stops backdrop dismiss on inner clicks; not an interactive control */}
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents: stops backdrop dismiss on inner clicks; not an interactive control */}
       <div className="modal" data-tour="composer" onClick={(e) => e.stopPropagation()}>
         <Panel title="SEND" titleAccent="MESSAGE" meta="PICK MESSAGE TYPE">
           <div className="mbody" style={{ display: "block" }}>
             <input
               className="field"
+              // biome-ignore lint/a11y/noAutofocus: intentional — the composer must be ready to type immediately
               autoFocus
               style={{ width: "100%" }}
               placeholder="type to filter MA→FA messages…"
@@ -257,7 +262,10 @@ function FieldForm({
   };
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: backdrop scrim; Escape cancels and the Cancel button is the keyboard control
+    // biome-ignore lint/a11y/useKeyWithClickEvents: backdrop scrim; Escape cancels and the Cancel button is the keyboard control
     <div className="modal-scrim" onClick={onCancel}>
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: stops backdrop dismiss on inner clicks; keyboard handled by onKeyDown */}
       <div
         className="modal"
         data-tour="composer"
@@ -268,6 +276,8 @@ function FieldForm({
           <div className="mbody" style={{ display: "block" }}>
             <div className="fieldlist">
               {fields.map((f, i) => (
+                // biome-ignore lint/a11y/noStaticElementInteractions: layout row wrapping the real form controls (select/input); click is a convenience mirroring their onFocus
+                // biome-ignore lint/a11y/useKeyWithClickEvents: layout row wrapping the real form controls (select/input); click is a convenience mirroring their onFocus
                 <div
                   className={`fl-row${i === active ? " active" : ""}`}
                   key={f.name}

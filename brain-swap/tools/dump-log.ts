@@ -5,10 +5,27 @@
 // Usage: npx tsx tools/dump-log.ts <levelKey> [brainKey]
 //   levelKey : 00 | 11 | 12 | 13 | 14 | 16 | 22 | 45
 //   brainKey : ref (default) | naive | locked | none
-import { initWorld, makeScenario, run, scoreWorld, type World } from "@brain-swap/core";
+import {
+  type BodyProfile,
+  type Brain,
+  initWorld,
+  type LevelDef,
+  makeScenario,
+  run,
+  scoreWorld,
+  type World,
+} from "@brain-swap/core";
 import * as L from "@brain-swap/levels";
 
-const levels: Record<string, { level: any; ref?: any; naive?: any; locked?: any }> = {
+type BrainKey = "ref" | "naive" | "locked";
+interface LevelEntry {
+  level: LevelDef;
+  ref?: Brain;
+  naive?: Brain;
+  locked?: Brain;
+}
+
+const levels: Record<string, LevelEntry> = {
   "00": { level: L.level00, ref: L.level00ReferenceBrain },
   "11": { level: L.level11, ref: L.level11ReferenceBrain, naive: L.level11NaiveBrain },
   "12": { level: L.level12, ref: L.level12ReferenceBrain },
@@ -26,14 +43,14 @@ const brainKey = process.argv[3] ?? "ref";
 const entry = levels[levelKey];
 if (!entry) throw new Error(`unknown level key: ${levelKey}`);
 
-function pickBrain(): any | null {
+function pickBrain(): Brain | null {
   if (brainKey === "none") return null;
-  const b = (entry as any)[brainKey];
+  const b = entry?.[brainKey as BrainKey];
   if (!b) throw new Error(`level ${levelKey} has no '${brainKey}' brain`);
   return b;
 }
 
-function dumpFor(level: any, body: any, brain: any): void {
+function dumpFor(level: LevelDef, body: BodyProfile, brain: Brain | null): void {
   const scenario = makeScenario(body, { brain, level });
   const w: World = run(initWorld(scenario), 1000);
   process.stdout.write(`\n=== ${level.id} on ${body.name} (${brainKey}) ===\n`);
@@ -53,7 +70,7 @@ function dumpFor(level: any, body: any, brain: any): void {
 
 const brain = pickBrain();
 if (entry.level.bodies) {
-  for (const id of entry.level.bodies as string[]) dumpFor(entry.level, L.bodyById(id), brain);
+  for (const id of entry.level.bodies) dumpFor(entry.level, L.bodyById(id), brain);
 } else {
   dumpFor(entry.level, L.bodyById(entry.level.body), brain);
 }

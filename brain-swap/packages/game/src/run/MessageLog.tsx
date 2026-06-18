@@ -107,14 +107,14 @@ function LogRow({
   const badge = badgeFor(entry.disposition, entry.type, entry.payload);
   const ma = entry.from === "MA";
   return (
-    <div className={`logrow${selected ? " sel" : ""}`} onClick={onClick}>
+    <button type="button" className={`logrow${selected ? " sel" : ""}`} onClick={onClick}>
       <span className="tick">{String(entry.tick).padStart(4, "0")}</span>
       <span className={`dir ${ma ? "ma" : "fa"}`}>{ma ? "MA→FA" : "FA→MA"}</span>
       <span className="typecell">
         <Identifier name={entry.type} />
         <DispositionBadge kind={badge.kind} reason={badge.reason} />
       </span>
-    </div>
+    </button>
   );
 }
 

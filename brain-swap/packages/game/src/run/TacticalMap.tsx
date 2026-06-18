@@ -363,10 +363,20 @@ export function TacticalMapPanel() {
             {world.outcome === "won" ? "PASS" : "FAIL"}
           </div>
         )}
-        <button type="button" className="btn sm map-centre" onClick={centreView} title="Centre on the aircraft">
+        <button
+          type="button"
+          className="btn sm map-centre"
+          onClick={centreView}
+          title="Centre on the aircraft"
+        >
           ✛ Centre
         </button>
-        <button type="button" className="btn sm map-fit" onClick={fitView} title="Frame the whole mission area">
+        <button
+          type="button"
+          className="btn sm map-fit"
+          onClick={fitView}
+          title="Frame the whole mission area"
+        >
           ⤢ Fit
         </button>
         <div className="alt-tape">

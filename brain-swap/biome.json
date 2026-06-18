@@ -6,7 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!**/node_modules", "!**/dist", "!**/packages/game/dist"]
+    "includes": ["**", "!**/node_modules", "!**/dist", "!**/packages/game/dist", "!**/.claude"]
   },
   "formatter": {
     "enabled": true,
@@ -24,7 +24,11 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "preset": "recommended"
+      "preset": "recommended",
+      "style": {
+        "noNonNullAssertion": "off",
+        "noDescendingSpecificity": "off"
+      }
     }
   },
   "assist": { "actions": { "source": { "organizeImports": "on" } } }
