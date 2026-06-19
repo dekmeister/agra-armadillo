@@ -14,6 +14,7 @@ import { reactToMessage } from "./brain/interpreter.ts";
 import { enqueueAll, takeDue } from "./bus.ts";
 import { faAdvanceApprovals, faCollisionCheck, faHandleInbound, faPublish } from "./fa/engine.ts";
 import { advanceThreats, applyEvents } from "./level/events.ts";
+import { msAdvanceState, msHandleInbound, msPublish } from "./ms/engine.ts";
 import { evaluateWin } from "./level/runtime.ts";
 import { DELIVERED, type Message, type MessageLogEntry, msg } from "./types.ts";
 import { integrate } from "./vehicle/pointmass.ts";
@@ -39,11 +40,12 @@ export function step(world: World): World {
   if (world.outcome !== "running") return world;
 
   const { scenario } = world;
-  const { body } = scenario;
+  const { body, msBody } = scenario;
   const tick = world.tick + 1;
 
   let bus = world.bus;
   let fa = world.fa;
+  let ms = world.ms;
   let vehicle = world.vehicle;
   let ma = world.ma;
   let threats = world.threats;
@@ -54,6 +56,9 @@ export function step(world: World): World {
   const adv = faAdvanceApprovals(fa);
   fa = adv.fa;
   bus = enqueueAll(bus, adv.outbound, tick);
+
+  // Phase A (MS) — apply each subsystem's deterministic state timeline for this tick.
+  if (msBody && ms) ms = msAdvanceState(msBody, ms, tick);
 
   // Phase A′ — fire mission events scheduled for this tick. Updates the envelope /
   // availability / threat overlay before inbound so this tick's commands see it.
@@ -79,6 +84,11 @@ export function step(world: World): World {
       if (res.targetUpdate !== undefined) vehicle = { ...vehicle, target: res.targetUpdate };
       bus = enqueueAll(bus, res.outbound, tick);
       log.push(entry(tick, m, res.disposition));
+    } else if (m.to === "MS" && msBody && ms) {
+      const res = msHandleInbound(msBody, ms, m);
+      ms = res.ms;
+      bus = enqueueAll(bus, res.outbound, tick);
+      log.push(entry(tick, m, res.disposition));
     } else {
       if (scenario.brain && ma.brainState !== null) {
         const reaction = reactToMessage(scenario.brain, ma.brainState, m, cap);
@@ -93,6 +103,13 @@ export function step(world: World): World {
   const pub = faPublish(body, fa, vehicle);
   fa = pub.fa;
   bus = enqueueAll(bus, pub.outbound, tick);
+
+  // Phase C (MS) — the MS heartbeat (periodic subsystem + service status).
+  if (msBody && ms) {
+    const msPub = msPublish(msBody, ms);
+    ms = msPub.ms;
+    bus = enqueueAll(bus, msPub.outbound, tick);
+  }
 
   // Phase C′ — collision-avoidance interrupt (CAUTION fault + fly-away override).
   const col = faCollisionCheck(body, fa, vehicle, threats);
@@ -110,7 +127,7 @@ export function step(world: World): World {
   let holdTicks = world.holdTicks;
   let waypointIndex = world.waypointIndex;
   if (scenario.level) {
-    const wc = evaluateWin(scenario.level, vehicle, fa, { holdTicks, waypointIndex }, threats);
+    const wc = evaluateWin(scenario.level, vehicle, fa, ms, { holdTicks, waypointIndex }, threats);
     holdTicks = wc.holdTicks;
     waypointIndex = wc.waypointIndex;
     const fuelOut = vehicle.fuel !== undefined && vehicle.fuel <= 0;
@@ -127,6 +144,7 @@ export function step(world: World): World {
     bus,
     log,
     fa,
+    ms,
     vehicle,
     ma,
     outcome,

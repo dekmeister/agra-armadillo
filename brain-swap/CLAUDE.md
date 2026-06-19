@@ -8,9 +8,12 @@ see `PLAN_FUTURE.md` and the realtime-mode plan. The brain *interpreter* survive
 `packages/core` only to derive/verify each level's reference solution.) A realtime
 session is a deterministic recorded input script (`ScriptedInput[]`), so it replays
 and golden-tests exactly like a brain did. **Current state:** playable React+Pixi
-game (`npm run dev`) with levels **1.1, 1.2, 1.3, 1.4, 4.1, 4.5** and bodies
-**AX-01/02/03**, each level golden-tested (brain run + realtime-replay parity). Read
-`docs/` before implementing; `docs/03-levels.md` has per-level build status.
+game (`npm run dev`) with levels **1.1, 1.2, 1.3, 1.4, 1.6, 2.2, 3.1, 4.2, 4.3, 4.5**,
+FA bodies **AX-01/02/03**, and the first **Mission Systems** level (**3.1**, on MS body
+**Sentry MS**). MS is a real third bus party (`Party = "MA" | "FA" | "MS"`) with its own
+engine (`packages/core/src/ms/engine.ts`) and catalog (`packages/levels/catalog/tier2-ms.yaml`).
+Each level golden-tested (brain run + realtime-replay parity). Read `docs/` before
+implementing; `docs/03-levels.md` has per-level build status.
 
 ## Read first
 
@@ -62,8 +65,16 @@ game (`npm run dev`) with levels **1.1, 1.2, 1.3, 1.4, 4.1, 4.5** and bodies
   golden-run test that proves solvability headless (the original MVP discipline,
   now applied to each level).
 - Objectives are a discriminated union (`reach-hold` / `hold-control` /
-  `waypoint-sequence`); a level may override the body's vehicle `start`. See
+  `waypoint-sequence` / `ms-status`); a level may override the body's vehicle `start`. See
   `docs/06-schemas.md`.
+- **Mission Systems (MS) is a real third bus party** (`Party = "MA" | "FA" | "MS"`), not a
+  UI reskin of FA traffic. It is modelled by a sibling `MsBodyDef` + `ms/engine.ts` (mirrors
+  the FA engine's pure-phase shape: `msAdvanceState` / `msHandleInbound` / `msPublish`), with
+  MS messages in `packages/levels/catalog/tier2-ms.yaml` (directions `MA->MS` / `MS->MA`). A
+  MA-origin message's `to` is derived from its catalog direction via `targetParty` (core) —
+  the brain interpreter and the composer both use it, neither hardcodes `"FA"`. MS is **not**
+  safety-critical: it never REJECTs a well-formed command (lie #20). World 3 build status and
+  the deferred sensor/weapon/DLZ levels are in `RESEARCH_MS.md` and `PLAN_MS.md`.
 - Visual design direction (refer to existing code)
 
 ## Not yet decided (don't assume)
@@ -80,19 +91,21 @@ game (`npm run dev`) with levels **1.1, 1.2, 1.3, 1.4, 4.1, 4.5** and bodies
 Levels are **data**, not code, when they reuse the existing engine. Prefer that
 path; only touch `packages/core` when the level genuinely needs a new mechanic.
 
-1. **Stay fidelity-clean.** Reuse the existing 9-message catalog if possible. If a
-   level truly needs a new message/field/enum, add it to `packages/levels/catalog/`,
-   run `npm run gen:catalog` + `npm run fidelity` (every name must grep in the XSD),
-   and record any simplification in `docs/02-fidelity.md` (+ add a `FidelityNote` in
-   `packages/game/src/meta/fidelityNotes.ts`, kept in sync).
+1. **Stay fidelity-clean.** Reuse the existing catalog (FA `tier1.yaml` + MS `tier2-ms.yaml`)
+   if possible. If a level truly needs a new message/field/enum, add it to the right
+   `packages/levels/catalog/*.yaml` (`loadCatalog` merges them), run `npm run gen:catalog` +
+   `npm run fidelity` (every name must grep in the XSD), and record any simplification in
+   `docs/02-fidelity.md` (+ add a `FidelityNote` in `packages/game/src/meta/fidelityNotes.ts`,
+   kept in sync).
 2. **Author the data** under `packages/levels/worlds/world-N/`:
    `level-X.Y.json` (objective `kind`, `body`, `capabilityId`, `availableMessages`,
-   `maxTicks`, optional `brief`/`teaches`/`start`/`bodies`, `fidelityNotes`) plus a
+   `maxTicks`, optional `msBody`/`brief`/`teaches`/`start`/`bodies`, `fidelityNotes`) plus a
    `*.reference-brain.json` and any `*.naive-brain.json` / `*.locked-brain.json`.
-   New airframes go in `packages/levels/bodies/*.json`.
-3. **Register** in `packages/levels/src/index.ts`: export the level + brains, add any
-   body to the `BODIES` map, and add the level to the `LEVELS` registry. Add it to
-   the map in `tools/dump-log.ts` too.
+   New FA airframes go in `packages/levels/bodies/*.json`; new MS bodies in
+   `packages/levels/bodies/ms/*.json` (shape `MsBodyDef`).
+3. **Register** in `packages/levels/src/index.ts`: export the level + brains, add any FA
+   body to the `BODIES` map (MS body to `MS_BODIES`), and add the level to the `LEVELS`
+   registry. Add it to the map in `tools/dump-log.ts` too.
 4. **Tune by running it.** `npx tsx tools/dump-log.ts <levelKey> <ref|naive|locked>`
    prints the projected log, MA sends, final state, and score. Set `pars` to the
    measured winning run. (For multi-body levels, co-design body envelopes so the

@@ -22,7 +22,7 @@ import {
   step,
   type World,
 } from "@brain-swap/core";
-import { bodyById, levelById } from "@brain-swap/levels";
+import { bodyById, levelById, msBodyById } from "@brain-swap/levels";
 import { create } from "zustand";
 import { isTutorialLevel } from "./meta/levelCatalog.ts";
 import { finalFrame } from "./sim/timeline.ts";
@@ -111,8 +111,13 @@ interface StoreState {
   recordResult: () => void;
 }
 
+/** Resolve a level's optional MS body (null for FA-only levels). */
+function msBodyOf(level: LevelDef) {
+  return level.msBody ? msBodyById(level.msBody) : null;
+}
+
 function scenarioOf(s: Pick<StoreState, "body" | "level">): Scenario {
-  return makeScenario(s.body, { brain: null, level: s.level });
+  return makeScenario(s.body, { brain: null, level: s.level, msBody: msBodyOf(s.level) });
 }
 
 function maxStepsFor(level: LevelDef): number {
@@ -130,7 +135,11 @@ function deriveDemoScript(levelId: string): ScriptedInput[] {
   const bundle = levelById(levelId);
   if (!bundle) return [];
   const { level, referenceBrain } = bundle;
-  const scenario = makeScenario(bodyById(level.body), { brain: referenceBrain, level });
+  const scenario = makeScenario(bodyById(level.body), {
+    brain: referenceBrain,
+    level,
+    msBody: msBodyOf(level),
+  });
   return extractScript([run(initWorld(scenario), maxStepsFor(level))]);
 }
 
@@ -138,7 +147,9 @@ export const useStore = create<StoreState>((set, get) => {
   const initialLevel = levelById(DEFAULT_LEVEL_ID)!.level;
   const initialBody = bodyById(initialLevel.body);
   const initialTimeline = [
-    initWorld(makeScenario(initialBody, { brain: null, level: initialLevel })),
+    initWorld(
+      makeScenario(initialBody, { brain: null, level: initialLevel, msBody: msBodyOf(initialLevel) }),
+    ),
   ];
 
   return {
@@ -178,7 +189,7 @@ export const useStore = create<StoreState>((set, get) => {
       set({
         level,
         body,
-        timeline: [initWorld(makeScenario(body, { brain: null, level }))],
+        timeline: [initWorld(makeScenario(body, { brain: null, level, msBody: msBodyOf(level) }))],
         playhead: 0,
         running: false,
         script: [],

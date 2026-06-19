@@ -1,0 +1,58 @@
+# Brain Swap — Tier 2 message catalog: Mission Systems (MS) Status Service.
+#
+# CLAUDE.md hard rule #1: never invent standard names. Every `name:` below and every
+# enum `values:` literal is grep-able in the A-GRA XSD; tools/check-fidelity.ts enforces
+# this. These are the MS-interface analogue of FA's heartbeat — MS publishes subsystem
+# and service status; MA may also request a subsystem's status on demand.
+#
+# `path` is indicative (the real structures are nested UCI). The fidelity gate verifies
+# `name`s and enum literals, not full structural paths. `citation` points at the MS Volume
+# interaction. `version`/`xsd` come from tier1.yaml (this file is merged into it).
+#
+# Verified field/enum names against:
+#   docs/A-GRA References/A-GRA_MessageDefinitions_v5_0_a.xsd
+#   - SubsystemStatusMDT: SubsystemID, SubsystemState (SubsystemStateEnum)
+#   - ServiceStatusMDT:   ServiceID, TimeUp, ServiceState (ServiceStateEnum)
+#   - SubsystemStatusDataRequestMDT: SubsystemID, SystemID (no RequestID correlator —
+#     so the on-demand reply is a fresh SubsystemStatusMT, not a separate ack message).
+
+messages:
+  # --- Status Service: capability heartbeat (subsystem) (MS Vol §1.2.9.1) -----
+  - name: SubsystemStatusMT
+    tier: 2
+    direction: MS->MA
+    citation: "MS Vol §1.2.9.1 Capability Heartbeat (subsystem status)"
+    summary: >-
+      An MS subsystem reports its operating state. MS broadcasts this periodically
+      (the MS heartbeat) and on demand. Same message type appears on the VI and MS
+      buses in the real standard; the game collapses both onto one bus (lie #2),
+      distinguished by the `from` party.
+    fields:
+      - { name: SubsystemID, path: MessageData.SubsystemID, type: string, required: true }
+      - { name: SubsystemState, path: MessageData.SubsystemState, type: enum, values: [INITIALIZATION, STANDBY, OPERATE, DEGRADED], required: true }
+
+  # --- Status Service: service health (MS Vol §1.2.9.4) ----------------------
+  - name: ServiceStatusMT
+    tier: 2
+    direction: MS->MA
+    citation: "MS Vol §1.2.9.4 Periodic Status (service health)"
+    summary: >-
+      An MS service reports its health and uptime. Read alongside SubsystemStatusMT
+      to judge whether the MS interface is fit to task before commanding it.
+    fields:
+      - { name: ServiceID, path: MessageData.ServiceID, type: string, required: true }
+      - { name: ServiceState, path: MessageData.ServiceState, type: enum, values: [NORMAL, DEGRADED, INITIALIZING, INOPERABLE], required: true }
+      - { name: TimeUp, path: MessageData.TimeUp, type: number, required: false }
+
+  # --- Status Service: on-demand subsystem status request (MS Vol §1.2.9.5) ---
+  - name: SubsystemStatusDataRequestMT
+    tier: 2
+    direction: MA->MS
+    citation: "MS Vol §1.2.9.5 On-Demand Subsystem Status"
+    summary: >-
+      MA asks a named MS subsystem to report its status now (rather than waiting for
+      the next heartbeat). MS replies with a fresh SubsystemStatusMT. The lesson:
+      confirm a subsystem is OPERATE on demand before relying on it — MS does not
+      validate/REJECT like FA (it isn't safety-critical), it just reflects state.
+    fields:
+      - { name: SubsystemID, path: MessageData.SubsystemID, type: string, required: true }

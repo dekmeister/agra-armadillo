@@ -3,7 +3,7 @@
 // authoring golden tests and eyeballing new levels.
 //
 // Usage: npx tsx tools/dump-log.ts <levelKey> [brainKey]
-//   levelKey : 00 | 11 | 12 | 13 | 14 | 16 | 22 | 45
+//   levelKey : 00 | 11 | 12 | 13 | 14 | 16 | 22 | 31 | 45
 //   brainKey : ref (default) | naive | locked | none
 import {
   type BodyProfile,
@@ -33,6 +33,7 @@ const levels: Record<string, LevelEntry> = {
   "14": { level: L.level14, ref: L.level14ReferenceBrain },
   "16": { level: L.level16, ref: L.level16ReferenceBrain, naive: L.level16NaiveBrain },
   "22": { level: L.level22, ref: L.level22ReferenceBrain, naive: L.level22NaiveBrain },
+  "31": { level: L.level31, ref: L.level31ReferenceBrain, naive: L.level31NaiveBrain },
   "42": { level: L.level42, ref: L.level42ReferenceBrain, naive: L.level42NaiveBrain },
   "43": { level: L.level43, ref: L.level43ReferenceBrain, naive: L.level43NaiveBrain },
   "45": { level: L.level45, locked: L.level45LockedBrain },
@@ -51,7 +52,11 @@ function pickBrain(): Brain | null {
 }
 
 function dumpFor(level: LevelDef, body: BodyProfile, brain: Brain | null): void {
-  const scenario = makeScenario(body, { brain, level });
+  const scenario = makeScenario(body, {
+    brain,
+    level,
+    msBody: level.msBody ? L.msBodyById(level.msBody) : null,
+  });
   const w: World = run(initWorld(scenario), 1000);
   process.stdout.write(`\n=== ${level.id} on ${body.name} (${brainKey}) ===\n`);
   for (const e of w.log) {

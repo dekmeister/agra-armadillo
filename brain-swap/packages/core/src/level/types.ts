@@ -60,7 +60,21 @@ export interface WaypointSequenceObjective {
   readonly holdTicks: number;
 }
 
-export type Objective = ReachHoldObjective | HoldControlObjective | WaypointSequenceObjective;
+/** Confirm an MS subsystem reached a required state via an on-demand status request
+ *  (level 3.1). The MS analogue of hold-control: a state latched by a message exchange
+ *  (here `ms.onDemandConfirmed[subsystemId]`), read by evaluateWin. */
+export interface MsStatusObjective {
+  readonly kind: "ms-status";
+  readonly subsystemId: string;
+  readonly requiredState: string; // e.g. "OPERATE"
+  readonly holdTicks: number;
+}
+
+export type Objective =
+  | ReachHoldObjective
+  | HoldControlObjective
+  | WaypointSequenceObjective
+  | MsStatusObjective;
 
 export interface LevelPars {
   readonly ticks: number;
@@ -73,6 +87,9 @@ export interface LevelDef {
   readonly id: string;
   readonly title: string;
   readonly body: string; // body id reference
+  /** Optional Mission Systems body id — present when the level orchestrates the MS
+   *  interface in parallel with FA (e.g. 3.1). Absent for FA-only levels. */
+  readonly msBody?: string;
   /** Capability the level expects MA to control (drives `cap.*` template refs). */
   readonly capabilityId: string;
   readonly objective: Objective;

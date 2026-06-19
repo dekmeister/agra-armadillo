@@ -111,6 +111,8 @@ function fallbackLesson(o: Objective): string {
       return "Steer the circuit with single-field UPDATEs to keep bus traffic to a minimum.";
     case "reach-hold":
       return "Acquire control, command a valid vector, and read your position to know you've arrived.";
+    case "ms-status":
+      return "Wait for the MS subsystem to report OPERATE, then confirm it with an on-demand status request.";
   }
 }
 

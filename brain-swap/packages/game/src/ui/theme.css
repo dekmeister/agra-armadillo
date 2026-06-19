@@ -594,6 +594,9 @@ button {
 .logrow .dir.fa {
   color: var(--k-amber);
 }
+.logrow .dir.ms {
+  color: var(--k-green);
+}
 .logrow .typecell {
   display: flex;
   flex-direction: column;

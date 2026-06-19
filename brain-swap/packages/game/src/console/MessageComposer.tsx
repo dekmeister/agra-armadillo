@@ -12,6 +12,7 @@ import {
   type Message,
   type MessageLogEntry,
   type MessageTypeName,
+  targetParty,
 } from "@brain-swap/core";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { parseLiteral } from "../sim/format.ts";
@@ -44,9 +45,9 @@ export function MessageComposer() {
   const world = useStore((s) => s.world());
   const heldCapId = useMemo(() => controlledCapabilityId(world.log), [world.log]);
 
-  // Sendable = MA→FA messages the level exposes.
+  // Sendable = MA-originated messages the level exposes (MA→FA and MA→MS).
   const sendable = useMemo(
-    () => available.filter((m) => catalogEntry(m).direction === "MA->FA"),
+    () => available.filter((m) => catalogEntry(m).direction.startsWith("MA->")),
     [available],
   );
 
@@ -76,7 +77,14 @@ export function MessageComposer() {
       heldCapabilityId={heldCapId}
       onBack={sendable.length > 1 ? () => setMessageType(null) : undefined}
       onCancel={cancel}
-      onSend={(payload) => submit({ type: messageType, from: "MA", to: "FA", payload } as Message)}
+      onSend={(payload) =>
+        submit({
+          type: messageType,
+          from: "MA",
+          to: targetParty(catalogEntry(messageType).direction),
+          payload,
+        } as Message)
+      }
     />
   );
 }
@@ -131,7 +139,7 @@ function Typeahead({
               // biome-ignore lint/a11y/noAutofocus: intentional — the composer must be ready to type immediately
               autoFocus
               style={{ width: "100%" }}
-              placeholder="type to filter MA→FA messages…"
+              placeholder="type to filter sendable messages…"
               value={query}
               onChange={(e) => {
                 setQuery(e.target.value);

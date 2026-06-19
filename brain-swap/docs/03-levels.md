@@ -24,7 +24,9 @@ Bodies introduced along the way (performance profiles are level data):
 Implemented and golden-tested (`packages/levels`): **1.2** (MVP), plus the
 post-MVP batch **1.1, 1.3, 1.4, 4.5**, the avoidance level **2.2** (Phase 2), and
 the endurance level **1.6 Bingo** (Phase 3), and the **4.2 The Flinch** (collision
-interrupt) + **4.3 Degraded** (live envelope) levels (Phase 4). (Standalone **4.1** was built then
+interrupt) + **4.3 Degraded** (live envelope) levels (Phase 4), and the first
+**Mission Systems** level **3.1 Meet MS** (Phase 5 — the MS foundation: a third bus
+party with its own heartbeat, on the new MS body **Sentry MS**). (Standalone **4.1** was built then
 removed in the Phase-0 streamline — its portability lesson is now owned by 4.5,
 which already flies one locked brain across the whole fleet.) Bodies built (one
 version each): **AX-01 "Mule"**, **AX-02 "Heron"** (`approvalLatencyTicks 3`, ceiling
@@ -54,6 +56,21 @@ The built versions are deliberately simplified against the design copy (see
   score-screen UI yet. It owns the portability lesson outright: the locked
   profile-driven brain (reads `cap.MaxAltitude`/`MaxAirspeed`/`MinAirspeed`) ports
   unchanged across AX-01/02/03 — the role the removed standalone 4.1 used to fill.
+- **3.1 Meet MS** is the first level on the **MS interface** (a real third bus party,
+  `to:"MS"`). The MS engine (`packages/core/src/ms/engine.ts`) mirrors the FA engine's
+  shape but only the Status Service: a subsystem boots INITIALIZATION→OPERATE on a
+  deterministic timeline, MS publishes a periodic heartbeat (`SubsystemStatusMT` /
+  `ServiceStatusMT`), and answers an on-demand `SubsystemStatusDataRequestMT`. Unlike FA,
+  MS does **not** validate/REJECT — an early request just reflects the current state
+  (the `ms-status` objective, the MS analogue of `hold-control`). Sensor tasking, weapons,
+  and DLZ are deferred (`PLAN_MS.md`).
+
+## World structure note (W2/W3 restructure)
+
+World 2 (Waypoint Following, 6 levels) and the old World 3 (Curve Following, 4 levels)
+were merged into a single **World 2 "Navigation"** (~5 levels), freeing World 3 for the
+new **"Mission Systems"** world. No playable id changed (2.2 keeps its id; the new 3.1 is
+"Meet MS"). The trimmed/folded levels are recorded in `RESEARCH_MS.md` §6.
 
 ## Tutorial — First Flight (1 level)
 
@@ -119,60 +136,74 @@ The built versions are deliberately simplified against the design copy (see
   parameters and resend. Teaches: rejection is the start of a negotiation, not a
   dead end.
 
-## World 2 — Waypoint Following (6 levels, bodies AX-01/AX-02)
+## World 2 — Navigation (5 levels, merged W2 Waypoint + old W3 Curve; bodies AX-01/02/03)
 
-- **2.1 The Upload Liturgy.** A route is given; getting FA to fly it is the puzzle:
+Merged per `RESEARCH_MS.md` §6: the route-upload liturgy, geofence avoidance, retask,
+and curve following condensed to five levels (loiters/read-only/append folded in as
+techniques rather than standalone lessons).
+
+- **2.1 Upload.** A route is given; getting FA to fly it is the puzzle:
   `MA_MissionPlanActivationCommandMT` PREPARE_FOR_UPLOAD → COMPLETED → publish
   `MA_RoutePlanMT` → `MA_SystemNotificationMT` CONFIRMED → UPLOAD → COMPLETED →
-  prepare-for-activation → READY_FOR_ACTIVATION → ACTIVATE → route executes.
-  Skipping or reordering any step fails with the real status semantics. This level
-  is unapologetically the route-plan state machine, and it becomes the player's
+  prepare-for-activation → READY_FOR_ACTIVATION → ACTIVATE → route executes. Skipping
+  or reordering any step fails with the real status semantics. The route ends at a
+  loiter hold-point (Racetrack) set as a route parameter — loiter is just another route
+  element, not a separate command. The route-plan state machine becomes the player's
   first big reusable interaction block.
-- **2.2 Threading the Fence. [Built]** Build the route's waypoints yourself around
-  geozones. Lazy straight line → `VIOLATION_GEOFENCE` (with the offending segment
-  identified, per `RouteValidationInvalidPathType`). Optional pre-check via
-  Validate Route Plan (`RoutePlanValidationCommandMT`) — costs messages, saves
-  rejections; the metrics trade off against each other. *(Built as a hand-flown
-  HSA avoidance level: a `LevelDef.avoid` no-fly circle on the direct line; entering
-  it is a world-state breach → `failed` (no geofence rejection). The reference brain
-  dog-legs with a Direction-only `UPDATE`; the naive straight-line brain breaches.
-  Route-plan geozones / `Validate Route Plan` are not built — they belong with the
-  Phase-5 route-upload world.)*
-- **2.3 On Station.** Loiter on a fix: Racetrack with the real defaults (right
-  turns; 60 s legs at/below 14 000 ft MSL, 90 s above). Par requires letting the
-  defaults work for you instead of over-specifying. Teaches loiter types +
-  `MA_FixOrbitType` refinement.
-- **2.4 Read-Only.** Weather closes the objective; divert and land. You cannot
-  upload an approach route — takeoff/departure/approach/landing plans are
-  pre-stored on FA, safety-critical, read-only (real rule). Query them
-  (`QueryDataRequestMT` → `MA_RoutePlanMT` + `AirfieldReportMT`) and activate by
-  reference. Teaches: the Airworthiness Boundary as a gameplay wall.
-- **2.5 Retask.** Mid-route, the objective moves. DEACTIVATE on an EXECUTING route
-  returns FAILED (real); the correct move is superseding with a new flight command
-  or activating a replacement route. Teaches: supersede vs deactivate semantics.
-- **2.6 FA Says No.** Pop-up restricted zone: FA aborts your active route itself
-  (VI Deactivate Route; `RoutePlanExecutionStatusMT` CANCELED). Brain must detect
-  the cancel, fall back to an HSA hold (block reuse from world 1!), and re-plan.
-  First robustness exam.
+- **2.2 Avoid. [Built]** Build the route's waypoints yourself around geozones. Lazy
+  straight line → `VIOLATION_GEOFENCE` (offending segment identified, per
+  `RouteValidationInvalidPathType`). Optional pre-check via Validate Route Plan
+  (`RoutePlanValidationCommandMT`) — costs messages, saves rejections; the metrics trade
+  off. *(Built as a hand-flown HSA avoidance level: a `LevelDef.avoid` no-fly circle on
+  the direct line; entering it is a world-state breach → `failed` (no geofence rejection).
+  The reference brain dog-legs with a Direction-only `UPDATE`; the naive straight-line
+  brain breaches. Route-plan geozones / `Validate Route Plan` are the unbuilt upgrade.)*
+- **2.3 Retask.** Mid-route the objective moves, and FA may abort the active route itself
+  (`RoutePlanExecutionStatusMT` CANCELED). DEACTIVATE on an EXECUTING route returns FAILED
+  (real); the correct move is superseding with a new flight command or a replacement
+  route. The brain must detect the cancel, fall back to an HSA hold (block reuse from
+  World 1!), and re-plan. Merges the old 2.5 Retask + 2.6 FA Says No. First robustness exam.
+- **2.4 First Curve.** One quintic Bézier segment (six control points, ownship NED
+  reference) through two gates. Teaches the curve command payload; knot vector and weights
+  shown read-only. Over-tight radius → `PERFORMANCE_LIMIT_EXCEEDED` with the offending
+  section.
+- **2.5 Canyon.** Multi-segment curve through terrain, each segment appended while the
+  previous executes (`AppendCurve` — only valid while EXECUTING, real rule; the old 3.3
+  Append folded in as a required technique). A pipeline gap triggers `EndOfCurveBehavior`
+  (loiter) and blows the time par; terrain clips → `VIOLATION_TERRAIN`. Teaches: pipelining
+  segments vs the acceleration limits in `CurveFollowingPerformanceProfile`.
 
-## World 3 — Curve Following (4 levels, body AX-03 — which advertises Curve on
-this variant; its sister variant in world 4 doesn't)
+*(Trimmed from the original 10-level design, per `RESEARCH_MS.md` §6: 2.3 On Station,
+2.4 Read-Only, 3.3 Append (absorbed into 2.5), 3.4 Exit Strategy.)*
 
-- **3.1 First Curve.** One quintic Bézier segment (six control points, ownship NED
-  reference) through two gates. Teaches the curve command payload; knot vector and
-  weights shown read-only.
-- **3.2 Canyon.** Multi-segment (≤10) curve through terrain. Over-tight curvature →
-  `PERFORMANCE_LIMIT_EXCEEDED` or `INVALID_CURVE` with the offending section
-  (`MA_CurveSectionType` start/end parameter + segment number); terrain clips →
-  `VIOLATION_TERRAIN`. Teaches: control-point geometry vs the acceleration limits
-  in `CurveFollowingPerformanceProfile`.
-- **3.3 Append.** Continuous show-line: keep appending segments with `AppendCurve`
-  *while executing* (only valid then — real rule); a gap in the pipeline means the
-  vehicle hits `EndOfCurveBehavior` and loiters, blowing the time par.
-- **3.4 Exit Strategy.** Same course, two scored variants: end in a circular
-  loiter at the endpoint vs continue at previous CSA (`EndOfCurveBehaviorEnum`),
-  plus a timing window via `MA_CurveTraversingType`. Teaches: you choose what
-  happens after the curve, and FA holds you to it.
+## World 3 — Mission Systems (4 levels; FA airframe + an MS body in parallel)
+
+The MS interface owns the payload (sensors, weapons, status, geometry) on its own bus.
+MA is the integration layer orchestrating FA **and** MS at once. Progression: passive MS
+first (MS publishes, you read), then active MS (you command). See `RESEARCH_MS.md` for the
+interaction analysis and `PLAN_MS.md` for the deferred 3.2–3.4 build.
+
+- **3.1 Meet MS. [Built]** *(passive)* The Sentry radar boots INITIALIZATION→OPERATE on a
+  deterministic timeline; MS publishes a periodic heartbeat (`SubsystemStatusMT` /
+  `ServiceStatusMT`, MS Vol §1.2.9.1/§1.2.9.4). Win: read the heartbeat, wait for OPERATE,
+  then confirm it with an on-demand `SubsystemStatusDataRequestMT` (MS Vol §1.2.9.5). The
+  bait requests during INITIALIZATION and latches the wrong state — MS doesn't REJECT (it
+  isn't safety-critical), it just reflects the current state. Teaches: MS is a separate body
+  on its own bus with its own heartbeat; read it like FA, but the party is MS.
+- **3.2 Eyes Open.** *(first MS command)* `MA_AMTI_CapabilityMT` advertises the radar;
+  schedule a search via `AMTI_CommandMT` (referencing the advertised `CapabilityID`, valid
+  time windows, a `TargetVolume`); watch `AMTI_CommandStatusMT` → `AMTI_ActivityMT` →
+  `EntityMT` tracks. Teaches: sensors are scheduled, not pointed; the command/status/activity
+  cycle.
+- **3.3 Clear to Engage.** *(fire command + consent)* `StrikeCapabilityMT` →
+  `MA_TaskMT` → `MA_TaskCommandMT` (EXECUTE) → respond to `StrikeConsentRequestMT` with
+  `StrikeConsentRequestStatusMT` → `MA_StrikeActivityMT`. Teaches: MS holds the capability;
+  MA holds the key — the consent chain is the human-machine-teaming model in its most direct
+  form.
+- **3.4 In the Zone.** *(DLZ + full fire sequence)* Request the DLZ (`DLZ_RequestMT` →
+  `DLZ_MT`), maneuver FA (HSA block reuse from World 1) to close the target into the zone,
+  then run the 3.3 fire sequence. First level actively managing two interfaces in one run —
+  a preview of the Brain Swap capstone.
 
 ## World 4 — Brain Swap (5 levels)
 

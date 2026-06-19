@@ -1,0 +1,20 @@
+{
+  "id": "naive-3.1",
+  "_doc": "Bait brain (teaching artifact, docs/02): requests subsystem status the instant the first heartbeat arrives, without checking the state. The first SubsystemStatusMT is the boot INITIALIZATION status, so the on-demand reply latches INITIALIZATION — never OPERATE — and the level is never won. MS does not REJECT the early request (it isn't safety-critical); it just reflects the wrong state.",
+  "initial": "start",
+  "states": ["start", "done"],
+  "transitions": [
+    {
+      "from": "start",
+      "trigger": { "messageType": "SubsystemStatusMT" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "SubsystemStatusDataRequestMT",
+          "fields": { "SubsystemID": { "msg": "SubsystemID" } }
+        }
+      ],
+      "target": "done"
+    }
+  ]
+}

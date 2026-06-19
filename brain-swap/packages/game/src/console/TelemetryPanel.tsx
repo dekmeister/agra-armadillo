@@ -4,28 +4,11 @@
 // the live objective-hold progress. (Automated field-watches — auto-pause when a value
 // matches — are deferred; see PLAN_FUTURE.md. For now you watch this panel by eye.)
 
-import type { MessageLogEntry, MessageTypeName } from "@brain-swap/core";
 import { useMemo } from "react";
 import { useStore } from "../store.ts";
 import { Identifier } from "../ui/Identifier.tsx";
 import { Panel } from "../ui/Panel.tsx";
-
-/** Latest payload of a given message type in the log up to the playhead, or undefined. */
-function latest(
-  log: readonly MessageLogEntry[],
-  type: MessageTypeName,
-): Record<string, unknown> | undefined {
-  for (let i = log.length - 1; i >= 0; i -= 1) {
-    if (log[i]!.type === type) return log[i]!.payload as Record<string, unknown>;
-  }
-  return undefined;
-}
-
-function fmt(v: unknown): string {
-  if (v === undefined || v === null) return "—";
-  if (typeof v === "number") return Number.isInteger(v) ? String(v) : v.toFixed(1);
-  return String(v);
-}
+import { fmt, latest } from "./telemetry-utils.ts";
 
 function Row({
   label,

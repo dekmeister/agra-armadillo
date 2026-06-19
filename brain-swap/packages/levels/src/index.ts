@@ -7,12 +7,14 @@ import {
   type Brain,
   type LevelDef,
   makeScenario,
+  type MsBodyDef,
   type Scenario,
 } from "@brain-swap/core";
 
 import ax01Json from "../bodies/ax-01.json";
 import ax02Json from "../bodies/ax-02.json";
 import ax03Json from "../bodies/ax-03.json";
+import msSentry01Json from "../bodies/ms/ms-sentry-01.json";
 
 import level00Json from "../worlds/world-0/level-0.0.json";
 import refBrain00Json from "../worlds/world-0/level-0.0.reference-brain.json";
@@ -32,6 +34,9 @@ import refBrain16Json from "../worlds/world-1/level-1.6.reference-brain.json";
 import level22Json from "../worlds/world-2/level-2.2.json";
 import naiveBrain22Json from "../worlds/world-2/level-2.2.naive-brain.json";
 import refBrain22Json from "../worlds/world-2/level-2.2.reference-brain.json";
+import level31Json from "../worlds/world-3/level-3.1.json";
+import naiveBrain31Json from "../worlds/world-3/level-3.1.naive-brain.json";
+import refBrain31Json from "../worlds/world-3/level-3.1.reference-brain.json";
 import level42Json from "../worlds/world-4/level-4.2.json";
 import naiveBrain42Json from "../worlds/world-4/level-4.2.naive-brain.json";
 import refBrain42Json from "../worlds/world-4/level-4.2.reference-brain.json";
@@ -45,6 +50,9 @@ import lockedBrain45Json from "../worlds/world-4/level-4.5.locked-brain.json";
 export const ax01 = ax01Json as unknown as BodyProfile;
 export const ax02 = ax02Json as unknown as BodyProfile;
 export const ax03 = ax03Json as unknown as BodyProfile;
+
+// --- Mission Systems bodies -------------------------------------------------
+export const msSentry01 = msSentry01Json as unknown as MsBodyDef;
 
 // --- Levels + brains --------------------------------------------------------
 export const level00 = level00Json as unknown as LevelDef;
@@ -72,6 +80,10 @@ export const level22 = level22Json as unknown as LevelDef;
 export const level22ReferenceBrain = refBrain22Json as unknown as Brain;
 export const level22NaiveBrain = naiveBrain22Json as unknown as Brain;
 
+export const level31 = level31Json as unknown as LevelDef;
+export const level31ReferenceBrain = refBrain31Json as unknown as Brain;
+export const level31NaiveBrain = naiveBrain31Json as unknown as Brain;
+
 export const level42 = level42Json as unknown as LevelDef;
 export const level42ReferenceBrain = refBrain42Json as unknown as Brain;
 export const level42NaiveBrain = naiveBrain42Json as unknown as Brain;
@@ -91,9 +103,22 @@ export function bodyById(id: string): BodyProfile {
   return body;
 }
 
-/** Build a runnable scenario from a level + optional brain (defaults to the reference brain). */
+const MS_BODIES: Record<string, MsBodyDef> = { "ms-sentry-01": msSentry01 };
+
+export function msBodyById(id: string): MsBodyDef {
+  const ms = MS_BODIES[id];
+  if (!ms) throw new Error(`unknown MS body: ${id}`);
+  return ms;
+}
+
+/** Build a runnable scenario from a level + optional brain (defaults to the reference
+ *  brain). Resolves the level's optional MS body so MS levels orchestrate both interfaces. */
 export function scenarioFor(level: LevelDef, brain: Brain | null): Scenario {
-  return makeScenario(bodyById(level.body), { brain, level });
+  return makeScenario(bodyById(level.body), {
+    brain,
+    level,
+    msBody: level.msBody ? msBodyById(level.msBody) : null,
+  });
 }
 
 /** A playable level + the brain its "Load Reference" affordance should load. */
@@ -115,6 +140,7 @@ export const LEVELS: Record<string, LevelBundle> = {
   "1.4": { level: level14, referenceBrain: level14ReferenceBrain },
   "1.6": { level: level16, referenceBrain: level16ReferenceBrain },
   "2.2": { level: level22, referenceBrain: level22ReferenceBrain },
+  "3.1": { level: level31, referenceBrain: level31ReferenceBrain },
   "4.2": { level: level42, referenceBrain: level42ReferenceBrain },
   "4.3": { level: level43, referenceBrain: level43ReferenceBrain },
   "4.5": { level: level45, referenceBrain: level45LockedBrain },
@@ -131,5 +157,6 @@ export function levelById(id: string): LevelBundle | undefined {
  */
 export function multiBodyScenarios(level: LevelDef, brain: Brain | null): Scenario[] {
   const ids = level.bodies ?? [level.body];
-  return ids.map((id) => makeScenario(bodyById(id), { brain, level }));
+  const msBody = level.msBody ? msBodyById(level.msBody) : null;
+  return ids.map((id) => makeScenario(bodyById(id), { brain, level, msBody }));
 }

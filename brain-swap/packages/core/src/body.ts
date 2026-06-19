@@ -100,3 +100,42 @@ export function findCapability(
 ): BodyCapability | undefined {
   return body.capabilities.find((c) => c.id === capabilityId);
 }
+
+// --- Mission Systems (MS) body --------------------------------------------------
+// A sibling of BodyProfile: the MS interface owns the payload (sensors/weapons/
+// status), so it is configured separately and a level may reference both an FA body
+// (`body`) and an MS body (`msBody`). Kept minimal for the Status Service foundation;
+// sensor/weapon/store fields are added by later MS levels (see PLAN_MS.md).
+
+/** One MS subsystem (SubsystemID) with a deterministic state timeline — no RNG.
+ *  The latest entry whose `atTick <= tick` wins (the OPERATE warm-up, analogous to
+ *  FA's `capability-available`). */
+export interface MsSubsystemDef {
+  readonly id: string; // SubsystemID
+  readonly kind?: string; // author note (e.g. "AESA radar")
+  readonly states: readonly { readonly atTick: number; readonly state: string }[];
+}
+
+/** One MS service (ServiceID) with a fixed health state for the level. */
+export interface MsServiceDef {
+  readonly id: string; // ServiceID
+  readonly state: string; // ServiceStateEnum literal
+}
+
+export interface MsBodyDef {
+  readonly id: string;
+  readonly name: string;
+  readonly subsystems: readonly MsSubsystemDef[];
+  readonly services: readonly MsServiceDef[];
+  /** MS heartbeat schedule: re-emit every subsystem/service status this often. */
+  readonly publish: { readonly statusIntervalTicks: number };
+}
+
+/** The subsystem state in effect at `tick`: the latest timeline entry that has fired. */
+export function subsystemStateAt(sub: MsSubsystemDef, tick: number): string {
+  let state = sub.states[0]?.state ?? "UNKNOWN";
+  for (const s of sub.states) {
+    if (s.atTick <= tick) state = s.state;
+  }
+  return state;
+}

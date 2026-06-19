@@ -98,6 +98,16 @@ const FIDELITY_NOTES: FidelityNote[] = [
     title: "Collision avoidance is a fly-away + a fault",
     body: "Real MA_SubsystemFaultType carries FaultState/ComponentID and FA's avoidance is a full maneuver. The game prunes MA_FaultMT to FaultID/Severity/FaultDescription/CapabilityID and models the interrupt as: FA flies directly away from a threatened zone, raises one CAUTION fault, and rejects any re-issued vector still entering a threat (VIOLATION_AIR_TRAFFIC) until you command a clear one. Threat lookahead is a fixed tick count per body. (Level 4.2 The Flinch.)",
   },
+  {
+    index: 19,
+    title: "Same message, two buses",
+    body: "SubsystemStatusMT (and MA_FaultMT) flow on both the VI and MS interfaces in the real standard — the MS heartbeat is a pub/sub broadcast, the VI heartbeat is directed to MA. The game collapses both onto its one in-order bus (lie #2); the from party (FA vs MS) tells them apart. (World 3 Mission Systems.)",
+  },
+  {
+    index: 20,
+    title: "MS isn't safety-critical — no REJECT gate",
+    body: "The VI has the Airworthiness Boundary (FA always retains authority and REJECTs bad commands). The MS interface has no equivalent: MA commands sensors and consents to weapon release without an approve/reject cycle. The game makes this tangible by never REJECTing a well-formed MS command — the feedback loop is status, not a validator. An on-demand status request sent too early just reflects the current (non-OPERATE) state. (Level 3.1 Meet MS.)",
+  },
 ];
 
 export function notesFor(indices: readonly number[] | undefined): FidelityNote[] {

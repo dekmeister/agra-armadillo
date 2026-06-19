@@ -159,11 +159,31 @@ the XSD: `INVALID_CURVE`, `INVALID_WAYPOINT`, `PERFORMANCE_LIMIT_EXCEEDED`,
     zone, and rejects any re-issued vector still entering a threat
     (`VIOLATION_AIR_TRAFFIC`) until MA commands a clear one. Threats are circles in the
     2D world (lie #6); pop-ups and motion are `spawn-threat` events.
+19. **Same message, two buses (World 3 Mission Systems).** `SubsystemStatusMT` and
+    `MA_FaultMT` flow on both the VI and MS interfaces in the real standard — the MS
+    heartbeat is a pub/sub broadcast (any listener gets it); the VI heartbeat is directed
+    to MA. The game collapses both onto its single in-order bus (lie #2); the message's
+    `from` party (FA vs MS) distinguishes the source. MS is a real third bus party
+    (`to:"MS"`), routed in `step()` and modelled by a parallel `MsBodyDef` + `ms/engine.ts`.
+20. **MS isn't safety-critical — no REJECT gate (level 3.1).** The VI has the
+    Airworthiness Boundary (FA retains final authority and REJECTs invalid commands). The
+    MS interface has no equivalent: MA schedules sensors and *consents* to weapon release
+    without an approve/reject cycle. The game makes this tangible by never returning a
+    REJECTED disposition for a well-formed MS command — the feedback loop is task/subsystem
+    status, not a validator gate. In 3.1, an on-demand `SubsystemStatusDataRequestMT` sent
+    before the subsystem reaches OPERATE simply reflects the current state and never wins.
+    The subsystem state timeline (INITIALIZATION→OPERATE) is deterministic, no RNG (rule #3).
 
 > **Added by Phase 2–4:** #5/#6/#12 again for 2.2 (hand-flown no-fly avoidance), 1.6
 > (Bingo), 4.2 (The Flinch) and 4.3 (Degraded); #17 (flat fuel + U-curve burn +
 > endurance reserve, 1.6); #18 (collision interrupt fly-away + MA_FaultMT, 4.2). 4.3
 > exercises #14 (the envelope is live — re-read the re-advertised MA_FlightCapabilityMT).
+>
+> **Added by Phase 5 (Mission Systems foundation):** #19 (same message on the VI and MS
+> buses) and #20 (MS is not safety-critical — no REJECT gate), both surfaced by 3.1 Meet
+> MS. Further MS simplifications (sensor scheduling, simulated `EntityMT` tracks, static
+> store inventory, the implicit C2 leg of release consent) land with the sensor/weapon/DLZ
+> levels — recorded in `PLAN_MS.md` and `RESEARCH_MS.md` §7, to be added here when built.
 
 ## 4. Honesty mechanisms
 

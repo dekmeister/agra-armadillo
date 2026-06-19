@@ -1,0 +1,20 @@
+{
+  "id": "3.1",
+  "title": "Meet MS",
+  "body": "ax-01",
+  "msBody": "ms-sentry-01",
+  "capabilityId": "MULE-01",
+  "brief": "Meet Mission Systems — a second interface running in parallel with FA. The Sentry radar boots through INITIALIZATION. Read its heartbeat, wait for it to report OPERATE, then confirm it with an on-demand status request.",
+  "teaches": "MS is a separate body on its own bus, with its own heartbeat (SubsystemStatusMT / ServiceStatusMT, MS Vol §1.2.9.1/§1.2.9.4) — you read it exactly as you read FA, but the party is MS, not FA. Unlike FA, MS isn't safety-critical: it never validates or REJECTs your request. An on-demand SubsystemStatusDataRequestMT (MS Vol §1.2.9.5) sent too early just reflects the subsystem's current (non-OPERATE) state. Confirm OPERATE before relying on a capability.",
+  "objective": {
+    "_doc": "No flight. Win = an on-demand status reply confirms SENTRY-RADAR-01 is OPERATE (ms-status). The subsystem boots INITIALIZATION and reaches OPERATE at tick 6; a request before then latches the non-OPERATE state and never wins.",
+    "kind": "ms-status",
+    "subsystemId": "SENTRY-RADAR-01",
+    "requiredState": "OPERATE",
+    "holdTicks": 1
+  },
+  "availableMessages": ["SubsystemStatusDataRequestMT"],
+  "maxTicks": 40,
+  "pars": { "ticks": 8, "busTraffic": 1, "rejections": 0, "brainSize": 3 },
+  "fidelityNotes": [19, 20]
+}

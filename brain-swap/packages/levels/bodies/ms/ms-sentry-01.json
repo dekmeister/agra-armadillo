@@ -1,0 +1,22 @@
+{
+  "id": "ms-sentry-01",
+  "name": "Sentry MS",
+  "_doc": "First Mission Systems payload (docs/03 World 3): a single AESA radar subsystem that boots through INITIALIZATION to OPERATE, plus two services to read. Deterministic state timeline — no RNG (CLAUDE.md rule #3).",
+  "subsystems": [
+    {
+      "id": "SENTRY-RADAR-01",
+      "kind": "AESA radar",
+      "states": [
+        { "atTick": 0, "state": "INITIALIZATION" },
+        { "atTick": 6, "state": "OPERATE" }
+      ]
+    }
+  ],
+  "services": [
+    { "id": "SENTRY-TRACK-SVC", "state": "NORMAL" },
+    { "id": "SENTRY-CAL-SVC", "state": "DEGRADED" }
+  ],
+  "publish": {
+    "statusIntervalTicks": 3
+  }
+}

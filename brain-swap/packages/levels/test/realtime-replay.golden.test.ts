@@ -27,6 +27,8 @@ import {
   level16ReferenceBrain,
   level22,
   level22ReferenceBrain,
+  level31,
+  level31ReferenceBrain,
   level42,
   level42ReferenceBrain,
   level43,
@@ -64,6 +66,7 @@ const CASES: Case[] = [
   { id: "1.4", level: level14, brain: level14ReferenceBrain },
   { id: "1.6", level: level16, brain: level16ReferenceBrain },
   { id: "2.2", level: level22, brain: level22ReferenceBrain },
+  { id: "3.1", level: level31, brain: level31ReferenceBrain },
   { id: "4.2", level: level42, brain: level42ReferenceBrain },
   { id: "4.3", level: level43, brain: level43ReferenceBrain },
   { id: "4.5", level: level45, brain: level45LockedBrain },
@@ -84,7 +87,11 @@ function deriveScript(
 }
 
 function brainlessOf(scenario: Scenario): Scenario {
-  return makeScenario(scenario.body, { brain: null, level: scenario.level });
+  return makeScenario(scenario.body, {
+    brain: null,
+    level: scenario.level,
+    msBody: scenario.msBody,
+  });
 }
 
 describe("realtime replay — every level is solvable by hand", () => {

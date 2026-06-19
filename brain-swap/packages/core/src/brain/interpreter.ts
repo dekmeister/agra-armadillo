@@ -1,7 +1,8 @@
 // Brain interpreter: on each message delivered to MA, find the first matching
 // transition out of the current state (by trigger message type + guard), run its
 // send actions, and move to its target state. First-match-wins keeps it deterministic.
-import type { Message } from "../types.ts";
+import { catalogEntry, isKnownMessageType } from "../messages/index.ts";
+import { type Message, targetParty } from "../types.ts";
 import { buildSendPayload, type EvalContext, evaluateGuard } from "./evaluator.ts";
 import type { Brain } from "./schema.ts";
 
@@ -29,8 +30,13 @@ export function reactToMessage(
     for (const action of t.actions ?? []) {
       const payload = buildSendPayload(action.fields, ctx);
       // The interpreter is the dynamic data->message boundary; payload shape is
-      // governed by the catalog/send-form, not the static type system here.
-      outbound.push({ type: action.message, from: "MA", to: "FA", payload } as Message);
+      // governed by the catalog/send-form, not the static type system here. The
+      // target party is derived from the message's catalog direction (MA->MS → MS,
+      // else FA) so a brain can drive the MS interface, not just FA.
+      const to = isKnownMessageType(action.message)
+        ? targetParty(catalogEntry(action.message).direction)
+        : "FA";
+      outbound.push({ type: action.message, from: "MA", to, payload } as Message);
     }
     return { nextState: t.target ?? currentState, outbound };
   }

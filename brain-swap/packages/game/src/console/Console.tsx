@@ -10,6 +10,7 @@ import { TacticalMapPanel } from "../run/TacticalMap.tsx";
 import { useStore } from "../store.ts";
 import { ChromeBar } from "./ChromeBar.tsx";
 import { MessageComposer } from "./MessageComposer.tsx";
+import { MsPanel } from "./MsPanel.tsx";
 import { StatusStrip } from "./StatusStrip.tsx";
 import { TelemetryPanel } from "./TelemetryPanel.tsx";
 
@@ -32,6 +33,7 @@ export function Console() {
       <div className="grid">
         <div className="col" data-tour="telemetry">
           <TelemetryPanel />
+          <MsPanel />
         </div>
         <div className="col">
           <TacticalMapPanel />

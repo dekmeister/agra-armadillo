@@ -8,7 +8,9 @@ import { fileURLToPath } from "node:url";
 import { parse } from "yaml";
 
 export type FieldType = "string" | "number" | "boolean" | "enum" | "object";
-export type Direction = "MA->FA" | "FA->MA";
+export type Direction = "MA->FA" | "FA->MA" | "MA->MS" | "MS->MA";
+
+const DIRECTIONS: ReadonlySet<string> = new Set(["MA->FA", "FA->MA", "MA->MS", "MS->MA"]);
 
 export interface CatalogField {
   name: string;
@@ -36,6 +38,10 @@ export interface Catalog {
 const here = dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = resolve(here, "..");
 export const CATALOG_PATH = resolve(REPO_ROOT, "packages/levels/catalog/tier1.yaml");
+export const MS_CATALOG_PATH = resolve(REPO_ROOT, "packages/levels/catalog/tier2-ms.yaml");
+/** Catalog is multi-file: tier1 (FA/VI) + tier2-ms (Mission Systems). `version`/`xsd`
+ *  come from the first file; message names are deduped across all files. */
+export const CATALOG_PATHS: readonly string[] = [CATALOG_PATH, MS_CATALOG_PATH];
 
 // Default XSD: the in-repo copy (guaranteed present, no external dependency).
 // Byte-identical to the canonical ../References/A-GRA/standard/Schema/ copy.
@@ -50,14 +56,10 @@ function fail(msg: string): never {
   throw new Error(`catalog: ${msg}`);
 }
 
-export function loadCatalog(path = CATALOG_PATH): Catalog {
-  const raw = parse(readFileSync(path, "utf8")) as unknown;
-  if (typeof raw !== "object" || raw === null) fail("root must be a mapping");
-  const cat = raw as Record<string, unknown>;
-  if (!Array.isArray(cat.messages)) fail("`messages` must be a list");
-
-  const seen = new Set<string>();
-  const messages: CatalogMessage[] = cat.messages.map((m, i) => {
+/** Parse + validate the `messages` list of one catalog file. `seen` is shared across
+ *  files so a name duplicated in any file fails. */
+function parseMessages(rawMessages: unknown[], seen: Set<string>): CatalogMessage[] {
+  return rawMessages.map((m, i) => {
     if (typeof m !== "object" || m === null) fail(`message[${i}] must be a mapping`);
     const msg = m as Record<string, unknown>;
     const name = msg.name;
@@ -97,19 +99,38 @@ export function loadCatalog(path = CATALOG_PATH): Catalog {
       };
     });
 
+    if (typeof msg.direction !== "string" || !DIRECTIONS.has(msg.direction)) {
+      fail(`${name}.direction must be one of ${[...DIRECTIONS].join("|")}`);
+    }
     return {
       name,
       tier: typeof msg.tier === "number" ? msg.tier : 1,
-      direction: msg.direction === "MA->FA" ? "MA->FA" : "FA->MA",
+      direction: msg.direction as Direction,
       citation: typeof msg.citation === "string" ? msg.citation : "",
       summary: typeof msg.summary === "string" ? msg.summary.trim() : "",
       fields,
     };
   });
+}
 
-  return {
-    version: typeof cat.version === "number" ? cat.version : 1,
-    xsd: typeof cat.xsd === "string" ? cat.xsd : "",
-    messages,
-  };
+/** Load and merge the catalog files. `version`/`xsd` come from the first file;
+ *  messages from every file are concatenated with cross-file name dedup. Callers
+ *  (gen-catalog, fidelity) invoke this no-arg, so they pick up tier2-ms automatically. */
+export function loadCatalog(paths: readonly string[] = CATALOG_PATHS): Catalog {
+  const seen = new Set<string>();
+  const messages: CatalogMessage[] = [];
+  let version = 1;
+  let xsd = "";
+  paths.forEach((path, idx) => {
+    const raw = parse(readFileSync(path, "utf8")) as unknown;
+    if (typeof raw !== "object" || raw === null) fail(`${path}: root must be a mapping`);
+    const cat = raw as Record<string, unknown>;
+    if (!Array.isArray(cat.messages)) fail(`${path}: \`messages\` must be a list`);
+    if (idx === 0) {
+      version = typeof cat.version === "number" ? cat.version : 1;
+      xsd = typeof cat.xsd === "string" ? cat.xsd : "";
+    }
+    messages.push(...parseMessages(cat.messages, seen));
+  });
+  return { version, xsd, messages };
 }

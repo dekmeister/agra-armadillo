@@ -36,25 +36,28 @@ export const WORLDS: WorldEntry[] = [
     ],
   },
   {
+    // Merged W2 (Waypoint Following) + old W3 (Curve Following) — the route upload
+    // liturgy, geofence avoidance, retask, and curve following in ~5 levels (docs/03).
     no: "W2",
-    name: "Waypoint Following",
+    name: "Navigation",
     levels: [
-      { id: "2.1", name: "The Upload Liturgy" },
-      { id: "2.2", name: "Threading the Fence", playable: true },
-      { id: "2.3", name: "On Station" },
-      { id: "2.4", name: "Read-Only" },
-      { id: "2.5", name: "Retask" },
-      { id: "2.6", name: "FA Says No" },
+      { id: "2.1", name: "Upload" },
+      { id: "2.2", name: "Avoid", playable: true },
+      { id: "2.3", name: "Retask" },
+      { id: "2.4", name: "First Curve" },
+      { id: "2.5", name: "Canyon" },
     ],
   },
   {
+    // New World 3: the Mission Systems interface (sensors, weapons, status, geometry)
+    // running in parallel with FA. 3.1 is built; the rest are the deferred roster (PLAN_MS.md).
     no: "W3",
-    name: "Curve Following",
+    name: "Mission Systems",
     levels: [
-      { id: "3.1", name: "First Curve" },
-      { id: "3.2", name: "Canyon" },
-      { id: "3.3", name: "Append" },
-      { id: "3.4", name: "Exit Strategy" },
+      { id: "3.1", name: "Meet MS", playable: true },
+      { id: "3.2", name: "Eyes Open" },
+      { id: "3.3", name: "Clear to Engage" },
+      { id: "3.4", name: "In the Zone" },
     ],
   },
   {

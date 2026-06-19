@@ -12,6 +12,7 @@ export * from "./level/events.ts";
 export * from "./level/runtime.ts";
 export * from "./level/types.ts";
 export * from "./messages/index.ts";
+export * from "./ms/engine.ts";
 export * from "./score.ts";
 export * from "./sim.ts";
 export * from "./types.ts";

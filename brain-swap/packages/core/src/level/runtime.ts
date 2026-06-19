@@ -7,6 +7,7 @@
 // `World.threats` zone fails the run (breach-check below the kind switch).
 
 import { type FaState, isSecondaryController } from "../fa/engine.ts";
+import type { MsState } from "../ms/engine.ts";
 import { distance, type VehicleState } from "../vehicle/pointmass.ts";
 import type { ActiveThreat } from "./events.ts";
 import type { LevelDef, Waypoint, Zone } from "./types.ts";
@@ -68,6 +69,7 @@ export function evaluateWin(
   level: LevelDef,
   vehicle: VehicleState,
   fa: FaState,
+  ms: MsState | null,
   progress: Progress,
   threats: readonly ActiveThreat[] = [],
 ): WinEvaluation {
@@ -107,6 +109,20 @@ export function evaluateWin(
       const satisfied = onFinal && inWaypoint(vehicle, o.waypoints[last]!);
       const holdTicks = satisfied ? progress.holdTicks + 1 : 0;
       return { satisfied, holdTicks, waypointIndex, won: holdTicks >= o.holdTicks, failed };
+    }
+    case "ms-status": {
+      // MS analogue of hold-control: the on-demand status reply must have latched the
+      // subsystem at the required state (e.g. OPERATE). MS isn't safety-critical, so an
+      // early request latches a non-OPERATE state and never satisfies (the 3.1 lesson).
+      const satisfied = ms?.onDemandConfirmed[o.subsystemId] === o.requiredState;
+      const holdTicks = satisfied ? progress.holdTicks + 1 : 0;
+      return {
+        satisfied,
+        holdTicks,
+        waypointIndex: progress.waypointIndex,
+        won: holdTicks >= o.holdTicks,
+        failed,
+      };
     }
   }
 }

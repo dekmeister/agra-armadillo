@@ -47,6 +47,11 @@ export function MissionCard({ collapsed, onToggleCollapse }: CollapseProps) {
             WIN ▸ hold secondary control of {level.capabilityId} for {o.holdTicks} consecutive
             ticks.
           </div>
+        ) : o.kind === "ms-status" ? (
+          <div className="win">
+            WIN ▸ confirm MS subsystem {o.subsystemId} is {o.requiredState} via an on-demand status
+            request.
+          </div>
         ) : (
           <div className="win">
             WIN ▸ pass {o.waypoints.length} waypoints in order, then hold for {o.holdTicks} ticks.

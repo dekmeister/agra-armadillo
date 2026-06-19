@@ -1,13 +1,22 @@
 // Core simulation types. Everything here is plain data — the sim core is
 // deterministic and headless (CLAUDE.md hard rule #3): no RNG, no DOM, no wall-clock.
-import type { MessagePayloads, MessageTypeName } from "./messages/index.ts";
+import type { Direction, MessagePayloads, MessageTypeName } from "./messages/index.ts";
 
-/** The two parties on the (single, simplified) bus. Fidelity lie #1: FA collapses
- *  isolator + VMS + FA into one character. */
-export type Party = "MA" | "FA";
+/** The parties on the (single, simplified) bus. Fidelity lie #1: FA collapses
+ *  isolator + VMS + FA into one character. MS is the parallel Mission Systems
+ *  party (sensors/weapons/status) — a real third party, not a UI reskin of FA. */
+export type Party = "MA" | "FA" | "MS";
 
 export const MA_SYSTEM_ID = "MA";
 export const FA_SYSTEM_ID = "FA";
+export const MS_SYSTEM_ID = "MS";
+
+/** The party a MA-origin message is addressed to, derived from its catalog
+ *  `direction` (`MA->MS` → MS, otherwise FA). One rule keeps the brain
+ *  interpreter and the composer from hardcoding `"FA"`. */
+export function targetParty(direction: Direction): Party {
+  return direction === "MA->MS" ? "MS" : "FA";
+}
 
 /** What happened to a message when its recipient processed it. Mirrors the
  *  message-log disposition in docs/04 ("the message log is the debugger"). */

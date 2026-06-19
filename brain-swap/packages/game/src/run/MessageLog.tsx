@@ -12,11 +12,14 @@ import { Identifier } from "../ui/Identifier.tsx";
 import { Panel } from "../ui/Panel.tsx";
 import { badgeFor } from "../ui/tokens.ts";
 
-// FA's timer-driven publications — see faPublish() in core/src/fa/engine.ts.
+// Timer-driven publications — FA's faPublish() and MS's msPublish() (the MS heartbeat),
+// both in core/src/*/engine.ts. Hidden by the Show/Hide-periodic toggle.
 const PERIODIC_TYPES = new Set<MessageTypeName>([
   "MA_PositionReportDetailedMT",
   "MA_FlightActivityMT",
   "NavigationReportMT",
+  "SubsystemStatusMT",
+  "ServiceStatusMT",
 ]);
 
 export function MessageLogPanel() {
@@ -105,11 +108,15 @@ function LogRow({
   onClick: () => void;
 }) {
   const badge = badgeFor(entry.disposition, entry.type, entry.payload);
-  const ma = entry.from === "MA";
+  // Colour by the party MA is talking to: FA (amber) or MS (green); MA→FA keeps cyan.
+  const dirClass =
+    entry.to === "MS" || entry.from === "MS" ? "ms" : entry.from === "MA" ? "ma" : "fa";
   return (
     <button type="button" className={`logrow${selected ? " sel" : ""}`} onClick={onClick}>
       <span className="tick">{String(entry.tick).padStart(4, "0")}</span>
-      <span className={`dir ${ma ? "ma" : "fa"}`}>{ma ? "MA→FA" : "FA→MA"}</span>
+      <span className={`dir ${dirClass}`}>
+        {entry.from}→{entry.to}
+      </span>
       <span className="typecell">
         <Identifier name={entry.type} />
         <DispositionBadge kind={badge.kind} reason={badge.reason} />

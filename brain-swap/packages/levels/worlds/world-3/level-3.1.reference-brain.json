@@ -1,0 +1,21 @@
+{
+  "id": "ref-3.1",
+  "_doc": "Minimal MS handshake: watch the Sentry radar's status heartbeat; the moment it reports OPERATE, send an on-demand SubsystemStatusDataRequestMT for that subsystem. MS replies with a fresh SubsystemStatusMT and the on-demand OPERATE confirmation wins. Mirror of the 1.1 control handshake, on the MS bus.",
+  "initial": "watch",
+  "states": ["watch", "done"],
+  "transitions": [
+    {
+      "from": "watch",
+      "trigger": { "messageType": "SubsystemStatusMT" },
+      "guard": { "field": "SubsystemState", "op": "==", "value": "OPERATE" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "SubsystemStatusDataRequestMT",
+          "fields": { "SubsystemID": { "msg": "SubsystemID" } }
+        }
+      ],
+      "target": "done"
+    }
+  ]
+}
