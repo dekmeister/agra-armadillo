@@ -1,0 +1,27 @@
+{
+  "id": "ref-3.2",
+  "_doc": "Schedule the AMTI sensor the moment its capability is advertised: send AMTI_CommandMT (NEW) referencing the advertised CapabilityID, with a time window that hasn't passed (EndTimeWindow 40). MS schedules the activity and reports two tracks; the run wins on the second EntityMT. Script source only — the player hand-sends the command.",
+  "initial": "await-cap",
+  "states": ["await-cap", "tasking"],
+  "transitions": [
+    {
+      "from": "await-cap",
+      "trigger": { "messageType": "MA_AMTI_CapabilityMT" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "AMTI_CommandMT",
+          "fields": {
+            "CommandID": "AMTI-CMD-1",
+            "CapabilityID": { "msg": "CapabilityID" },
+            "CommandState": "NEW",
+            "StartTimeWindow": 0,
+            "EndTimeWindow": 40,
+            "TargetVolume": "VOL-A"
+          }
+        }
+      ],
+      "target": "tasking"
+    }
+  ]
+}

@@ -176,7 +176,7 @@ techniques rather than standalone lessons).
 *(Trimmed from the original 10-level design, per `RESEARCH_MS.md` §6: 2.3 On Station,
 2.4 Read-Only, 3.3 Append (absorbed into 2.5), 3.4 Exit Strategy.)*
 
-## World 3 — Mission Systems (4 levels; FA airframe + an MS body in parallel)
+## World 3 — Mission Systems (5 levels; FA airframe + an MS body in parallel)
 
 The MS interface owns the payload (sensors, weapons, status, geometry) on its own bus.
 MA is the integration layer orchestrating FA **and** MS at once. Progression: passive MS
@@ -190,20 +190,26 @@ interaction analysis and `PLAN_MS.md` for the deferred 3.2–3.4 build.
   bait requests during INITIALIZATION and latches the wrong state — MS doesn't REJECT (it
   isn't safety-critical), it just reflects the current state. Teaches: MS is a separate body
   on its own bus with its own heartbeat; read it like FA, but the party is MS.
-- **3.2 Eyes Open.** *(first MS command)* `MA_AMTI_CapabilityMT` advertises the radar;
+- **3.2 Eyes Open. [Built]** *(first MS command)* `MA_AMTI_CapabilityMT` advertises the radar;
   schedule a search via `AMTI_CommandMT` (referencing the advertised `CapabilityID`, valid
   time windows, a `TargetVolume`); watch `AMTI_CommandStatusMT` → `AMTI_ActivityMT` →
   `EntityMT` tracks. Teaches: sensors are scheduled, not pointed; the command/status/activity
   cycle.
-- **3.3 Clear to Engage.** *(fire command + consent)* `StrikeCapabilityMT` →
-  `MA_TaskMT` → `MA_TaskCommandMT` (EXECUTE) → respond to `StrikeConsentRequestMT` with
+- **3.3 Clear to Engage. [Built]** *(fire command + consent)* `StrikeCapabilityMT` →
+  `MA_TaskMT` → `MA_TaskCommandMT` (NEW/execute) → respond to `StrikeConsentRequestMT` with
   `StrikeConsentRequestStatusMT` → `MA_StrikeActivityMT`. Teaches: MS holds the capability;
   MA holds the key — the consent chain is the human-machine-teaming model in its most direct
-  form.
-- **3.4 In the Zone.** *(DLZ + full fire sequence)* Request the DLZ (`DLZ_RequestMT` →
+  form. Bait: ignore the consent request and the weapon never releases.
+- **3.4 In the Zone. [Built]** *(DLZ + full fire sequence)* Request the DLZ (`DLZ_RequestMT` →
   `DLZ_MT`), maneuver FA (HSA block reuse from World 1) to close the target into the zone,
-  then run the 3.3 fire sequence. First level actively managing two interfaces in one run —
-  a preview of the Brain Swap capstone.
+  then run the 3.3 fire sequence. The MS engine gates strike completion on the vehicle being
+  within `RangeMaxAero`, so a completed strike is a geometrically valid one. First level
+  actively managing two interfaces in one run — a preview of the Brain Swap capstone.
+- **3.5 Sensor Failure. [Built]** *(robustness variant of 3.2)* Mid-collection the primary
+  radar subsystem degrades and MS publishes `MA_FaultMT` (the same message as FA, on the MS
+  bus). Cancel the dead task (`AMTI_CommandMT` CANCEL) and re-task the healthy backup radar.
+  Bait: ignore the fault and keep waiting on silence → timeout. Teaches: MS has its own fault
+  model; the same `MA_FaultMT` flows on both interfaces.
 
 ## World 4 — Brain Swap (5 levels)
 

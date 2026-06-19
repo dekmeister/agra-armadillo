@@ -113,6 +113,10 @@ function fallbackLesson(o: Objective): string {
       return "Acquire control, command a valid vector, and read your position to know you've arrived.";
     case "ms-status":
       return "Wait for the MS subsystem to report OPERATE, then confirm it with an on-demand status request.";
+    case "ms-track":
+      return "Schedule the sensor with a valid AMTI command, then wait for the tracks — sensors are scheduled, not pointed.";
+    case "ms-strike":
+      return "MS holds the capability; MA holds the key — answer the consent request before the weapon will release.";
   }
 }
 

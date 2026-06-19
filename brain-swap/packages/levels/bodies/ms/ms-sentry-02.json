@@ -1,0 +1,27 @@
+{
+  "id": "ms-sentry-02",
+  "name": "Sentry MS (AMTI)",
+  "_doc": "Sensor-tasking MS payload (docs/03 World 3, level 3.2): the AESA radar boots straight to OPERATE and advertises one VOLUME AMTI capability. A valid AMTI_CommandMT schedules the activity (ACTIVE after 2 ticks) and reports two tracks; deterministic, no RNG (CLAUDE.md rule #3).",
+  "subsystems": [
+    {
+      "id": "SENTRY-RADAR-01",
+      "kind": "AESA radar",
+      "states": [{ "atTick": 0, "state": "OPERATE" }]
+    }
+  ],
+  "services": [{ "id": "SENTRY-TRACK-SVC", "state": "NORMAL" }],
+  "publish": { "statusIntervalTicks": 6 },
+  "sensors": [
+    {
+      "capabilityId": "AESA-VOL-1",
+      "capabilityType": "VOLUME",
+      "subsystemId": "SENTRY-RADAR-01",
+      "activeDelayTicks": 2,
+      "entityOffsets": [1, 3],
+      "tracks": [
+        { "entityId": "TRK-1", "x": 2000, "y": 1500 },
+        { "entityId": "TRK-2", "x": 2600, "y": 900 }
+      ]
+    }
+  ]
+}

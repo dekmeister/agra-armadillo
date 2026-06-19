@@ -55,9 +55,10 @@ export const WORLDS: WorldEntry[] = [
     name: "Mission Systems",
     levels: [
       { id: "3.1", name: "Meet MS", playable: true },
-      { id: "3.2", name: "Eyes Open" },
-      { id: "3.3", name: "Clear to Engage" },
-      { id: "3.4", name: "In the Zone" },
+      { id: "3.2", name: "Eyes Open", playable: true },
+      { id: "3.3", name: "Clear to Engage", playable: true },
+      { id: "3.4", name: "In the Zone", playable: true },
+      { id: "3.5", name: "Sensor Failure", playable: true },
     ],
   },
   {

@@ -1,0 +1,19 @@
+{
+  "id": "3.2",
+  "title": "Eyes Open",
+  "body": "ax-01",
+  "msBody": "ms-sentry-02",
+  "capabilityId": "MULE-01",
+  "brief": "Your first MS command. The Sentry radar advertises an AMTI capability — but you don't point a sensor, you schedule it. Submit an AMTI_CommandMT against the advertised CapabilityID with a valid time window, then watch the activity confirm and the tracks come in.",
+  "teaches": "Sensors are scheduled, not pointed (MS Vol §1.2.8). Reference the advertised CapabilityID from MA_AMTI_CapabilityMT, give a time window that hasn't passed, and wait: AMTI_CommandStatusMT RECEIVED→ACCEPTED, AMTI_ActivityMT ENABLED→ACTIVE→COMPLETED, then EntityMT tracks. MS isn't safety-critical — a command with an unadvertised capability isn't REJECTED, it's just quietly CANCELED and nothing collects (lie #20).",
+  "objective": {
+    "_doc": "No flight. Win = two sensor tracks (EntityMT) collected. A valid AMTI_CommandMT (NEW, advertised CapabilityID, window not passed) schedules the activity; it goes ACTIVE at tick 4 and reports TRK-1 at t5 and TRK-2 at t7. A command with a wrong CapabilityID is CANCELED and never collects.",
+    "kind": "ms-track",
+    "requiredCount": 2,
+    "holdTicks": 1
+  },
+  "availableMessages": ["AMTI_CommandMT"],
+  "maxTicks": 40,
+  "pars": { "ticks": 8, "busTraffic": 1, "rejections": 0, "brainSize": 3 },
+  "fidelityNotes": [20, 21, 22]
+}

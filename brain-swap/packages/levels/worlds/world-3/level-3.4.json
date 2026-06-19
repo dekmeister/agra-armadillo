@@ -1,0 +1,27 @@
+{
+  "id": "3.4",
+  "title": "In the Zone",
+  "body": "ax-01",
+  "msBody": "ms-talon-02",
+  "capabilityId": "MULE-01",
+  "brief": "The target is out of range. Orchestrate both interfaces: take FA control and fly the aircraft into the launch zone, ask MS for the DLZ to know where that is, and run the fire sequence. MS will not complete the strike until the aircraft is inside the zone — pre-fire geometry is data, not a guess.",
+  "teaches": "This is the whole architecture in one run: MA is the integration layer over FA and MS at once. Request the DLZ (DLZ_RequestMT → DLZ_MT) to learn the launch geometry, maneuver FA (the HSA block from World 1) to close the target, and run the 3.3 fire + consent chain. Even with consent granted, the strike holds at ENABLED until the vehicle is within RangeMaxAero — then it completes. Run the strike without closing the range and the weapon never releases.",
+  "objective": {
+    "_doc": "Win = the strike reaches COMPLETED, which the MS engine only allows when the FA vehicle is within the DLZ max range (500 m) of the target at (1400,-800). The vehicle starts at (0,0) heading 90 (due east); flying straight passes 800 m abeam — out of range. The reference brain takes control and commands ~heading 120 to angle into the zone, then fires. A brain that runs the strike without maneuvering never gets in range. start overrides the body default.",
+    "kind": "ms-strike",
+    "taskId": "TASK-1",
+    "holdTicks": 2
+  },
+  "start": { "x": 0, "y": 0, "altitude": 3000, "heading": 90, "speed": 60 },
+  "availableMessages": [
+    "MA_ControlRequestMT",
+    "MA_FlightCommandMT",
+    "DLZ_RequestMT",
+    "MA_TaskMT",
+    "MA_TaskCommandMT",
+    "StrikeConsentRequestStatusMT"
+  ],
+  "maxTicks": 80,
+  "pars": { "ticks": 22, "busTraffic": 6, "rejections": 0, "brainSize": 15 },
+  "fidelityNotes": [20, 23, 24]
+}

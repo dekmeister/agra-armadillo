@@ -1,0 +1,43 @@
+{
+  "id": "ms-sentry-03",
+  "name": "Sentry MS (dual radar)",
+  "_doc": "Robustness MS payload (docs/03 World 3, level 3.5): two AMTI radars. The primary (PRIMARY-RADAR) goes DEGRADED at tick 5 — mid-collection, before it ever reports a track — and MS publishes MA_FaultMT. The backup (BACKUP-RADAR) stays healthy. The player must cancel the dead task and re-task the backup. Deterministic, no RNG (CLAUDE.md rule #3).",
+  "subsystems": [
+    {
+      "id": "PRIMARY-RADAR",
+      "kind": "AESA radar (primary)",
+      "states": [
+        { "atTick": 0, "state": "OPERATE" },
+        { "atTick": 5, "state": "DEGRADED" }
+      ]
+    },
+    {
+      "id": "BACKUP-RADAR",
+      "kind": "AESA radar (backup)",
+      "states": [{ "atTick": 0, "state": "OPERATE" }]
+    }
+  ],
+  "services": [{ "id": "SENTRY-TRACK-SVC", "state": "NORMAL" }],
+  "publish": { "statusIntervalTicks": 6 },
+  "sensors": [
+    {
+      "capabilityId": "AESA-PRIMARY-1",
+      "capabilityType": "VOLUME",
+      "subsystemId": "PRIMARY-RADAR",
+      "activeDelayTicks": 2,
+      "entityOffsets": [6],
+      "tracks": [{ "entityId": "TRK-P1", "x": 2000, "y": 1500 }]
+    },
+    {
+      "capabilityId": "AESA-BACKUP-1",
+      "capabilityType": "VOLUME",
+      "subsystemId": "BACKUP-RADAR",
+      "activeDelayTicks": 1,
+      "entityOffsets": [1, 2],
+      "tracks": [
+        { "entityId": "TRK-B1", "x": 2000, "y": 1500 },
+        { "entityId": "TRK-B2", "x": 2600, "y": 900 }
+      ]
+    }
+  ]
+}

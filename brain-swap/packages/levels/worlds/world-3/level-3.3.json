@@ -1,0 +1,19 @@
+{
+  "id": "3.3",
+  "title": "Clear to Engage",
+  "body": "ax-01",
+  "msBody": "ms-talon-01",
+  "capabilityId": "MULE-01",
+  "brief": "MS holds the weapon — but MS holds nothing it can fire on its own. Run the fire sequence: describe the strike task, issue the execution order, and then answer the consent request. The weapon will not release until you give consent. You hold the key.",
+  "teaches": "The MS power relationship is inverted from FA. FA holds authority over the aircraft; here MS holds the capability but asks MA for consent (MS Vol §1.2.10.10). The fire sequence separates the *what* (MA_TaskMT) from the *when* (MA_TaskCommandMT), then MS sends StrikeConsentRequestMT and waits — it will not fire autonomously. Approve with StrikeConsentRequestStatusMT and the strike completes; ignore it and nothing releases.",
+  "objective": {
+    "_doc": "No flight. Win = the strike activity reaches COMPLETED. Sequence: MA_TaskMT → MA_TaskStatusMT (CapabilityID assigned) → MA_TaskCommandMT (NEW/execute) → MA_TaskCommandStatusMT ACCEPTED → StrikeConsentRequestMT → StrikeConsentRequestStatusMT (APPROVED) → MA_StrikeActivityMT ENABLED → COMPLETED. holdTicks 2 so the COMPLETED report is delivered before the win lands.",
+    "kind": "ms-strike",
+    "taskId": "TASK-1",
+    "holdTicks": 2
+  },
+  "availableMessages": ["MA_TaskMT", "MA_TaskCommandMT", "StrikeConsentRequestStatusMT"],
+  "maxTicks": 40,
+  "pars": { "ticks": 11, "busTraffic": 3, "rejections": 0, "brainSize": 7 },
+  "fidelityNotes": [20, 23]
+}

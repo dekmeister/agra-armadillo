@@ -1,0 +1,50 @@
+{
+  "id": "naive-3.4",
+  "_doc": "Bait: run the entire fire + consent chain correctly, but never maneuver the aircraft into the launch zone. The vehicle coasts due east, passing 800 m abeam the target — outside the 500 m DLZ. MS arms the strike and waits at ENABLED for geometry that never comes, so the weapon never releases. The documented failure for 3.4: a valid shot is geometry, not just consent.",
+  "initial": "await-store",
+  "states": ["await-store", "tasked", "commanded", "consented"],
+  "transitions": [
+    {
+      "from": "await-store",
+      "trigger": { "messageType": "StrikeCapabilityMT" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "MA_TaskMT",
+          "fields": {
+            "TaskID": "TASK-1",
+            "TaskType": "STRIKE",
+            "Target": "TGT-1",
+            "StoreType": { "msg": "StoreType" },
+            "StoreQuantity": 1
+          }
+        }
+      ],
+      "target": "tasked"
+    },
+    {
+      "from": "tasked",
+      "trigger": { "messageType": "MA_TaskStatusMT" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "MA_TaskCommandMT",
+          "fields": { "TaskID": { "msg": "TaskID" }, "CommandState": "NEW" }
+        }
+      ],
+      "target": "commanded"
+    },
+    {
+      "from": "commanded",
+      "trigger": { "messageType": "StrikeConsentRequestMT" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "StrikeConsentRequestStatusMT",
+          "fields": { "TaskID": { "msg": "TaskID" }, "ConsentState": "APPROVED" }
+        }
+      ],
+      "target": "consented"
+    }
+  ]
+}

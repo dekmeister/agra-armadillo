@@ -56,3 +56,231 @@ messages:
       validate/REJECT like FA (it isn't safety-critical), it just reflects state.
     fields:
       - { name: SubsystemID, path: MessageData.SubsystemID, type: string, required: true }
+
+  # ===========================================================================
+  # Sensor Tasking — AMTI (MS Vol §1.2.8). Advertise capability → command (time-
+  # windowed) → status → activity → tracks. Field/enum names verified against:
+  #   AMTI_CapabilityMDT, AMTI_CommandMDT, AMTI_CommandStatusMDT, AMTI_ActivityMDT,
+  #   EntityMDT; CapabilityTypeEnum (VOLUME/TRACK), CommandStateEnum (NEW/UPDATE/CANCEL),
+  #   CommandProcessingStateEnum (RECEIVED/ACCEPTED/REJECTED/CANCELED),
+  #   ActivityStateEnum (ENABLED/ACTIVE_UNCONSTRAINED/COMPLETED).
+  # ===========================================================================
+  - name: MA_AMTI_CapabilityMT
+    tier: 2
+    direction: MS->MA
+    citation: "MS Vol §1.2.8.1 Sensor Capability Advertisement (AMTI)"
+    summary: >-
+      MS advertises an available AMTI radar capability — a CapabilityID an AMTI_CommandMT
+      must reference, and the search type (VOLUME search or TRACK update). The MS analogue
+      of FA's MA_FlightCapabilityMT.
+    fields:
+      - { name: CapabilityID, path: MessageData.Capability.CapabilityID, type: string, required: true }
+      - { name: CapabilityType, path: MessageData.Capability.CapabilityType, type: enum, values: [VOLUME, TRACK], required: true }
+
+  - name: AMTI_CommandMT
+    tier: 2
+    direction: MA->MS
+    citation: "MS Vol §1.2.8.4 Sensor Command (AMTI)"
+    summary: >-
+      MA schedules an AMTI sensor: reference the advertised CapabilityID, give a tasking
+      interval (StartTimeWindow/EndTimeWindow, in ticks) and a TargetVolume. Sensors are
+      scheduled, not pointed — submit a request, then wait for the activity to confirm.
+      CommandState CANCEL stops an active task (used after a sensor fault).
+    fields:
+      - { name: CommandID, path: MessageData.CommandID, type: string, required: true }
+      - { name: CapabilityID, path: MessageData.CapabilityID, type: string, required: true }
+      - { name: CommandState, path: MessageData.CommandState, type: enum, values: [NEW, CANCEL], required: true }
+      - { name: StartTimeWindow, path: MessageData.Command.StartTimeWindow, type: number, required: false }
+      - { name: EndTimeWindow, path: MessageData.Command.EndTimeWindow, type: number, required: false }
+      - { name: TargetVolume, path: MessageData.Command.TargetVolume, type: string, required: false }
+
+  - name: AMTI_CommandStatusMT
+    tier: 2
+    direction: MS->MA
+    citation: "MS Vol §1.2.8.4 Sensor Command Status (AMTI)"
+    summary: >-
+      MS acknowledges an AMTI command and reports its processing state. A valid command is
+      RECEIVED then ACCEPTED; an invalid one (unknown capability, or an interval already
+      passed) is CANCELED — MS isn't safety-critical, so it reflects status, it doesn't
+      REJECT a gate (lie #20).
+    fields:
+      - { name: CommandID, path: MessageData.CommandID, type: string, required: true }
+      - { name: CommandProcessingState, path: MessageData.CommandProcessingState, type: enum, values: [RECEIVED, ACCEPTED, REJECTED, CANCELED], required: true }
+
+  - name: AMTI_ActivityMT
+    tier: 2
+    direction: MS->MA
+    citation: "MS Vol §1.2.8 Sensor Activity Report (AMTI)"
+    summary: >-
+      MS reports the scheduled sensor activity. Watch ActivityState advance ENABLED →
+      ACTIVE_UNCONSTRAINED → COMPLETED before treating tracks as authoritative.
+    fields:
+      - { name: CapabilityID, path: MessageData.Activity.CapabilityID, type: string, required: true }
+      - { name: ActivityState, path: MessageData.Activity.ActivityState, type: enum, values: [ENABLED, ACTIVE_UNCONSTRAINED, COMPLETED], required: true }
+      - { name: EstimatedStartTime, path: MessageData.Activity.EstimatedStartTime, type: number, required: false }
+      - { name: EstimatedCompletionTime, path: MessageData.Activity.EstimatedCompletionTime, type: number, required: false }
+
+  - name: EntityMT
+    tier: 2
+    direction: MS->MA
+    citation: "MS Vol §1.2.8 Entity (sensor track)"
+    summary: >-
+      A sensor track: MA's evidence the AMTI sensor is collecting. Position carried as
+      Longitude/Latitude in the world frame (the same convention as MA_PositionReportDetailedMT;
+      tracks are simulated, not sensed — fidelity).
+    fields:
+      - { name: EntityID, path: MessageData.EntityID, type: string, required: true }
+      - { name: Longitude, path: MessageData.Kinematics.Position.Longitude, type: number, required: false }
+      - { name: Latitude, path: MessageData.Kinematics.Position.Latitude, type: number, required: false }
+
+  # ===========================================================================
+  # Weapon Employment (MS Vol §1.2.10). Store inventory → task → task status →
+  # task command (execute) → consent request → consent reply → strike activity.
+  # Verified: StrikeCapabilityMDT, StrikeCapabilityStatusMDT, MA_TaskMDT,
+  #   MA_TaskStatusMDT, MA_TaskCommandMDT, MA_TaskCommandStatusMDT,
+  #   StrikeConsentRequestMDT, StrikeConsentRequestStatusMDT, MA_StrikeActivityMDT;
+  #   MA_TaskTypeEnum (STRIKE), StoreStateEnum (READY/ARMED/AWAY), ConsentEnum
+  #   (REQUESTED/APPROVED/REJECTED), ActivityStateEnum, CommandStateEnum.
+  # ===========================================================================
+  - name: StrikeCapabilityMT
+    tier: 2
+    direction: MS->MA
+    citation: "MS Vol §1.2.10.11 Store Inventory (Strike Capability)"
+    summary: >-
+      MS advertises a loaded weapon store: what is loaded and how many. MA needs this
+      before tasking a strike.
+    fields:
+      - { name: CapabilityID, path: MessageData.Capability.CapabilityID, type: string, required: true }
+      - { name: StoreType, path: MessageData.Capability.WeaponList.StoreInformation.StoreType, type: string, required: true }
+      - { name: StoreQuantity, path: MessageData.Capability.WeaponList.StoreInformation.StoreQuantity, type: number, required: false }
+
+  - name: StrikeCapabilityStatusMT
+    tier: 2
+    direction: MS->MA
+    citation: "MS Vol §1.2.10.8 Store Status"
+    summary: >-
+      MS reports a store's state (READY → ARMED → AWAY). Static per level in the game
+      (one store type, one station — fidelity).
+    fields:
+      - { name: CapabilityID, path: MessageData.CapabilityID, type: string, required: true }
+      - { name: StoreState, path: MessageData.StoreStatus.StoreState, type: enum, values: [READY, ARMED, AWAY], required: true }
+
+  - name: MA_TaskMT
+    tier: 2
+    direction: MA->MS
+    citation: "MS Vol §1.2.10.5 Fire Command (task description)"
+    summary: >-
+      MA describes a strike task — the target and the weapon to use. This is the *what*,
+      a task description, not yet a fire command (that is MA_TaskCommandMT).
+    fields:
+      - { name: TaskID, path: MessageData.TaskID, type: string, required: true }
+      - { name: TaskType, path: MessageData.TaskType, type: enum, values: [STRIKE], required: true }
+      - { name: Target, path: MessageData.TaskGuidance.Target, type: string, required: false }
+      - { name: StoreType, path: MessageData.TaskGuidance.WeaponList.StoreInformation.StoreType, type: string, required: false }
+      - { name: StoreQuantity, path: MessageData.TaskGuidance.WeaponList.StoreInformation.StoreQuantity, type: number, required: false }
+
+  - name: MA_TaskStatusMT
+    tier: 2
+    direction: MS->MA
+    citation: "MS Vol §1.2.10.5 Task Status"
+    summary: >-
+      MS accepts the task description and assigns the CapabilityID(s) that will service it.
+    fields:
+      - { name: TaskID, path: MessageData.TaskID, type: string, required: true }
+      - { name: CapabilityID, path: MessageData.CapabilityID, type: string, required: false }
+
+  - name: MA_TaskCommandMT
+    tier: 2
+    direction: MA->MS
+    citation: "MS Vol §1.2.10.5 Fire Command (execution order)"
+    summary: >-
+      MA's execution order for a task (CommandState NEW, referencing the TaskID) — the
+      *when*, separate from the task description. CANCEL aborts the task.
+    fields:
+      - { name: TaskID, path: MessageData.Command.TaskID, type: string, required: true }
+      - { name: CommandState, path: MessageData.Command.CommandState, type: enum, values: [NEW, CANCEL], required: true }
+
+  - name: MA_TaskCommandStatusMT
+    tier: 2
+    direction: MS->MA
+    citation: "MS Vol §1.2.10.5 Task Command Status"
+    summary: >-
+      MS acknowledges the execution order. ACCEPTED means the strike is armed for consent.
+    fields:
+      - { name: TaskID, path: MessageData.TaskID, type: string, required: true }
+      - { name: CommandProcessingState, path: MessageData.CommandProcessingState, type: enum, values: [RECEIVED, ACCEPTED, REJECTED], required: true }
+
+  - name: StrikeConsentRequestMT
+    tier: 2
+    direction: MS->MA
+    citation: "MS Vol §1.2.10.10 Release Consent (request)"
+    summary: >-
+      MS requests consent to fire — the inverted power relationship: MS holds the
+      capability but asks MA for the key. It will not release autonomously.
+    fields:
+      - { name: SubsystemID, path: MessageData.SubsystemID, type: string, required: true }
+      - { name: TaskID, path: MessageData.ConsentRequest.TaskID, type: string, required: false }
+      - { name: ConsentState, path: MessageData.ConsentRequest.Consent, type: enum, values: [REQUESTED, APPROVED, REJECTED], required: false }
+
+  - name: StrikeConsentRequestStatusMT
+    tier: 2
+    direction: MA->MS
+    citation: "MS Vol §1.2.10.10 Release Consent (reply)"
+    summary: >-
+      MA's consent decision. APPROVED releases the weapon; REJECTED (or no reply) withholds
+      it. The single most important MS lesson — MA holds the key.
+    fields:
+      - { name: TaskID, path: MessageData.TaskID, type: string, required: true }
+      - { name: ConsentState, path: MessageData.Consent, type: enum, values: [APPROVED, REJECTED], required: true }
+
+  - name: MA_StrikeActivityMT
+    tier: 2
+    direction: MS->MA
+    citation: "MS Vol §1.2.10 Strike Activity"
+    summary: >-
+      MS reports the strike activity: ENABLED → ACTIVE_FULLY_CONSTRAINED → COMPLETED once
+      consent is granted (and, with a DLZ, the target is in range).
+    fields:
+      - { name: SubsystemID, path: MessageData.SubsystemID, type: string, required: true }
+      - { name: TaskID, path: MessageData.Activity.TaskID, type: string, required: false }
+      - { name: ActivityState, path: MessageData.Activity.ActivityState, type: enum, values: [ENABLED, ACTIVE_FULLY_CONSTRAINED, COMPLETED], required: true }
+
+  # ===========================================================================
+  # Dynamic Launch Zone (MS Vol §1.2.10.3). Request → status → zone. Verified:
+  #   DLZ_MDT (DLZ_ID, DLZ_RequestID), DLZ_DataType (RangeMinimum/RangeOptimal/
+  #   RangeMaxAero). Ranges flattened to scalar metres (azimuth array collapsed — fidelity).
+  # ===========================================================================
+  - name: DLZ_RequestMT
+    tier: 2
+    direction: MA->MS
+    citation: "MS Vol §1.2.10.3 Dynamic Launch Zone (request)"
+    summary: >-
+      MA asks MS for the launch zone before committing to a strike — the pre-fire geometry
+      check, answered by data, not guesswork.
+    fields:
+      - { name: DLZ_RequestID, path: MessageData.DLZ_RequestID, type: string, required: true }
+      - { name: CapabilityID, path: MessageData.CapabilityID, type: string, required: false }
+      - { name: ResultsInNativeMessage, path: MessageData.ResultsInNativeMessage, type: boolean, required: false }
+
+  - name: DLZ_RequestStatusMT
+    tier: 2
+    direction: MS->MA
+    citation: "MS Vol §1.2.10.3 DLZ Request Status"
+    summary: MS acknowledges the DLZ request before sending the zone.
+    fields:
+      - { name: DLZ_RequestID, path: MessageData.DLZ_RequestID, type: string, required: true }
+      - { name: CommandProcessingState, path: MessageData.CommandProcessingState, type: enum, values: [RECEIVED, ACCEPTED], required: true }
+
+  - name: DLZ_MT
+    tier: 2
+    direction: MS->MA
+    citation: "MS Vol §1.2.10.3 Dynamic Launch Zone (result)"
+    summary: >-
+      The launch zone: minimum / optimal / maximum ranges (metres). The strike completes
+      only when the vehicle is inside the maximum — close the target before you fire.
+    fields:
+      - { name: DLZ_RequestID, path: MessageData.DLZ_RequestID, type: string, required: true }
+      - { name: DLZ_ID, path: MessageData.DLZ_ID, type: string, required: false }
+      - { name: RangeMinimum, path: MessageData.DLZ_Data.RangeMinimum, type: number, required: false }
+      - { name: RangeOptimal, path: MessageData.DLZ_Data.RangeOptimal, type: number, required: false }
+      - { name: RangeMaxAero, path: MessageData.DLZ_Data.RangeMaxAero, type: number, required: false }

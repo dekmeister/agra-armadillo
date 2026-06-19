@@ -14,7 +14,7 @@ import { reactToMessage } from "./brain/interpreter.ts";
 import { enqueueAll, takeDue } from "./bus.ts";
 import { faAdvanceApprovals, faCollisionCheck, faHandleInbound, faPublish } from "./fa/engine.ts";
 import { advanceThreats, applyEvents } from "./level/events.ts";
-import { msAdvanceState, msHandleInbound, msPublish } from "./ms/engine.ts";
+import { msAdvanceState, msCountDeliveredEntity, msHandleInbound, msPublish } from "./ms/engine.ts";
 import { evaluateWin } from "./level/runtime.ts";
 import { DELIVERED, type Message, type MessageLogEntry, msg } from "./types.ts";
 import { integrate } from "./vehicle/pointmass.ts";
@@ -85,11 +85,14 @@ export function step(world: World): World {
       bus = enqueueAll(bus, res.outbound, tick);
       log.push(entry(tick, m, res.disposition));
     } else if (m.to === "MS" && msBody && ms) {
-      const res = msHandleInbound(msBody, ms, m);
+      const res = msHandleInbound(msBody, ms, m, tick);
       ms = res.ms;
       bus = enqueueAll(bus, res.outbound, tick);
       log.push(entry(tick, m, res.disposition));
     } else {
+      // Delivered to MA. Count any MS sensor track toward the ms-track objective here, so
+      // the win reflects tracks *received* (in the log), not merely emitted by MS.
+      if (m.type === "EntityMT" && ms) ms = msCountDeliveredEntity(ms);
       if (scenario.brain && ma.brainState !== null) {
         const reaction = reactToMessage(scenario.brain, ma.brainState, m, cap);
         ma = { brainState: reaction.nextState };
@@ -104,9 +107,11 @@ export function step(world: World): World {
   fa = pub.fa;
   bus = enqueueAll(bus, pub.outbound, tick);
 
-  // Phase C (MS) — the MS heartbeat (periodic subsystem + service status).
+  // Phase C (MS) — heartbeat + time-driven MS emissions (sensor activity/tracks, strike
+  // consent/activity, faults). `vehicle` is this tick's pre-integration position, read by
+  // the 3.4 DLZ geometry gate.
   if (msBody && ms) {
-    const msPub = msPublish(msBody, ms);
+    const msPub = msPublish(msBody, ms, tick, vehicle);
     ms = msPub.ms;
     bus = enqueueAll(bus, msPub.outbound, tick);
   }

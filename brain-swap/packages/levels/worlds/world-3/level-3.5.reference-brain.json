@@ -1,0 +1,55 @@
+{
+  "id": "ref-3.5",
+  "_doc": "Task the primary radar on its advertisement; when MS raises MA_FaultMT, cancel the dead primary (echoing the faulted CapabilityID) and re-task the healthy backup (AESA-BACKUP-1) in the same step. The backup collects both tracks and the run wins. Script source only — the player hand-sends all three commands.",
+  "initial": "await-cap",
+  "states": ["await-cap", "tasking", "recovered"],
+  "transitions": [
+    {
+      "from": "await-cap",
+      "trigger": { "messageType": "MA_AMTI_CapabilityMT" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "AMTI_CommandMT",
+          "fields": {
+            "CommandID": "AMTI-CMD-P",
+            "CapabilityID": { "msg": "CapabilityID" },
+            "CommandState": "NEW",
+            "StartTimeWindow": 0,
+            "EndTimeWindow": 60,
+            "TargetVolume": "VOL-A"
+          }
+        }
+      ],
+      "target": "tasking"
+    },
+    {
+      "from": "tasking",
+      "trigger": { "messageType": "MA_FaultMT" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "AMTI_CommandMT",
+          "fields": {
+            "CommandID": "AMTI-CMD-P-CANCEL",
+            "CapabilityID": { "msg": "CapabilityID" },
+            "CommandState": "CANCEL"
+          }
+        },
+        {
+          "kind": "send",
+          "message": "AMTI_CommandMT",
+          "fields": {
+            "CommandID": "AMTI-CMD-B",
+            "CapabilityID": "AESA-BACKUP-1",
+            "CommandState": "NEW",
+            "StartTimeWindow": 0,
+            "EndTimeWindow": 60,
+            "TargetVolume": "VOL-A"
+          }
+        }
+      ],
+      "target": "recovered"
+    }
+  ]
+}

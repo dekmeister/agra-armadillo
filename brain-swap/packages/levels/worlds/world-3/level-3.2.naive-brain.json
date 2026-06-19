@@ -1,0 +1,27 @@
+{
+  "id": "naive-3.2",
+  "_doc": "Bait: command a sensor that was never advertised (CapabilityID AESA-WRONG). MS isn't safety-critical, so it doesn't REJECT — it returns a CANCELED status and schedules nothing. No activity, no tracks, the run times out. The documented failure for 3.2.",
+  "initial": "await-cap",
+  "states": ["await-cap", "tasking"],
+  "transitions": [
+    {
+      "from": "await-cap",
+      "trigger": { "messageType": "MA_AMTI_CapabilityMT" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "AMTI_CommandMT",
+          "fields": {
+            "CommandID": "AMTI-CMD-1",
+            "CapabilityID": "AESA-WRONG",
+            "CommandState": "NEW",
+            "StartTimeWindow": 0,
+            "EndTimeWindow": 40,
+            "TargetVolume": "VOL-A"
+          }
+        }
+      ],
+      "target": "tasking"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "id": "ms-talon-01",
+  "name": "Talon MS (strike)",
+  "_doc": "Weapon-employment MS payload (docs/03 World 3, level 3.3): one weapon subsystem and one loaded store. Advertises StrikeCapabilityMT + StrikeCapabilityStatusMT at boot. The strike runs on deterministic timings: 2 ticks from EXECUTE to the consent request, 2 ticks from consent APPROVED to COMPLETED. No DLZ — the strike completes on the timer, not on geometry. Deterministic, no RNG (CLAUDE.md rule #3).",
+  "subsystems": [
+    {
+      "id": "MS-WEAPON",
+      "kind": "weapon management",
+      "states": [{ "atTick": 0, "state": "OPERATE" }]
+    }
+  ],
+  "services": [{ "id": "TALON-WEAPON-SVC", "state": "NORMAL" }],
+  "publish": { "statusIntervalTicks": 8 },
+  "stores": [
+    {
+      "capabilityId": "STRIKE-1",
+      "storeType": "GBU-53",
+      "storeQuantity": 1,
+      "consentAfterTicks": 2,
+      "strikeTicks": 2
+    }
+  ]
+}

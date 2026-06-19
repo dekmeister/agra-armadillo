@@ -124,5 +124,31 @@ export function evaluateWin(
         failed,
       };
     }
+    case "ms-track": {
+      // Enough sensor tracks (EntityMT) collected — a valid AMTI_CommandMT plus the
+      // sensor schedule (3.2); after a sensor fault, re-tasking a healthy sensor (3.5).
+      const satisfied = (ms?.entitiesReported ?? 0) >= o.requiredCount;
+      const holdTicks = satisfied ? progress.holdTicks + 1 : 0;
+      return {
+        satisfied,
+        holdTicks,
+        waypointIndex: progress.waypointIndex,
+        won: holdTicks >= o.holdTicks,
+        failed,
+      };
+    }
+    case "ms-strike": {
+      // The strike reached COMPLETED through the fire + release-consent chain (3.3); with
+      // a DLZ body, MS only completes it inside the zone, so completion ⇒ valid shot (3.4).
+      const satisfied = ms?.strikeTasks[o.taskId]?.activityState === "COMPLETED";
+      const holdTicks = satisfied ? progress.holdTicks + 1 : 0;
+      return {
+        satisfied,
+        holdTicks,
+        waypointIndex: progress.waypointIndex,
+        won: holdTicks >= o.holdTicks,
+        failed,
+      };
+    }
   }
 }

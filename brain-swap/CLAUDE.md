@@ -8,9 +8,10 @@ see `PLAN_FUTURE.md` and the realtime-mode plan. The brain *interpreter* survive
 `packages/core` only to derive/verify each level's reference solution.) A realtime
 session is a deterministic recorded input script (`ScriptedInput[]`), so it replays
 and golden-tests exactly like a brain did. **Current state:** playable React+Pixi
-game (`npm run dev`) with levels **1.1, 1.2, 1.3, 1.4, 1.6, 2.2, 3.1, 4.2, 4.3, 4.5**,
-FA bodies **AX-01/02/03**, and the first **Mission Systems** level (**3.1**, on MS body
-**Sentry MS**). MS is a real third bus party (`Party = "MA" | "FA" | "MS"`) with its own
+game (`npm run dev`) with levels **1.1, 1.2, 1.3, 1.4, 1.6, 2.2, 3.1, 3.2, 3.3, 3.4, 3.5,
+4.2, 4.3, 4.5**, FA bodies **AX-01/02/03**, and the full **Mission Systems** World 3 (**3.1**
+status, **3.2** sensor tasking, **3.3** fire+consent, **3.4** DLZ capstone, **3.5** sensor
+failure; MS bodies Sentry/Talon). MS is a real third bus party (`Party = "MA" | "FA" | "MS"`) with its own
 engine (`packages/core/src/ms/engine.ts`) and catalog (`packages/levels/catalog/tier2-ms.yaml`).
 Each level golden-tested (brain run + realtime-replay parity). Read `docs/` before
 implementing; `docs/03-levels.md` has per-level build status.

@@ -1,0 +1,19 @@
+{
+  "id": "3.5",
+  "title": "Sensor Failure",
+  "body": "ax-01",
+  "msBody": "ms-sentry-03",
+  "capabilityId": "MULE-01",
+  "brief": "You've tasked the primary radar when it fails. MS raises an MA_FaultMT and the primary stops collecting — it will never report. Don't keep waiting on a dead sensor: cancel the task, re-task the healthy backup radar, and finish the collection.",
+  "teaches": "MS has its own fault model, and it speaks the same MA_FaultMT as FA — the same message type on a different bus (MS Vol §1.2.2.4, lie #19). When a sensor degrades, the standing task is dead: cancel it (AMTI_CommandMT CommandState CANCEL) and re-task a healthy capability. A brain that ignores the fault keeps waiting on silence and times out.",
+  "objective": {
+    "_doc": "No flight. Win = two tracks (EntityMT) collected. The primary degrades at tick 5 before its track (offset 6) ever fires, so it reports nothing; MA_FaultMT arrives at t6. Cancelling the primary and tasking AESA-BACKUP-1 collects both backup tracks. Ignoring the fault collects nothing and times out.",
+    "kind": "ms-track",
+    "requiredCount": 2,
+    "holdTicks": 1
+  },
+  "availableMessages": ["AMTI_CommandMT"],
+  "maxTicks": 60,
+  "pars": { "ticks": 11, "busTraffic": 3, "rejections": 0, "brainSize": 5 },
+  "fidelityNotes": [19, 20, 21, 22]
+}

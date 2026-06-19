@@ -1,0 +1,50 @@
+{
+  "id": "ref-3.3",
+  "_doc": "Run the full fire + release-consent chain: describe the task on the store advertisement, issue the execution order on the task status, then approve the consent request. MS completes the strike. Script source only — the player hand-sends the three MA→MS messages.",
+  "initial": "await-store",
+  "states": ["await-store", "tasked", "commanded", "consented"],
+  "transitions": [
+    {
+      "from": "await-store",
+      "trigger": { "messageType": "StrikeCapabilityMT" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "MA_TaskMT",
+          "fields": {
+            "TaskID": "TASK-1",
+            "TaskType": "STRIKE",
+            "Target": "TGT-1",
+            "StoreType": { "msg": "StoreType" },
+            "StoreQuantity": 1
+          }
+        }
+      ],
+      "target": "tasked"
+    },
+    {
+      "from": "tasked",
+      "trigger": { "messageType": "MA_TaskStatusMT" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "MA_TaskCommandMT",
+          "fields": { "TaskID": { "msg": "TaskID" }, "CommandState": "NEW" }
+        }
+      ],
+      "target": "commanded"
+    },
+    {
+      "from": "commanded",
+      "trigger": { "messageType": "StrikeConsentRequestMT" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "StrikeConsentRequestStatusMT",
+          "fields": { "TaskID": { "msg": "TaskID" }, "ConsentState": "APPROVED" }
+        }
+      ],
+      "target": "consented"
+    }
+  ]
+}

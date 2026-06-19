@@ -90,6 +90,108 @@ export interface SubsystemStatusDataRequestMT {
   SubsystemID: string;
 }
 
+export interface MA_AMTI_CapabilityMT {
+  CapabilityID: string;
+  CapabilityType: "VOLUME" | "TRACK";
+}
+
+export interface AMTI_CommandMT {
+  CommandID: string;
+  CapabilityID: string;
+  CommandState: "NEW" | "CANCEL";
+  StartTimeWindow?: number;
+  EndTimeWindow?: number;
+  TargetVolume?: string;
+}
+
+export interface AMTI_CommandStatusMT {
+  CommandID: string;
+  CommandProcessingState: "RECEIVED" | "ACCEPTED" | "REJECTED" | "CANCELED";
+}
+
+export interface AMTI_ActivityMT {
+  CapabilityID: string;
+  ActivityState: "ENABLED" | "ACTIVE_UNCONSTRAINED" | "COMPLETED";
+  EstimatedStartTime?: number;
+  EstimatedCompletionTime?: number;
+}
+
+export interface EntityMT {
+  EntityID: string;
+  Longitude?: number;
+  Latitude?: number;
+}
+
+export interface StrikeCapabilityMT {
+  CapabilityID: string;
+  StoreType: string;
+  StoreQuantity?: number;
+}
+
+export interface StrikeCapabilityStatusMT {
+  CapabilityID: string;
+  StoreState: "READY" | "ARMED" | "AWAY";
+}
+
+export interface MA_TaskMT {
+  TaskID: string;
+  TaskType: "STRIKE";
+  Target?: string;
+  StoreType?: string;
+  StoreQuantity?: number;
+}
+
+export interface MA_TaskStatusMT {
+  TaskID: string;
+  CapabilityID?: string;
+}
+
+export interface MA_TaskCommandMT {
+  TaskID: string;
+  CommandState: "NEW" | "CANCEL";
+}
+
+export interface MA_TaskCommandStatusMT {
+  TaskID: string;
+  CommandProcessingState: "RECEIVED" | "ACCEPTED" | "REJECTED";
+}
+
+export interface StrikeConsentRequestMT {
+  SubsystemID: string;
+  TaskID?: string;
+  ConsentState?: "REQUESTED" | "APPROVED" | "REJECTED";
+}
+
+export interface StrikeConsentRequestStatusMT {
+  TaskID: string;
+  ConsentState: "APPROVED" | "REJECTED";
+}
+
+export interface MA_StrikeActivityMT {
+  SubsystemID: string;
+  TaskID?: string;
+  ActivityState: "ENABLED" | "ACTIVE_FULLY_CONSTRAINED" | "COMPLETED";
+}
+
+export interface DLZ_RequestMT {
+  DLZ_RequestID: string;
+  CapabilityID?: string;
+  ResultsInNativeMessage?: boolean;
+}
+
+export interface DLZ_RequestStatusMT {
+  DLZ_RequestID: string;
+  CommandProcessingState: "RECEIVED" | "ACCEPTED";
+}
+
+export interface DLZ_MT {
+  DLZ_RequestID: string;
+  DLZ_ID?: string;
+  RangeMinimum?: number;
+  RangeOptimal?: number;
+  RangeMaxAero?: number;
+}
+
 /** Maps each message type name to its pruned payload interface. */
 export interface MessagePayloads {
   MA_FlightCapabilityMT: MA_FlightCapabilityMT;
@@ -106,6 +208,23 @@ export interface MessagePayloads {
   SubsystemStatusMT: SubsystemStatusMT;
   ServiceStatusMT: ServiceStatusMT;
   SubsystemStatusDataRequestMT: SubsystemStatusDataRequestMT;
+  MA_AMTI_CapabilityMT: MA_AMTI_CapabilityMT;
+  AMTI_CommandMT: AMTI_CommandMT;
+  AMTI_CommandStatusMT: AMTI_CommandStatusMT;
+  AMTI_ActivityMT: AMTI_ActivityMT;
+  EntityMT: EntityMT;
+  StrikeCapabilityMT: StrikeCapabilityMT;
+  StrikeCapabilityStatusMT: StrikeCapabilityStatusMT;
+  MA_TaskMT: MA_TaskMT;
+  MA_TaskStatusMT: MA_TaskStatusMT;
+  MA_TaskCommandMT: MA_TaskCommandMT;
+  MA_TaskCommandStatusMT: MA_TaskCommandStatusMT;
+  StrikeConsentRequestMT: StrikeConsentRequestMT;
+  StrikeConsentRequestStatusMT: StrikeConsentRequestStatusMT;
+  MA_StrikeActivityMT: MA_StrikeActivityMT;
+  DLZ_RequestMT: DLZ_RequestMT;
+  DLZ_RequestStatusMT: DLZ_RequestStatusMT;
+  DLZ_MT: DLZ_MT;
 }
 
 /** Union of all Tier-1 message type names. */
@@ -599,8 +718,521 @@ export const MESSAGE_CATALOG = {
         "required": true
       }
     ]
+  },
+  "MA_AMTI_CapabilityMT": {
+    "name": "MA_AMTI_CapabilityMT",
+    "tier": 2,
+    "direction": "MS->MA",
+    "citation": "MS Vol §1.2.8.1 Sensor Capability Advertisement (AMTI)",
+    "summary": "MS advertises an available AMTI radar capability — a CapabilityID an AMTI_CommandMT must reference, and the search type (VOLUME search or TRACK update). The MS analogue of FA's MA_FlightCapabilityMT.",
+    "fields": [
+      {
+        "name": "CapabilityID",
+        "path": "MessageData.Capability.CapabilityID",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "CapabilityType",
+        "path": "MessageData.Capability.CapabilityType",
+        "type": "enum",
+        "values": [
+          "VOLUME",
+          "TRACK"
+        ],
+        "required": true
+      }
+    ]
+  },
+  "AMTI_CommandMT": {
+    "name": "AMTI_CommandMT",
+    "tier": 2,
+    "direction": "MA->MS",
+    "citation": "MS Vol §1.2.8.4 Sensor Command (AMTI)",
+    "summary": "MA schedules an AMTI sensor: reference the advertised CapabilityID, give a tasking interval (StartTimeWindow/EndTimeWindow, in ticks) and a TargetVolume. Sensors are scheduled, not pointed — submit a request, then wait for the activity to confirm. CommandState CANCEL stops an active task (used after a sensor fault).",
+    "fields": [
+      {
+        "name": "CommandID",
+        "path": "MessageData.CommandID",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "CapabilityID",
+        "path": "MessageData.CapabilityID",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "CommandState",
+        "path": "MessageData.CommandState",
+        "type": "enum",
+        "values": [
+          "NEW",
+          "CANCEL"
+        ],
+        "required": true
+      },
+      {
+        "name": "StartTimeWindow",
+        "path": "MessageData.Command.StartTimeWindow",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "EndTimeWindow",
+        "path": "MessageData.Command.EndTimeWindow",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "TargetVolume",
+        "path": "MessageData.Command.TargetVolume",
+        "type": "string",
+        "required": false
+      }
+    ]
+  },
+  "AMTI_CommandStatusMT": {
+    "name": "AMTI_CommandStatusMT",
+    "tier": 2,
+    "direction": "MS->MA",
+    "citation": "MS Vol §1.2.8.4 Sensor Command Status (AMTI)",
+    "summary": "MS acknowledges an AMTI command and reports its processing state. A valid command is RECEIVED then ACCEPTED; an invalid one (unknown capability, or an interval already passed) is CANCELED — MS isn't safety-critical, so it reflects status, it doesn't REJECT a gate (lie #20).",
+    "fields": [
+      {
+        "name": "CommandID",
+        "path": "MessageData.CommandID",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "CommandProcessingState",
+        "path": "MessageData.CommandProcessingState",
+        "type": "enum",
+        "values": [
+          "RECEIVED",
+          "ACCEPTED",
+          "REJECTED",
+          "CANCELED"
+        ],
+        "required": true
+      }
+    ]
+  },
+  "AMTI_ActivityMT": {
+    "name": "AMTI_ActivityMT",
+    "tier": 2,
+    "direction": "MS->MA",
+    "citation": "MS Vol §1.2.8 Sensor Activity Report (AMTI)",
+    "summary": "MS reports the scheduled sensor activity. Watch ActivityState advance ENABLED → ACTIVE_UNCONSTRAINED → COMPLETED before treating tracks as authoritative.",
+    "fields": [
+      {
+        "name": "CapabilityID",
+        "path": "MessageData.Activity.CapabilityID",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "ActivityState",
+        "path": "MessageData.Activity.ActivityState",
+        "type": "enum",
+        "values": [
+          "ENABLED",
+          "ACTIVE_UNCONSTRAINED",
+          "COMPLETED"
+        ],
+        "required": true
+      },
+      {
+        "name": "EstimatedStartTime",
+        "path": "MessageData.Activity.EstimatedStartTime",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "EstimatedCompletionTime",
+        "path": "MessageData.Activity.EstimatedCompletionTime",
+        "type": "number",
+        "required": false
+      }
+    ]
+  },
+  "EntityMT": {
+    "name": "EntityMT",
+    "tier": 2,
+    "direction": "MS->MA",
+    "citation": "MS Vol §1.2.8 Entity (sensor track)",
+    "summary": "A sensor track: MA's evidence the AMTI sensor is collecting. Position carried as Longitude/Latitude in the world frame (the same convention as MA_PositionReportDetailedMT; tracks are simulated, not sensed — fidelity).",
+    "fields": [
+      {
+        "name": "EntityID",
+        "path": "MessageData.EntityID",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "Longitude",
+        "path": "MessageData.Kinematics.Position.Longitude",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "Latitude",
+        "path": "MessageData.Kinematics.Position.Latitude",
+        "type": "number",
+        "required": false
+      }
+    ]
+  },
+  "StrikeCapabilityMT": {
+    "name": "StrikeCapabilityMT",
+    "tier": 2,
+    "direction": "MS->MA",
+    "citation": "MS Vol §1.2.10.11 Store Inventory (Strike Capability)",
+    "summary": "MS advertises a loaded weapon store: what is loaded and how many. MA needs this before tasking a strike.",
+    "fields": [
+      {
+        "name": "CapabilityID",
+        "path": "MessageData.Capability.CapabilityID",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "StoreType",
+        "path": "MessageData.Capability.WeaponList.StoreInformation.StoreType",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "StoreQuantity",
+        "path": "MessageData.Capability.WeaponList.StoreInformation.StoreQuantity",
+        "type": "number",
+        "required": false
+      }
+    ]
+  },
+  "StrikeCapabilityStatusMT": {
+    "name": "StrikeCapabilityStatusMT",
+    "tier": 2,
+    "direction": "MS->MA",
+    "citation": "MS Vol §1.2.10.8 Store Status",
+    "summary": "MS reports a store's state (READY → ARMED → AWAY). Static per level in the game (one store type, one station — fidelity).",
+    "fields": [
+      {
+        "name": "CapabilityID",
+        "path": "MessageData.CapabilityID",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "StoreState",
+        "path": "MessageData.StoreStatus.StoreState",
+        "type": "enum",
+        "values": [
+          "READY",
+          "ARMED",
+          "AWAY"
+        ],
+        "required": true
+      }
+    ]
+  },
+  "MA_TaskMT": {
+    "name": "MA_TaskMT",
+    "tier": 2,
+    "direction": "MA->MS",
+    "citation": "MS Vol §1.2.10.5 Fire Command (task description)",
+    "summary": "MA describes a strike task — the target and the weapon to use. This is the *what*, a task description, not yet a fire command (that is MA_TaskCommandMT).",
+    "fields": [
+      {
+        "name": "TaskID",
+        "path": "MessageData.TaskID",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "TaskType",
+        "path": "MessageData.TaskType",
+        "type": "enum",
+        "values": [
+          "STRIKE"
+        ],
+        "required": true
+      },
+      {
+        "name": "Target",
+        "path": "MessageData.TaskGuidance.Target",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "StoreType",
+        "path": "MessageData.TaskGuidance.WeaponList.StoreInformation.StoreType",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "StoreQuantity",
+        "path": "MessageData.TaskGuidance.WeaponList.StoreInformation.StoreQuantity",
+        "type": "number",
+        "required": false
+      }
+    ]
+  },
+  "MA_TaskStatusMT": {
+    "name": "MA_TaskStatusMT",
+    "tier": 2,
+    "direction": "MS->MA",
+    "citation": "MS Vol §1.2.10.5 Task Status",
+    "summary": "MS accepts the task description and assigns the CapabilityID(s) that will service it.",
+    "fields": [
+      {
+        "name": "TaskID",
+        "path": "MessageData.TaskID",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "CapabilityID",
+        "path": "MessageData.CapabilityID",
+        "type": "string",
+        "required": false
+      }
+    ]
+  },
+  "MA_TaskCommandMT": {
+    "name": "MA_TaskCommandMT",
+    "tier": 2,
+    "direction": "MA->MS",
+    "citation": "MS Vol §1.2.10.5 Fire Command (execution order)",
+    "summary": "MA's execution order for a task (CommandState NEW, referencing the TaskID) — the *when*, separate from the task description. CANCEL aborts the task.",
+    "fields": [
+      {
+        "name": "TaskID",
+        "path": "MessageData.Command.TaskID",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "CommandState",
+        "path": "MessageData.Command.CommandState",
+        "type": "enum",
+        "values": [
+          "NEW",
+          "CANCEL"
+        ],
+        "required": true
+      }
+    ]
+  },
+  "MA_TaskCommandStatusMT": {
+    "name": "MA_TaskCommandStatusMT",
+    "tier": 2,
+    "direction": "MS->MA",
+    "citation": "MS Vol §1.2.10.5 Task Command Status",
+    "summary": "MS acknowledges the execution order. ACCEPTED means the strike is armed for consent.",
+    "fields": [
+      {
+        "name": "TaskID",
+        "path": "MessageData.TaskID",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "CommandProcessingState",
+        "path": "MessageData.CommandProcessingState",
+        "type": "enum",
+        "values": [
+          "RECEIVED",
+          "ACCEPTED",
+          "REJECTED"
+        ],
+        "required": true
+      }
+    ]
+  },
+  "StrikeConsentRequestMT": {
+    "name": "StrikeConsentRequestMT",
+    "tier": 2,
+    "direction": "MS->MA",
+    "citation": "MS Vol §1.2.10.10 Release Consent (request)",
+    "summary": "MS requests consent to fire — the inverted power relationship: MS holds the capability but asks MA for the key. It will not release autonomously.",
+    "fields": [
+      {
+        "name": "SubsystemID",
+        "path": "MessageData.SubsystemID",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "TaskID",
+        "path": "MessageData.ConsentRequest.TaskID",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "ConsentState",
+        "path": "MessageData.ConsentRequest.Consent",
+        "type": "enum",
+        "values": [
+          "REQUESTED",
+          "APPROVED",
+          "REJECTED"
+        ],
+        "required": false
+      }
+    ]
+  },
+  "StrikeConsentRequestStatusMT": {
+    "name": "StrikeConsentRequestStatusMT",
+    "tier": 2,
+    "direction": "MA->MS",
+    "citation": "MS Vol §1.2.10.10 Release Consent (reply)",
+    "summary": "MA's consent decision. APPROVED releases the weapon; REJECTED (or no reply) withholds it. The single most important MS lesson — MA holds the key.",
+    "fields": [
+      {
+        "name": "TaskID",
+        "path": "MessageData.TaskID",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "ConsentState",
+        "path": "MessageData.Consent",
+        "type": "enum",
+        "values": [
+          "APPROVED",
+          "REJECTED"
+        ],
+        "required": true
+      }
+    ]
+  },
+  "MA_StrikeActivityMT": {
+    "name": "MA_StrikeActivityMT",
+    "tier": 2,
+    "direction": "MS->MA",
+    "citation": "MS Vol §1.2.10 Strike Activity",
+    "summary": "MS reports the strike activity: ENABLED → ACTIVE_FULLY_CONSTRAINED → COMPLETED once consent is granted (and, with a DLZ, the target is in range).",
+    "fields": [
+      {
+        "name": "SubsystemID",
+        "path": "MessageData.SubsystemID",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "TaskID",
+        "path": "MessageData.Activity.TaskID",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "ActivityState",
+        "path": "MessageData.Activity.ActivityState",
+        "type": "enum",
+        "values": [
+          "ENABLED",
+          "ACTIVE_FULLY_CONSTRAINED",
+          "COMPLETED"
+        ],
+        "required": true
+      }
+    ]
+  },
+  "DLZ_RequestMT": {
+    "name": "DLZ_RequestMT",
+    "tier": 2,
+    "direction": "MA->MS",
+    "citation": "MS Vol §1.2.10.3 Dynamic Launch Zone (request)",
+    "summary": "MA asks MS for the launch zone before committing to a strike — the pre-fire geometry check, answered by data, not guesswork.",
+    "fields": [
+      {
+        "name": "DLZ_RequestID",
+        "path": "MessageData.DLZ_RequestID",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "CapabilityID",
+        "path": "MessageData.CapabilityID",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "ResultsInNativeMessage",
+        "path": "MessageData.ResultsInNativeMessage",
+        "type": "boolean",
+        "required": false
+      }
+    ]
+  },
+  "DLZ_RequestStatusMT": {
+    "name": "DLZ_RequestStatusMT",
+    "tier": 2,
+    "direction": "MS->MA",
+    "citation": "MS Vol §1.2.10.3 DLZ Request Status",
+    "summary": "MS acknowledges the DLZ request before sending the zone.",
+    "fields": [
+      {
+        "name": "DLZ_RequestID",
+        "path": "MessageData.DLZ_RequestID",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "CommandProcessingState",
+        "path": "MessageData.CommandProcessingState",
+        "type": "enum",
+        "values": [
+          "RECEIVED",
+          "ACCEPTED"
+        ],
+        "required": true
+      }
+    ]
+  },
+  "DLZ_MT": {
+    "name": "DLZ_MT",
+    "tier": 2,
+    "direction": "MS->MA",
+    "citation": "MS Vol §1.2.10.3 Dynamic Launch Zone (result)",
+    "summary": "The launch zone: minimum / optimal / maximum ranges (metres). The strike completes only when the vehicle is inside the maximum — close the target before you fire.",
+    "fields": [
+      {
+        "name": "DLZ_RequestID",
+        "path": "MessageData.DLZ_RequestID",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "DLZ_ID",
+        "path": "MessageData.DLZ_ID",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "RangeMinimum",
+        "path": "MessageData.DLZ_Data.RangeMinimum",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "RangeOptimal",
+        "path": "MessageData.DLZ_Data.RangeOptimal",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "RangeMaxAero",
+        "path": "MessageData.DLZ_Data.RangeMaxAero",
+        "type": "number",
+        "required": false
+      }
+    ]
   }
 } as const satisfies Record<MessageTypeName, CatalogMessageMeta>;
 
 /** All Tier-1 message type names, in catalog order. */
-export const MESSAGE_TYPE_NAMES = ["MA_FlightCapabilityMT","MA_FlightCapabilityStatusMT","MA_ControlRequestMT","MA_ControlRequestStatusMT","ControlStatusMT","MA_FlightCommandMT","MA_FlightCommandStatusMT","MA_FlightActivityMT","MA_PositionReportDetailedMT","MA_FaultMT","NavigationReportMT","SubsystemStatusMT","ServiceStatusMT","SubsystemStatusDataRequestMT"] as const satisfies readonly MessageTypeName[];
+export const MESSAGE_TYPE_NAMES = ["MA_FlightCapabilityMT","MA_FlightCapabilityStatusMT","MA_ControlRequestMT","MA_ControlRequestStatusMT","ControlStatusMT","MA_FlightCommandMT","MA_FlightCommandStatusMT","MA_FlightActivityMT","MA_PositionReportDetailedMT","MA_FaultMT","NavigationReportMT","SubsystemStatusMT","ServiceStatusMT","SubsystemStatusDataRequestMT","MA_AMTI_CapabilityMT","AMTI_CommandMT","AMTI_CommandStatusMT","AMTI_ActivityMT","EntityMT","StrikeCapabilityMT","StrikeCapabilityStatusMT","MA_TaskMT","MA_TaskStatusMT","MA_TaskCommandMT","MA_TaskCommandStatusMT","StrikeConsentRequestMT","StrikeConsentRequestStatusMT","MA_StrikeActivityMT","DLZ_RequestMT","DLZ_RequestStatusMT","DLZ_MT"] as const satisfies readonly MessageTypeName[];

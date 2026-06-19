@@ -122,6 +122,54 @@ export interface MsServiceDef {
   readonly state: string; // ServiceStateEnum literal
 }
 
+/** One reported sensor track (an EntityMT). Positions are in world (x, y) metres, the
+ *  same frame the FA position report uses (Longitude=x, Latitude=y); they are authored,
+ *  not sensed (fidelity: tracks are simulated). */
+export interface MsTrackDef {
+  readonly entityId: string; // EntityID
+  readonly x: number;
+  readonly y: number;
+}
+
+/** One MS sensor capability (advertised via MA_AMTI_CapabilityMT). Tasking is
+ *  deterministic: a valid AMTI_CommandMT latches the schedule; the activity goes ACTIVE
+ *  after `activeDelayTicks` and reports each track at its scheduled offset, unless the
+ *  driving subsystem is DEGRADED (the 3.5 fault model). */
+export interface MsSensorDef {
+  readonly capabilityId: string; // CapabilityID (advertised + referenced by AMTI_CommandMT)
+  readonly capabilityType: string; // CapabilityTypeEnum literal: "VOLUME" | "TRACK"
+  /** SubsystemID powering this sensor — its health (subsystems[]) gates collection. */
+  readonly subsystemId: string;
+  /** Ticks from an ACCEPTED command to the activity reaching ACTIVE. */
+  readonly activeDelayTicks: number;
+  /** Track-report offsets (ticks after ACTIVE) — one entry per `tracks` entry, in order. */
+  readonly entityOffsets: readonly number[];
+  readonly tracks: readonly MsTrackDef[];
+}
+
+/** One loaded weapon store (advertised via StrikeCapabilityMT). The strike lifecycle is
+ *  deterministic on these timings. */
+export interface MsStoreDef {
+  readonly capabilityId: string; // assigned to the strike task in MA_TaskStatusMT
+  readonly storeType: string; // StoreType
+  readonly storeQuantity: number; // StoreQuantity
+  /** Ticks from the EXECUTE command (MA_TaskCommandMT) to MS sending StrikeConsentRequestMT. */
+  readonly consentAfterTicks: number;
+  /** Ticks from consent APPROVED to the strike reaching COMPLETED. */
+  readonly strikeTicks: number;
+}
+
+/** Dynamic Launch Zone model (DLZ_MT). Ranges are scalar metres (the azimuth-array
+ *  structure is collapsed — fidelity). The strike only completes when the FA vehicle is
+ *  within `max` of `target` (the geometry gate that makes 3.4 a two-interface level). */
+export interface MsDlzDef {
+  readonly capabilityId: string;
+  readonly min: number;
+  readonly optimal: number;
+  readonly max: number;
+  readonly target: { readonly x: number; readonly y: number };
+}
+
 export interface MsBodyDef {
   readonly id: string;
   readonly name: string;
@@ -129,6 +177,17 @@ export interface MsBodyDef {
   readonly services: readonly MsServiceDef[];
   /** MS heartbeat schedule: re-emit every subsystem/service status this often. */
   readonly publish: { readonly statusIntervalTicks: number };
+  /** Sensor capabilities (3.2 / 3.5). Absent ⇒ no sensor tasking. */
+  readonly sensors?: readonly MsSensorDef[];
+  /** Weapon stores (3.3 / 3.4). Absent ⇒ no strike capability. */
+  readonly stores?: readonly MsStoreDef[];
+  /** Launch-zone model (3.4). Absent ⇒ no DLZ / no geometry gate on the strike. */
+  readonly dlz?: MsDlzDef;
+}
+
+/** Look up the sensor advertising `capabilityId`, if any. */
+export function findSensor(msBody: MsBodyDef, capabilityId: string): MsSensorDef | undefined {
+  return msBody.sensors?.find((s) => s.capabilityId === capabilityId);
 }
 
 /** The subsystem state in effect at `tick`: the latest timeline entry that has fired. */

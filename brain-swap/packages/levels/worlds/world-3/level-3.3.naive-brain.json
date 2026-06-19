@@ -1,0 +1,38 @@
+{
+  "id": "naive-3.3",
+  "_doc": "Bait: describe the task and issue the execution order, but ignore the StrikeConsentRequestMT. MS will not fire without consent — the strike never reaches COMPLETED and the run times out. The documented failure for 3.3: MS holds the capability, but MA holds the key.",
+  "initial": "await-store",
+  "states": ["await-store", "tasked", "commanded"],
+  "transitions": [
+    {
+      "from": "await-store",
+      "trigger": { "messageType": "StrikeCapabilityMT" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "MA_TaskMT",
+          "fields": {
+            "TaskID": "TASK-1",
+            "TaskType": "STRIKE",
+            "Target": "TGT-1",
+            "StoreType": { "msg": "StoreType" },
+            "StoreQuantity": 1
+          }
+        }
+      ],
+      "target": "tasked"
+    },
+    {
+      "from": "tasked",
+      "trigger": { "messageType": "MA_TaskStatusMT" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "MA_TaskCommandMT",
+          "fields": { "TaskID": { "msg": "TaskID" }, "CommandState": "NEW" }
+        }
+      ],
+      "target": "commanded"
+    }
+  ]
+}

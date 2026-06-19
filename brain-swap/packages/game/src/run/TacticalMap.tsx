@@ -169,6 +169,31 @@ export function TacticalMapPanel() {
       g.stroke({ width: 1, color: colorNum(color.green), alpha: 0.7 });
     }
 
+    // MS Dynamic Launch Zone (3.4): amber dashed ring around the target — the strike only
+    // completes inside it. Drawn under the tracks/aircraft.
+    const ms = world.ms;
+    if (ms) {
+      for (const z of Object.values(ms.dlz)) {
+        g.circle(sx(z.target.x), sy(z.target.y), z.max * cam.scale).fill({
+          color: colorNum(color.amber),
+          alpha: 0.06,
+        });
+        dashedCircle(g, sx(z.target.x), sy(z.target.y), z.max * cam.scale, colorNum(color.amber));
+      }
+      // MS sensor tracks (EntityMT): small green diamonds (the MS bus colour).
+      for (const t of Object.values(ms.tracks)) {
+        const tx = sx(t.x);
+        const ty = sy(t.y);
+        const r = 5;
+        g.poly([tx, ty - r, tx + r, ty, tx, ty + r, tx - r, ty]).stroke({
+          width: 1.5,
+          color: colorNum(color.green),
+          alpha: 0.95,
+        });
+        g.circle(tx, ty, 1.5).fill({ color: colorNum(color.green) });
+      }
+    }
+
     // trail: dotted cyan dots at each frame up to playhead
     const upto = Math.min(playhead, timeline.length - 1);
     for (let i = 0; i <= upto; i += 1) {

@@ -15,6 +15,10 @@ import ax01Json from "../bodies/ax-01.json";
 import ax02Json from "../bodies/ax-02.json";
 import ax03Json from "../bodies/ax-03.json";
 import msSentry01Json from "../bodies/ms/ms-sentry-01.json";
+import msSentry02Json from "../bodies/ms/ms-sentry-02.json";
+import msSentry03Json from "../bodies/ms/ms-sentry-03.json";
+import msTalon01Json from "../bodies/ms/ms-talon-01.json";
+import msTalon02Json from "../bodies/ms/ms-talon-02.json";
 
 import level00Json from "../worlds/world-0/level-0.0.json";
 import refBrain00Json from "../worlds/world-0/level-0.0.reference-brain.json";
@@ -37,6 +41,18 @@ import refBrain22Json from "../worlds/world-2/level-2.2.reference-brain.json";
 import level31Json from "../worlds/world-3/level-3.1.json";
 import naiveBrain31Json from "../worlds/world-3/level-3.1.naive-brain.json";
 import refBrain31Json from "../worlds/world-3/level-3.1.reference-brain.json";
+import level32Json from "../worlds/world-3/level-3.2.json";
+import naiveBrain32Json from "../worlds/world-3/level-3.2.naive-brain.json";
+import refBrain32Json from "../worlds/world-3/level-3.2.reference-brain.json";
+import level33Json from "../worlds/world-3/level-3.3.json";
+import naiveBrain33Json from "../worlds/world-3/level-3.3.naive-brain.json";
+import refBrain33Json from "../worlds/world-3/level-3.3.reference-brain.json";
+import level34Json from "../worlds/world-3/level-3.4.json";
+import naiveBrain34Json from "../worlds/world-3/level-3.4.naive-brain.json";
+import refBrain34Json from "../worlds/world-3/level-3.4.reference-brain.json";
+import level35Json from "../worlds/world-3/level-3.5.json";
+import naiveBrain35Json from "../worlds/world-3/level-3.5.naive-brain.json";
+import refBrain35Json from "../worlds/world-3/level-3.5.reference-brain.json";
 import level42Json from "../worlds/world-4/level-4.2.json";
 import naiveBrain42Json from "../worlds/world-4/level-4.2.naive-brain.json";
 import refBrain42Json from "../worlds/world-4/level-4.2.reference-brain.json";
@@ -53,6 +69,10 @@ export const ax03 = ax03Json as unknown as BodyProfile;
 
 // --- Mission Systems bodies -------------------------------------------------
 export const msSentry01 = msSentry01Json as unknown as MsBodyDef;
+export const msSentry02 = msSentry02Json as unknown as MsBodyDef;
+export const msSentry03 = msSentry03Json as unknown as MsBodyDef;
+export const msTalon01 = msTalon01Json as unknown as MsBodyDef;
+export const msTalon02 = msTalon02Json as unknown as MsBodyDef;
 
 // --- Levels + brains --------------------------------------------------------
 export const level00 = level00Json as unknown as LevelDef;
@@ -84,6 +104,22 @@ export const level31 = level31Json as unknown as LevelDef;
 export const level31ReferenceBrain = refBrain31Json as unknown as Brain;
 export const level31NaiveBrain = naiveBrain31Json as unknown as Brain;
 
+export const level32 = level32Json as unknown as LevelDef;
+export const level32ReferenceBrain = refBrain32Json as unknown as Brain;
+export const level32NaiveBrain = naiveBrain32Json as unknown as Brain;
+
+export const level33 = level33Json as unknown as LevelDef;
+export const level33ReferenceBrain = refBrain33Json as unknown as Brain;
+export const level33NaiveBrain = naiveBrain33Json as unknown as Brain;
+
+export const level34 = level34Json as unknown as LevelDef;
+export const level34ReferenceBrain = refBrain34Json as unknown as Brain;
+export const level34NaiveBrain = naiveBrain34Json as unknown as Brain;
+
+export const level35 = level35Json as unknown as LevelDef;
+export const level35ReferenceBrain = refBrain35Json as unknown as Brain;
+export const level35NaiveBrain = naiveBrain35Json as unknown as Brain;
+
 export const level42 = level42Json as unknown as LevelDef;
 export const level42ReferenceBrain = refBrain42Json as unknown as Brain;
 export const level42NaiveBrain = naiveBrain42Json as unknown as Brain;
@@ -103,7 +139,13 @@ export function bodyById(id: string): BodyProfile {
   return body;
 }
 
-const MS_BODIES: Record<string, MsBodyDef> = { "ms-sentry-01": msSentry01 };
+const MS_BODIES: Record<string, MsBodyDef> = {
+  "ms-sentry-01": msSentry01,
+  "ms-sentry-02": msSentry02,
+  "ms-sentry-03": msSentry03,
+  "ms-talon-01": msTalon01,
+  "ms-talon-02": msTalon02,
+};
 
 export function msBodyById(id: string): MsBodyDef {
   const ms = MS_BODIES[id];
@@ -141,6 +183,10 @@ export const LEVELS: Record<string, LevelBundle> = {
   "1.6": { level: level16, referenceBrain: level16ReferenceBrain },
   "2.2": { level: level22, referenceBrain: level22ReferenceBrain },
   "3.1": { level: level31, referenceBrain: level31ReferenceBrain },
+  "3.2": { level: level32, referenceBrain: level32ReferenceBrain },
+  "3.3": { level: level33, referenceBrain: level33ReferenceBrain },
+  "3.4": { level: level34, referenceBrain: level34ReferenceBrain },
+  "3.5": { level: level35, referenceBrain: level35ReferenceBrain },
   "4.2": { level: level42, referenceBrain: level42ReferenceBrain },
   "4.3": { level: level43, referenceBrain: level43ReferenceBrain },
   "4.5": { level: level45, referenceBrain: level45LockedBrain },

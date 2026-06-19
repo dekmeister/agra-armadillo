@@ -1,0 +1,27 @@
+{
+  "id": "naive-3.5",
+  "_doc": "Bait: task the primary radar, then ignore the MA_FaultMT and keep waiting. The primary has degraded and will never report; nothing else is tasked. No tracks, the run times out. The documented failure for 3.5.",
+  "initial": "await-cap",
+  "states": ["await-cap", "tasking"],
+  "transitions": [
+    {
+      "from": "await-cap",
+      "trigger": { "messageType": "MA_AMTI_CapabilityMT" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "AMTI_CommandMT",
+          "fields": {
+            "CommandID": "AMTI-CMD-P",
+            "CapabilityID": { "msg": "CapabilityID" },
+            "CommandState": "NEW",
+            "StartTimeWindow": 0,
+            "EndTimeWindow": 60,
+            "TargetVolume": "VOL-A"
+          }
+        }
+      ],
+      "target": "tasking"
+    }
+  ]
+}

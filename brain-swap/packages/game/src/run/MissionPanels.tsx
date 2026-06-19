@@ -52,6 +52,14 @@ export function MissionCard({ collapsed, onToggleCollapse }: CollapseProps) {
             WIN ▸ confirm MS subsystem {o.subsystemId} is {o.requiredState} via an on-demand status
             request.
           </div>
+        ) : o.kind === "ms-track" ? (
+          <div className="win">
+            WIN ▸ schedule the sensor and collect {o.requiredCount} tracks (EntityMT).
+          </div>
+        ) : o.kind === "ms-strike" ? (
+          <div className="win">
+            WIN ▸ complete the strike on task {o.taskId} — answer the consent request to release.
+          </div>
         ) : (
           <div className="win">
             WIN ▸ pass {o.waypoints.length} waypoints in order, then hold for {o.holdTicks} ticks.

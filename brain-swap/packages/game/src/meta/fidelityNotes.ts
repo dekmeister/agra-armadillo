@@ -108,6 +108,26 @@ const FIDELITY_NOTES: FidelityNote[] = [
     title: "MS isn't safety-critical — no REJECT gate",
     body: "The VI has the Airworthiness Boundary (FA always retains authority and REJECTs bad commands). The MS interface has no equivalent: MA commands sensors and consents to weapon release without an approve/reject cycle. The game makes this tangible by never REJECTing a well-formed MS command — the feedback loop is status, not a validator. An on-demand status request sent too early just reflects the current (non-OPERATE) state. (Level 3.1 Meet MS.)",
   },
+  {
+    index: 21,
+    title: "Sensor scheduling is simplified",
+    body: "Real MS schedulers manage resource contention across many sensors and time-deconflict requests. The game models one AMTI capability with deterministic scheduling: a valid AMTI_CommandMT (advertised CapabilityID, a tasking interval that hasn't passed) is always accepted, goes ACTIVE after a fixed delay, and reports its tracks on a fixed timetable. (Level 3.2 Eyes Open.)",
+  },
+  {
+    index: 22,
+    title: "Tracks are simulated, not sensed",
+    body: "EntityMT tracks appear at deterministic ticks after the AMTI activity goes ACTIVE — there is no real radar return, and a track's position is authored, not computed from a sensor model. The teaching point (wait for the activity and the entity report rather than assuming instant intelligence) is preserved; the physics behind it is not. (Level 3.2 Eyes Open.)",
+  },
+  {
+    index: 23,
+    title: "Store inventory is static; consent's C2 leg is implicit",
+    body: "Real store management tracks station-by-station load, MDF variants, and compatibility testing; the game provides a fixed StrikeCapabilityMT at level start (one store type, one station). The real release-consent chain (MS Vol §1.2.10.10) also involves C2 authorizers beyond MA — the game models only the MA↔MS consent leg and assumes the C2 authorization (it's implicit in the mission card). (Level 3.3 Clear to Engage.)",
+  },
+  {
+    index: 24,
+    title: "The DLZ is a single range ring",
+    body: "A real Dynamic Launch Zone is an azimuth-array of ranges (min/optimal/max per bearing around the target) and the WEZ complement adds more. The game collapses it to scalar minimum/optimal/maximum ranges and gates the strike on a single circular maximum: the weapon only releases once the vehicle is within RangeMaxAero of the target. (Level 3.4 In the Zone.)",
+  },
 ];
 
 export function notesFor(indices: readonly number[] | undefined): FidelityNote[] {

@@ -70,11 +70,33 @@ export interface MsStatusObjective {
   readonly holdTicks: number;
 }
 
+/** Collect a number of MS sensor tracks (EntityMT) within the budget (level 3.2 / 3.5).
+ *  The MS analogue of waypoint-sequence: progress is `ms.entitiesReported`, driven by a
+ *  valid AMTI_CommandMT and the sensor schedule. */
+export interface MsTrackObjective {
+  readonly kind: "ms-track";
+  /** Total EntityMT reports required to win. */
+  readonly requiredCount: number;
+  readonly holdTicks: number;
+}
+
+/** Complete a weapon strike through the fire + release-consent chain (level 3.3 / 3.4).
+ *  Win = `ms.strikeTasks[taskId].activityState === "COMPLETED"`. With a DLZ body the MS
+ *  engine only completes the strike when the FA vehicle is inside the zone, so a completed
+ *  strike is necessarily geometrically valid (3.4). */
+export interface MsStrikeObjective {
+  readonly kind: "ms-strike";
+  readonly taskId: string;
+  readonly holdTicks: number;
+}
+
 export type Objective =
   | ReachHoldObjective
   | HoldControlObjective
   | WaypointSequenceObjective
-  | MsStatusObjective;
+  | MsStatusObjective
+  | MsTrackObjective
+  | MsStrikeObjective;
 
 export interface LevelPars {
   readonly ticks: number;

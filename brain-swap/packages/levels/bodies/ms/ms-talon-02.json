@@ -1,0 +1,30 @@
+{
+  "id": "ms-talon-02",
+  "name": "Talon MS (strike + DLZ)",
+  "_doc": "Capstone MS payload (docs/03 World 3, level 3.4): the 3.3 strike store plus a Dynamic Launch Zone. The DLZ is a single range ring around the target at (1400, -800); the strike only completes once the FA vehicle is within RangeMaxAero (500 m) of it. Deterministic, no RNG (CLAUDE.md rule #3).",
+  "subsystems": [
+    {
+      "id": "MS-WEAPON",
+      "kind": "weapon management",
+      "states": [{ "atTick": 0, "state": "OPERATE" }]
+    }
+  ],
+  "services": [{ "id": "TALON-WEAPON-SVC", "state": "NORMAL" }],
+  "publish": { "statusIntervalTicks": 10 },
+  "stores": [
+    {
+      "capabilityId": "STRIKE-1",
+      "storeType": "GBU-53",
+      "storeQuantity": 1,
+      "consentAfterTicks": 2,
+      "strikeTicks": 2
+    }
+  ],
+  "dlz": {
+    "capabilityId": "STRIKE-1",
+    "min": 200,
+    "optimal": 400,
+    "max": 500,
+    "target": { "x": 1400, "y": -800 }
+  }
+}
