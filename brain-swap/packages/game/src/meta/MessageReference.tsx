@@ -1,17 +1,24 @@
 // One message's reference block — name + direction + citation header, summary, and the
 // field table (type / required / enum values). Extracted from MessageCodex so the same
 // fidelity-policed reference can be embedded in the transition form's cheatsheet pane.
-import { catalogEntry, type MessageTypeName } from "@brain-swap/core";
+import { catalogEntry, type Direction, type MessageTypeName } from "@brain-swap/core";
 import { Identifier } from "../ui/Identifier.tsx";
+
+export const DIR_META: Record<Direction, { label: string; cls: string }> = {
+  "MA->FA": { label: "MA → FA", cls: "ma" },
+  "FA->MA": { label: "FA → MA", cls: "fa" },
+  "MA->MS": { label: "MA → MS", cls: "ma" },
+  "MS->MA": { label: "MS → MA", cls: "ms" },
+};
 
 export function MessageReference({ name }: { name: MessageTypeName }) {
   const m = catalogEntry(name);
-  const toMA = m.direction === "FA->MA";
+  const { label, cls } = DIR_META[m.direction];
   return (
     <section className="codex-msg" id={`msg-${name}`}>
       <h2 className="codex-h">
         <Identifier name={name} />
-        <span className={`codex-dir ${toMA ? "fa" : "ma"}`}>{toMA ? "FA → MA" : "MA → FA"}</span>
+        <span className={`codex-dir ${cls}`}>{label}</span>
         <span className="codex-cite">{m.citation}</span>
       </h2>
       <p className="help-p" style={{ margin: "6px 0" }}>

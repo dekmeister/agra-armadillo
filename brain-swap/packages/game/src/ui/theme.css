@@ -1618,6 +1618,9 @@ kbd {
 .codex-dir.fa {
   color: var(--k-amber);
 }
+.codex-dir.ms {
+  color: var(--k-green);
+}
 .codex-cite {
   margin-left: auto;
   font-size: 10px;
@@ -1625,8 +1628,8 @@ kbd {
   letter-spacing: 0.06em;
 }
 .codex-idx {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 20px 48px;
   padding: 12px 0 14px;
   border-bottom: 1px solid var(--k-line2);
