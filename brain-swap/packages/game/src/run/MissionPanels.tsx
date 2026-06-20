@@ -1,5 +1,6 @@
 // MissionCard + BodySpecSheet (center column, under the map).
 
+import { useEffect } from "react";
 import { capEntries } from "../sim/caps.ts";
 import { useStore } from "../store.ts";
 import { Identifier } from "../ui/Identifier.tsx";
@@ -12,6 +13,7 @@ interface CollapseProps {
 
 export function MissionCard({ collapsed, onToggleCollapse }: CollapseProps) {
   const level = useStore((s) => s.level);
+  const openTeaches = useStore((s) => s.openTeaches);
   const o = level.objective;
   const avoidCount = level.avoid?.length ?? 0;
   return (
@@ -81,8 +83,64 @@ export function MissionCard({ collapsed, onToggleCollapse }: CollapseProps) {
             one ends the mission.
           </div>
         )}
+        {level.teaches && (
+          <button
+            type="button"
+            className="btn sm"
+            style={{ alignSelf: "flex-start", marginTop: 6 }}
+            onClick={openTeaches}
+            title="What this level teaches (pauses the clock)"
+          >
+            ⓘ Field notes
+          </button>
+        )}
       </div>
     </Panel>
+  );
+}
+
+/** Field-notes popup: the level's `teaches` copy. Modal (pauses the live clock via the store)
+ *  so the player can read the lesson without the bus advancing under them. */
+export function TeachesModal() {
+  const open = useStore((s) => s.teachesOpen);
+  const teaches = useStore((s) => s.level.teaches);
+  const title = useStore((s) => s.level.title);
+  const close = useStore((s) => s.closeTeaches);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") close();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, close]);
+
+  if (!open || !teaches) return null;
+  return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: backdrop scrim; the Close button is the keyboard-accessible control
+    // biome-ignore lint/a11y/useKeyWithClickEvents: backdrop scrim; Escape closes and the Close button is the keyboard control
+    <div className="modal-scrim" onClick={close}>
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: stops backdrop dismiss on inner clicks; not an interactive control */}
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents: stops backdrop dismiss on inner clicks; not an interactive control */}
+      <div className="modal narrow" onClick={(e) => e.stopPropagation()}>
+        <Panel title="FIELD" titleAccent="NOTES" meta={title?.toUpperCase()}>
+          <div className="datalist" style={{ gap: 6 }}>
+            <div className="obj" style={{ lineHeight: 1.5 }}>
+              {teaches}
+            </div>
+          </div>
+        </Panel>
+        <div className="mfoot">
+          <span className="vsum">Clock paused · Esc or Close to resume control</span>
+          <div className="right">
+            <button type="button" className="btn" onClick={close}>
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 

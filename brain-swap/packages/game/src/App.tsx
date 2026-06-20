@@ -64,10 +64,11 @@ function useKeyboardShortcuts() {
 function usePlaybackClock() {
   const running = useStore((s) => s.running);
   const composing = useStore((s) => s.composing);
+  const teachesOpen = useStore((s) => s.teachesOpen);
   const speed = useStore((s) => s.speed);
 
   useEffect(() => {
-    if (!running || composing) return;
+    if (!running || composing || teachesOpen) return;
     let raf = 0;
     let last = performance.now();
     let acc = 0;
@@ -87,7 +88,7 @@ function usePlaybackClock() {
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [running, composing, speed]);
+  }, [running, composing, teachesOpen, speed]);
 }
 
 const NAV: { id: View; label: string }[] = [

@@ -67,6 +67,9 @@ interface StoreState {
   composing: boolean;
   /** Next CommandID sequence number to prefill in the composer (CMD-1, CMD-2, …). */
   commandSeq: number;
+  /** The "field notes" (level.teaches) modal is open. Like `composing`, this pauses the
+   *  live clock while it is up so the player can read without the bus moving under them. */
+  teachesOpen: boolean;
 
   // Tutorial demo: a guided, watch-only level. `demoScript` is the reference
   // solution derived headlessly on select; `advanceLive` injects it as the live
@@ -104,6 +107,10 @@ interface StoreState {
   openComposer: () => void;
   cancelComposer: () => void;
   submitComposer: (message: Message) => void;
+
+  // field-notes modal (level.teaches) — pauses the clock while open
+  openTeaches: () => void;
+  closeTeaches: () => void;
 
   // selection
   selectLog: (i: number | null) => void;
@@ -170,6 +177,7 @@ export const useStore = create<StoreState>((set, get) => {
     pendingInputs: [],
     composing: false,
     commandSeq: 1,
+    teachesOpen: false,
 
     tutorial: isTutorialLevel(DEFAULT_LEVEL_ID),
     demoScript: deriveDemoScript(DEFAULT_LEVEL_ID),
@@ -200,6 +208,7 @@ export const useStore = create<StoreState>((set, get) => {
         pendingInputs: [],
         composing: false,
         commandSeq: 1,
+        teachesOpen: false,
         tutorial: isTutorialLevel(levelId),
         demoScript: deriveDemoScript(levelId),
         view: "console",
@@ -307,6 +316,11 @@ export const useStore = create<StoreState>((set, get) => {
             ? s.commandSeq + 1
             : s.commandSeq,
       })),
+
+    // Opening the field-notes modal pauses the live clock (running:false) like the composer;
+    // closing it leaves the run paused so the player presses Play to resume deliberately.
+    openTeaches: () => set({ teachesOpen: true, running: false }),
+    closeTeaches: () => set({ teachesOpen: false }),
 
     selectLog: (i) => set({ selectedLogIndex: i }),
     toggleShowPeriodic: () => set((s) => ({ showPeriodic: !s.showPeriodic })),

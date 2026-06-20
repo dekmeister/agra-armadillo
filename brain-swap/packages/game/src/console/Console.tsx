@@ -5,7 +5,7 @@
 // over everything while the player is composing a message (the clock is paused then).
 import { useState } from "react";
 import { MessageLogPanel } from "../run/MessageLog.tsx";
-import { BodySpecSheet, MissionCard } from "../run/MissionPanels.tsx";
+import { BodySpecSheet, MissionCard, TeachesModal } from "../run/MissionPanels.tsx";
 import { TacticalMapPanel } from "../run/TacticalMap.tsx";
 import { useStore } from "../store.ts";
 import { ChromeBar } from "./ChromeBar.tsx";
@@ -56,6 +56,7 @@ export function Console() {
         </div>
       </div>
       {composing && <MessageComposer />}
+      <TeachesModal />
     </>
   );
 }
