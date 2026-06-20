@@ -68,5 +68,28 @@ export function badgeFor(
     if (state === "CANCELED") return { kind: "revoked" };
     if (state === "PENDING") return { kind: "pending" };
   }
+  // Route-plan activation liturgy (levels 2.1 / 2.3): each reply carries the new
+  // ActivationState — surfaced as the badge detail so the player can watch the handshake
+  // walk READY_FOR_UPLOAD → UPLOADED → READY_FOR_ACTIVATION → ACTIVATED (or a *_FAILED).
+  if (type === "MA_MissionPlanActivationCommandStatusMT") {
+    const state = p.ActivationState as string | undefined;
+    const status = p.CommandStatus as string | undefined;
+    if (status === "COMPLETED") return { kind: "accepted", reason: state };
+    if (status === "FAILED") return { kind: "rejected", reason: state };
+  }
+  // Route execution progress (levels 2.1 / 2.3): COMPLETE is the win, EXECUTING is in
+  // progress, CANCELED/SUPERCEDED is a revocation, FAILED is a rejection.
+  if (type === "RoutePlanExecutionStatusMT") {
+    const state = p.PlanExecutionState as string | undefined;
+    if (state === "COMPLETE") return { kind: "accepted", reason: state };
+    if (state === "EXECUTING" || state === "PENDING") return { kind: "pending", reason: state };
+    if (state === "CANCELED" || state === "SUPERCEDED") return { kind: "revoked", reason: state };
+    if (state === "FAILED") return { kind: "rejected", reason: state };
+  }
+  // Curve following (level 2.4): CURVE_COMPLETED is the win; the earlier phases are pending.
+  if (type === "MA_FlightActivityMT" && typeof p.CurveStatus === "string") {
+    if (p.CurveStatus === "CURVE_COMPLETED") return { kind: "accepted", reason: p.CurveStatus };
+    return { kind: "pending", reason: p.CurveStatus };
+  }
   return { kind: "delivered" };
 }

@@ -1,4 +1,5 @@
 import {
+  type BodyProfile,
   initWorld,
   injectMA,
   type MA_FlightCommandMT,
@@ -42,6 +43,15 @@ describe("FA command validator", () => {
 
   it("rejects an unknown capability with CAPABILITY_NOT_SUPPORTED", () => {
     const out = validateFlightCommand(testBody, command({ CapabilityID: "BAD-CAP" }));
+    expect(out).toEqual({ accepted: false, result: "CAPABILITY_NOT_SUPPORTED" });
+  });
+
+  it("rejects a direct flight command on a WAYPOINT_FOLLOWING capability (route-only, level 2.1)", () => {
+    const routeBody: BodyProfile = {
+      ...testBody,
+      capabilities: [{ ...testBody.capabilities[0]!, type: "WAYPOINT_FOLLOWING" }],
+    };
+    const out = validateFlightCommand(routeBody, command({}));
     expect(out).toEqual({ accepted: false, result: "CAPABILITY_NOT_SUPPORTED" });
   });
 });

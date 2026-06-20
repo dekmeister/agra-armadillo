@@ -148,7 +148,11 @@ export const useStore = create<StoreState>((set, get) => {
   const initialBody = bodyById(initialLevel.body);
   const initialTimeline = [
     initWorld(
-      makeScenario(initialBody, { brain: null, level: initialLevel, msBody: msBodyOf(initialLevel) }),
+      makeScenario(initialBody, {
+        brain: null,
+        level: initialLevel,
+        msBody: msBodyOf(initialLevel),
+      }),
     ),
   ];
 
@@ -296,8 +300,12 @@ export const useStore = create<StoreState>((set, get) => {
         pendingInputs: [...s.pendingInputs, message],
         composing: false,
         running: true,
-        // Each flight command consumes a CommandID; bump the prefill counter.
-        commandSeq: message.type === "MA_FlightCommandMT" ? s.commandSeq + 1 : s.commandSeq,
+        // Any command carrying a CommandID (flight command, route activation command, …)
+        // consumes one; bump the prefill counter so the next compose gets a fresh CMD-N.
+        commandSeq:
+          message.payload && "CommandID" in (message.payload as object)
+            ? s.commandSeq + 1
+            : s.commandSeq,
       })),
 
     selectLog: (i) => set({ selectedLogIndex: i }),

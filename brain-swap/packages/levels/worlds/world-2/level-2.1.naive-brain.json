@@ -1,0 +1,44 @@
+{
+  "id": "naive-2.1",
+  "_doc": "Bait: skips the liturgy and sends ACTIVATE straight after taking control. FA replies ActivationState ACTIVATION_FAILED (you can't activate a plan you never uploaded); the route never executes and the run times out.",
+  "initial": "await-capability",
+  "states": ["await-capability", "awaiting-approval", "confirming-control", "waiting"],
+  "transitions": [
+    {
+      "from": "await-capability",
+      "trigger": { "messageType": "MA_FlightCapabilityStatusMT" },
+      "guard": { "field": "Availability", "op": "==", "value": "AVAILABLE" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "MA_ControlRequestMT",
+          "fields": { "RequestType": "ACQUIRE", "CapabilityID": { "cap": "CapabilityID" } }
+        }
+      ],
+      "target": "awaiting-approval"
+    },
+    {
+      "from": "awaiting-approval",
+      "trigger": { "messageType": "MA_ControlRequestStatusMT" },
+      "guard": { "field": "ApprovalRequestProcessingState", "op": "==", "value": "APPROVED" },
+      "target": "confirming-control"
+    },
+    {
+      "from": "confirming-control",
+      "trigger": { "messageType": "ControlStatusMT" },
+      "guard": { "field": "SecondaryController", "op": "==", "value": "MA" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "MA_MissionPlanActivationCommandMT",
+          "fields": {
+            "CommandID": "MPC-1",
+            "RoutePlanID": "RTE-1",
+            "ActivationCommand": "ACTIVATE"
+          }
+        }
+      ],
+      "target": "waiting"
+    }
+  ]
+}

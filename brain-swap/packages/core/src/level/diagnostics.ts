@@ -109,6 +109,10 @@ function fallbackLesson(o: Objective): string {
       return "Acquire secondary control before you command — FA ignores commands until you hold control.";
     case "waypoint-sequence":
       return "Steer the circuit with single-field UPDATEs to keep bus traffic to a minimum.";
+    case "route-complete":
+      return "Walk the upload liturgy in order — PREPARE_FOR_UPLOAD, UPLOAD, PREPARE_FOR_ACTIVATION, ACTIVATE — then let FA fly the route.";
+    case "curve-complete":
+      return "Command a curve the airframe can fly — keep the curvature inside its minimum-radius limit.";
     case "reach-hold":
       return "Acquire control, command a valid vector, and read your position to know you've arrived.";
     case "ms-status":

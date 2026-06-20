@@ -9,7 +9,14 @@
 //   • Receive Vehicle State Data (VI §1.2.6.8): periodic position + activity reports.
 import { type BodyProfile, type CapabilityProfile, findCapability } from "../body.ts";
 import type { ActiveThreat } from "../level/events.ts";
-import type { MA_ControlRequestMT, MA_FlightCommandMT } from "../messages/index.ts";
+import type { CurveDef, RouteDef } from "../level/types.ts";
+import type {
+  MA_ControlRequestMT,
+  MA_FlightCommandMT,
+  MA_MissionPlanActivationCommandMT,
+  MA_MissionPlanActivationCommandStatusMT,
+  MA_RoutePlanMT,
+} from "../messages/index.ts";
 import {
   DELIVERED,
   type Disposition,
@@ -20,12 +27,15 @@ import {
   msg,
 } from "../types.ts";
 import {
+  bearingTo,
+  distance,
   type FlightTarget,
   headingAwayFrom,
   pathEntersZone,
+  turnToward,
   type VehicleState,
 } from "../vehicle/pointmass.ts";
-import { validateFlightCommand } from "./validator.ts";
+import { validateCurveCommand, validateFlightCommand } from "./validator.ts";
 
 export interface FaState {
   readonly booted: boolean;
@@ -45,6 +55,31 @@ export interface FaState {
   readonly collisionFault: string | null;
   /** Monotonic counter for FaultID generation (deterministic, no RNG). */
   readonly faultSeq: number;
+  /** RoutePlanID -> upload/activation state machine (levels 2.1 / 2.3). */
+  readonly routePlans: Readonly<Record<string, RoutePlanState>>;
+  /** The one route currently EXECUTING (FA steers the vehicle along it); null = none. */
+  readonly executingRouteId: string | null;
+  /** Active curve-following command (level 2.4); null = none. */
+  readonly activeCurve: CurveExecState | null;
+}
+
+/** Upload/activation state of one route plan. `activationState` is a PlanActivationStateEnum
+ *  literal; `executionState` is a PlanExecutionStateEnum literal once ACTIVATED. */
+export interface RoutePlanState {
+  readonly activationState: string;
+  /** Whether the MA_RoutePlanMT data has been received (gates UPLOAD). */
+  readonly uploaded: boolean;
+  readonly executionState: string | null;
+  /** Index of the next route leg FA is flying (0..legs.length; ==legs.length ⇒ to loiter). */
+  readonly waypointIndex: number;
+}
+
+/** Active curve-following execution (level 2.4). `status` is an MA_CurveStatusEnum literal. */
+export interface CurveExecState {
+  readonly status: string;
+  readonly curvature: number;
+  readonly speed?: number;
+  readonly altitude?: number;
 }
 
 export function initFaState(): FaState {
@@ -59,6 +94,9 @@ export function initFaState(): FaState {
     activeActivityId: null,
     collisionFault: null,
     faultSeq: 0,
+    routePlans: {},
+    executingRouteId: null,
+    activeCurve: null,
   };
 }
 
@@ -158,6 +196,7 @@ export function faHandleInbound(
   dynamicEnvelope: Readonly<Record<string, CapabilityProfile>> = {},
   vehicle?: VehicleState,
   threats: readonly ActiveThreat[] = [],
+  routes: readonly RouteDef[] = [],
 ): FaInboundResult {
   switch (message.type) {
     case "MA_ControlRequestMT":
@@ -170,6 +209,15 @@ export function faHandleInbound(
         dynamicEnvelope,
         vehicle,
         threats,
+      );
+    case "MA_RoutePlanMT":
+      return handleRoutePlan(fa, message.payload as MA_RoutePlanMT, routes);
+    case "MA_MissionPlanActivationCommandMT":
+      return handleActivationCommand(
+        fa,
+        message.payload as MA_MissionPlanActivationCommandMT,
+        routes,
+        vehicle,
       );
     default:
       return { fa, outbound: [], disposition: DELIVERED };
@@ -236,6 +284,12 @@ function handleFlightCommand(
     return { fa, outbound: [], disposition: IGNORED_NOT_CONTROLLER };
   }
 
+  // A Curvature selects the CurveFollowing flight mode (level 2.4) — validated and flown
+  // differently from an HSA vector. The presence of Curvature is the mode discriminator.
+  if (cmd.Curvature !== undefined && cmd.CommandState !== "CANCEL") {
+    return handleCurveCommand(body, fa, cmd, dynamicEnvelope[cmd.CapabilityID]);
+  }
+
   // Collision hold: while FA is holding the aircraft clear of a threat, it accepts a
   // command only if the new vector also clears every threat; otherwise it rejects with
   // VIOLATION_AIR_TRAFFIC. A clear command yields control back (releases the hold).
@@ -278,6 +332,269 @@ function handleFlightCommand(
     outbound: [status],
     disposition: DELIVERED,
     targetUpdate: outcome.target ?? {},
+  };
+}
+
+// --- Curve following (level 2.4) -------------------------------------------
+
+function handleCurveCommand(
+  body: BodyProfile,
+  fa: FaState,
+  cmd: MA_FlightCommandMT,
+  profileOverride?: CapabilityProfile,
+): FaInboundResult {
+  const outcome = validateCurveCommand(body, cmd, profileOverride);
+  const status = msg("MA_FlightCommandStatusMT", "FA", "MA", {
+    CommandID: cmd.CommandID,
+    CommandProcessingState: outcome.accepted ? "ACCEPTED" : "REJECTED",
+    ValidationResult: outcome.result,
+  });
+  if (!outcome.accepted) return { fa, outbound: [status], disposition: DELIVERED };
+
+  const activeCurve: CurveExecState = {
+    status: "START_CURVE_FOLLOWING",
+    curvature: cmd.Curvature ?? 0,
+    ...(cmd.Speed !== undefined ? { speed: cmd.Speed } : {}),
+    ...(cmd.Altitude !== undefined ? { altitude: cmd.Altitude } : {}),
+  };
+  const target: FlightTarget = {
+    ...(cmd.Speed !== undefined ? { speed: cmd.Speed } : {}),
+    ...(cmd.Altitude !== undefined ? { altitude: cmd.Altitude } : {}),
+  };
+  return {
+    fa: { ...fa, activeCurve },
+    outbound: [status],
+    disposition: DELIVERED,
+    targetUpdate: target,
+  };
+}
+
+// --- Route plan upload + activation (levels 2.1 / 2.3) ---------------------
+
+function emptyRoutePlan(): RoutePlanState {
+  return { activationState: "INACTIVE", uploaded: false, executionState: null, waypointIndex: 0 };
+}
+
+function activationStatus(
+  commandId: string,
+  state: MA_MissionPlanActivationCommandStatusMT["ActivationState"],
+  processing: NonNullable<MA_MissionPlanActivationCommandStatusMT["CommandStatus"]>,
+): Message {
+  return msg("MA_MissionPlanActivationCommandStatusMT", "FA", "MA", {
+    CommandID: commandId,
+    ActivationState: state,
+    CommandStatus: processing,
+  });
+}
+
+/** Record a received route plan (gates the UPLOAD step). Unknown ids are ignored. */
+function handleRoutePlan(
+  fa: FaState,
+  plan: MA_RoutePlanMT,
+  routes: readonly RouteDef[],
+): FaInboundResult {
+  const id = plan.RoutePlanID;
+  if (!routes.some((r) => r.id === id)) return { fa, outbound: [], disposition: DELIVERED };
+  const cur = fa.routePlans[id] ?? emptyRoutePlan();
+  return {
+    fa: { ...fa, routePlans: { ...fa.routePlans, [id]: { ...cur, uploaded: true } } },
+    outbound: [],
+    disposition: DELIVERED,
+  };
+}
+
+/** Drive the activation liturgy. A well-ordered step advances the plan state (COMPLETED);
+ *  a step taken out of order replies a *_FAILED state. ACTIVATE starts route execution;
+ *  DEACTIVATE while EXECUTING fails (VI §1.2.5.4). */
+function handleActivationCommand(
+  fa: FaState,
+  cmd: MA_MissionPlanActivationCommandMT,
+  routes: readonly RouteDef[],
+  _vehicle?: VehicleState,
+): FaInboundResult {
+  const id = cmd.RoutePlanID;
+  if (!routes.some((r) => r.id === id)) return { fa, outbound: [], disposition: DELIVERED };
+  const rp = fa.routePlans[id] ?? emptyRoutePlan();
+
+  type ActState = MA_MissionPlanActivationCommandStatusMT["ActivationState"];
+  const advance = (state: ActState): FaInboundResult => ({
+    fa: { ...fa, routePlans: { ...fa.routePlans, [id]: { ...rp, activationState: state } } },
+    outbound: [activationStatus(cmd.CommandID, state, "COMPLETED")],
+    disposition: DELIVERED,
+  });
+  const failState = (state: ActState): FaInboundResult => ({
+    fa,
+    outbound: [activationStatus(cmd.CommandID, state, "FAILED")],
+    disposition: DELIVERED,
+  });
+
+  switch (cmd.ActivationCommand) {
+    case "PREPARE_FOR_UPLOAD":
+      return advance("READY_FOR_UPLOAD");
+    case "UPLOAD":
+      return rp.activationState === "READY_FOR_UPLOAD" && rp.uploaded
+        ? advance("UPLOADED")
+        : failState("UPLOAD_FAILED");
+    case "PREPARE_FOR_ACTIVATION":
+      return rp.activationState === "UPLOADED"
+        ? advance("READY_FOR_ACTIVATION")
+        : failState("PREPARATION_FOR_ACTIVATION_FAILED");
+    case "ACTIVATE": {
+      if (rp.activationState !== "READY_FOR_ACTIVATION") return failState("ACTIVATION_FAILED");
+      const next: RoutePlanState = {
+        ...rp,
+        activationState: "ACTIVATED",
+        executionState: "EXECUTING",
+        waypointIndex: 0,
+      };
+      return {
+        fa: { ...fa, routePlans: { ...fa.routePlans, [id]: next }, executingRouteId: id },
+        outbound: [
+          activationStatus(cmd.CommandID, "ACTIVATED", "COMPLETED"),
+          msg("RoutePlanExecutionStatusMT", "FA", "MA", {
+            RoutePlanID: id,
+            PlanExecutionState: "EXECUTING",
+          }),
+        ],
+        disposition: DELIVERED,
+      };
+    }
+    case "DEACTIVATE":
+      // Illegal while the route is running (VI §1.2.5.4) — the route keeps executing.
+      if (rp.executionState === "EXECUTING") {
+        return {
+          fa,
+          outbound: [
+            activationStatus(cmd.CommandID, "DEACTIVATION_FAILED", "FAILED"),
+            msg("RoutePlanExecutionStatusMT", "FA", "MA", {
+              RoutePlanID: id,
+              PlanExecutionState: "FAILED",
+            }),
+          ],
+          disposition: DELIVERED,
+        };
+      }
+      return failState("DEACTIVATION_FAILED");
+    default:
+      return { fa, outbound: [], disposition: DELIVERED };
+  }
+}
+
+const LEG_ARRIVE_RADIUS = 50;
+
+function legTarget(
+  v: VehicleState,
+  leg: { x: number; y: number; altitude?: number; speed?: number },
+): FlightTarget {
+  return {
+    heading: bearingTo(v.x, v.y, leg.x, leg.y),
+    ...(leg.altitude !== undefined ? { altitude: leg.altitude } : {}),
+    ...(leg.speed !== undefined ? { speed: leg.speed } : {}),
+  };
+}
+
+/**
+ * Phase C: advance the EXECUTING route by steering the vehicle to its current leg, then
+ * to the terminal loiter. On entering the loiter zone the route is COMPLETE and FA stops
+ * steering (the vehicle dwells on its slow final leg, satisfying the hold). Pure; a no-op
+ * when no route is executing.
+ */
+export function faAdvanceRoute(
+  fa: FaState,
+  vehicle: VehicleState,
+  routes: readonly RouteDef[],
+): { fa: FaState; outbound: Message[]; targetOverride?: FlightTarget } {
+  const id = fa.executingRouteId;
+  if (id === null) return { fa, outbound: [] };
+  const rp = fa.routePlans[id];
+  if (!rp || rp.executionState !== "EXECUTING") return { fa, outbound: [] };
+  const route = routes.find((r) => r.id === id);
+  if (!route) return { fa, outbound: [] };
+
+  let waypointIndex = rp.waypointIndex;
+  while (
+    waypointIndex < route.legs.length &&
+    distance(vehicle.x, vehicle.y, route.legs[waypointIndex]!.x, route.legs[waypointIndex]!.y) <=
+      LEG_ARRIVE_RADIUS
+  ) {
+    waypointIndex += 1;
+  }
+  const withIndex = (next: RoutePlanState): FaState => ({
+    ...fa,
+    routePlans: { ...fa.routePlans, [id]: next },
+  });
+
+  if (waypointIndex < route.legs.length) {
+    const faNext = waypointIndex === rp.waypointIndex ? fa : withIndex({ ...rp, waypointIndex });
+    return {
+      fa: faNext,
+      outbound: [],
+      targetOverride: legTarget(vehicle, route.legs[waypointIndex]!),
+    };
+  }
+
+  const loiter = route.loiter;
+  if (distance(vehicle.x, vehicle.y, loiter.x, loiter.y) <= loiter.radius) {
+    const next: RoutePlanState = { ...rp, waypointIndex, executionState: "COMPLETE" };
+    return {
+      fa: { ...withIndex(next), executingRouteId: null },
+      outbound: [
+        msg("RoutePlanExecutionStatusMT", "FA", "MA", {
+          RoutePlanID: id,
+          PlanExecutionState: "COMPLETE",
+        }),
+      ],
+    };
+  }
+  const faNext = waypointIndex === rp.waypointIndex ? fa : withIndex({ ...rp, waypointIndex });
+  return { fa: faNext, outbound: [], targetOverride: legTarget(vehicle, loiter) };
+}
+
+/**
+ * Phase C: advance an active curve-following command (level 2.4) by steering the vehicle
+ * toward the terminal along a curvature-limited arc (per-tick heading change capped by the
+ * commanded Curvature). On reaching the terminal zone the curve is CURVE_COMPLETED (a one-
+ * shot activity report) and steering stops. Pure; a no-op when no curve is active.
+ */
+export function faAdvanceCurve(
+  body: BodyProfile,
+  fa: FaState,
+  vehicle: VehicleState,
+  curve: CurveDef | undefined,
+): { fa: FaState; outbound: Message[]; targetOverride?: FlightTarget } {
+  const ac = fa.activeCurve;
+  if (!ac || curve === undefined || ac.status === "CURVE_COMPLETED") return { fa, outbound: [] };
+  const term = curve.terminal;
+  if (distance(vehicle.x, vehicle.y, term.x, term.y) <= term.radius) {
+    return {
+      fa: { ...fa, activeCurve: { ...ac, status: "CURVE_COMPLETED" } },
+      outbound: [
+        msg("MA_FlightActivityMT", "FA", "MA", {
+          ActivityID: "CURVE-1",
+          CurveStatus: "CURVE_COMPLETED",
+        }),
+      ],
+    };
+  }
+  const speed = ac.speed ?? vehicle.speed;
+  const perTickDeg = Math.min(ac.curvature * speed * (180 / Math.PI), body.flight.maxTurnRateDeg);
+  const heading = turnToward(
+    vehicle.heading,
+    bearingTo(vehicle.x, vehicle.y, term.x, term.y),
+    perTickDeg,
+  );
+  const faNext =
+    ac.status === "START_CURVE_FOLLOWING"
+      ? { ...fa, activeCurve: { ...ac, status: "CURVE_IN_PROGRESS" } }
+      : fa;
+  return {
+    fa: faNext,
+    outbound: [],
+    targetOverride: {
+      heading,
+      ...(ac.speed !== undefined ? { speed: ac.speed } : {}),
+      ...(ac.altitude !== undefined ? { altitude: ac.altitude } : {}),
+    },
   };
 }
 

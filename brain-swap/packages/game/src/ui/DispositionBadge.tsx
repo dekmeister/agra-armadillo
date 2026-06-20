@@ -5,9 +5,13 @@
 import { BADGE_LABEL, type BadgeKind } from "./tokens.ts";
 
 export function DispositionBadge({ kind, reason }: { kind: BadgeKind; reason?: string }) {
-  // For rejected/revoked the real ValidationResult enum is appended inline — it inherits
-  // the badge's foreground (black/white on the filled chip) so it stays legible.
-  const showReason = reason && (kind === "rejected" || kind === "revoked");
+  // The real enum detail is appended inline — for rejected/revoked it's the ValidationResult;
+  // for accepted/pending it's the new protocol state (e.g. an activation liturgy's
+  // ActivationState or a route's PlanExecutionState), so the handshake reads itself in the
+  // log. It inherits the badge's foreground (black/white on the filled chip) to stay legible.
+  const showReason =
+    reason &&
+    (kind === "rejected" || kind === "revoked" || kind === "accepted" || kind === "pending");
   return (
     <span className={`badge ${kind}`}>
       {BADGE_LABEL[kind]}

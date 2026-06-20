@@ -6,10 +6,7 @@
     {
       "id": "SENTRY-RADAR-01",
       "kind": "AESA radar",
-      "states": [
-        { "atTick": 0, "state": "INITIALIZATION" },
-        { "atTick": 6, "state": "OPERATE" }
-      ]
+      "states": [{ "atTick": 0, "state": "INITIALIZATION" }, { "atTick": 6, "state": "OPERATE" }]
     }
   ],
   "services": [

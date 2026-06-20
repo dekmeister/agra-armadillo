@@ -228,9 +228,7 @@ function handleAmtiCommand(
     const next: MsSensorTaskState | undefined = existing
       ? { ...existing, state: "CANCELED" }
       : undefined;
-    const sensorTasks = next
-      ? { ...ms.sensorTasks, [p.CapabilityID]: next }
-      : ms.sensorTasks;
+    const sensorTasks = next ? { ...ms.sensorTasks, [p.CapabilityID]: next } : ms.sensorTasks;
     return {
       ms: { ...ms, sensorTasks },
       outbound: [commandStatus(p.CommandID, "CANCELED")],
@@ -458,7 +456,11 @@ function advanceSensors(msBody: MsBodyDef, ms: MsState, tick: number, out: Messa
     if (completed) out.push(amtiActivity(sensor.capabilityId, "COMPLETED"));
     sensorTasks = {
       ...sensorTasks,
-      [sensor.capabilityId]: { ...active, nextTrackIdx: idx, state: completed ? "COMPLETED" : "ACTIVE" },
+      [sensor.capabilityId]: {
+        ...active,
+        nextTrackIdx: idx,
+        state: completed ? "COMPLETED" : "ACTIVE",
+      },
     };
   }
 

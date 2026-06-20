@@ -6,12 +6,13 @@ import {
   type BodyProfile,
   type Brain,
   type LevelDef,
-  makeScenario,
   type MsBodyDef,
+  makeScenario,
   type Scenario,
 } from "@brain-swap/core";
 
 import ax01Json from "../bodies/ax-01.json";
+import ax01RouteJson from "../bodies/ax-01-route.json";
 import ax02Json from "../bodies/ax-02.json";
 import ax03Json from "../bodies/ax-03.json";
 import msSentry01Json from "../bodies/ms/ms-sentry-01.json";
@@ -35,9 +36,18 @@ import refBrain14Json from "../worlds/world-1/level-1.4.reference-brain.json";
 import level16Json from "../worlds/world-1/level-1.6.json";
 import naiveBrain16Json from "../worlds/world-1/level-1.6.naive-brain.json";
 import refBrain16Json from "../worlds/world-1/level-1.6.reference-brain.json";
+import level21Json from "../worlds/world-2/level-2.1.json";
+import naiveBrain21Json from "../worlds/world-2/level-2.1.naive-brain.json";
+import refBrain21Json from "../worlds/world-2/level-2.1.reference-brain.json";
 import level22Json from "../worlds/world-2/level-2.2.json";
 import naiveBrain22Json from "../worlds/world-2/level-2.2.naive-brain.json";
 import refBrain22Json from "../worlds/world-2/level-2.2.reference-brain.json";
+import level23Json from "../worlds/world-2/level-2.3.json";
+import naiveBrain23Json from "../worlds/world-2/level-2.3.naive-brain.json";
+import refBrain23Json from "../worlds/world-2/level-2.3.reference-brain.json";
+import level24Json from "../worlds/world-2/level-2.4.json";
+import naiveBrain24Json from "../worlds/world-2/level-2.4.naive-brain.json";
+import refBrain24Json from "../worlds/world-2/level-2.4.reference-brain.json";
 import level31Json from "../worlds/world-3/level-3.1.json";
 import naiveBrain31Json from "../worlds/world-3/level-3.1.naive-brain.json";
 import refBrain31Json from "../worlds/world-3/level-3.1.reference-brain.json";
@@ -64,6 +74,7 @@ import lockedBrain45Json from "../worlds/world-4/level-4.5.locked-brain.json";
 
 // --- Airframes --------------------------------------------------------------
 export const ax01 = ax01Json as unknown as BodyProfile;
+export const ax01Route = ax01RouteJson as unknown as BodyProfile;
 export const ax02 = ax02Json as unknown as BodyProfile;
 export const ax03 = ax03Json as unknown as BodyProfile;
 
@@ -96,9 +107,21 @@ export const level16 = level16Json as unknown as LevelDef;
 export const level16ReferenceBrain = refBrain16Json as unknown as Brain;
 export const level16NaiveBrain = naiveBrain16Json as unknown as Brain;
 
+export const level21 = level21Json as unknown as LevelDef;
+export const level21ReferenceBrain = refBrain21Json as unknown as Brain;
+export const level21NaiveBrain = naiveBrain21Json as unknown as Brain;
+
 export const level22 = level22Json as unknown as LevelDef;
 export const level22ReferenceBrain = refBrain22Json as unknown as Brain;
 export const level22NaiveBrain = naiveBrain22Json as unknown as Brain;
+
+export const level23 = level23Json as unknown as LevelDef;
+export const level23ReferenceBrain = refBrain23Json as unknown as Brain;
+export const level23NaiveBrain = naiveBrain23Json as unknown as Brain;
+
+export const level24 = level24Json as unknown as LevelDef;
+export const level24ReferenceBrain = refBrain24Json as unknown as Brain;
+export const level24NaiveBrain = naiveBrain24Json as unknown as Brain;
 
 export const level31 = level31Json as unknown as LevelDef;
 export const level31ReferenceBrain = refBrain31Json as unknown as Brain;
@@ -131,7 +154,12 @@ export const level43NaiveBrain = naiveBrain43Json as unknown as Brain;
 export const level45 = level45Json as unknown as LevelDef;
 export const level45LockedBrain = lockedBrain45Json as unknown as Brain;
 
-const BODIES: Record<string, BodyProfile> = { "ax-01": ax01, "ax-02": ax02, "ax-03": ax03 };
+const BODIES: Record<string, BodyProfile> = {
+  "ax-01": ax01,
+  "ax-01-route": ax01Route,
+  "ax-02": ax02,
+  "ax-03": ax03,
+};
 
 export function bodyById(id: string): BodyProfile {
   const body = BODIES[id];
@@ -181,7 +209,10 @@ export const LEVELS: Record<string, LevelBundle> = {
   "1.3": { level: level13, referenceBrain: level13ReferenceBrain },
   "1.4": { level: level14, referenceBrain: level14ReferenceBrain },
   "1.6": { level: level16, referenceBrain: level16ReferenceBrain },
+  "2.1": { level: level21, referenceBrain: level21ReferenceBrain },
   "2.2": { level: level22, referenceBrain: level22ReferenceBrain },
+  "2.3": { level: level23, referenceBrain: level23ReferenceBrain },
+  "2.4": { level: level24, referenceBrain: level24ReferenceBrain },
   "3.1": { level: level31, referenceBrain: level31ReferenceBrain },
   "3.2": { level: level32, referenceBrain: level32ReferenceBrain },
   "3.3": { level: level33, referenceBrain: level33ReferenceBrain },

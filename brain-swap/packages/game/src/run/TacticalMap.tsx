@@ -29,6 +29,7 @@ function objectiveZones(level: LevelDef): readonly Zone[] {
   const o = level.objective;
   if (o.kind === "reach-hold") return [o.zone];
   if (o.kind === "waypoint-sequence") return o.waypoints.map((w) => w.zone);
+  if (o.kind === "route-complete" || o.kind === "curve-complete") return [o.zone];
   return [];
 }
 

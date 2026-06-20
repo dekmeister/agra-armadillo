@@ -112,3 +112,9 @@ export function pathEntersZone(
 export function headingAwayFrom(x: number, y: number, zone: { x: number; y: number }): number {
   return normalizeDeg((Math.atan2(x - zone.x, y - zone.y) * 180) / Math.PI);
 }
+
+/** Heading (deg) pointing from (fromX,fromY) toward (toX,toY) — 0 = +y (north),
+ *  90 = +x (east). Used by FA route/curve steering to fly to a point. */
+export function bearingTo(fromX: number, fromY: number, toX: number, toY: number): number {
+  return normalizeDeg((Math.atan2(toX - fromX, toY - fromY) * 180) / Math.PI);
+}

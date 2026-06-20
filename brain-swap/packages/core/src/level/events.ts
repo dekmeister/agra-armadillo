@@ -68,12 +68,22 @@ export interface DespawnThreatEvent {
   readonly threatId: string;
 }
 
+/** FA aborts the active route plan mid-flight (VI §1.2.5.6): it reports the route
+ *  CANCELED and stops steering, so the brain must take over by hand (HSA hold) and
+ *  re-plan. The first robustness exam (level 2.3). */
+export interface AbortRouteEvent {
+  readonly kind: "abort-route";
+  readonly tick: number;
+  readonly routeId: string;
+}
+
 export type MissionEvent =
   | DegradeEnvelopeEvent
   | CapabilityUnavailableEvent
   | CapabilityAvailableEvent
   | SpawnThreatEvent
-  | DespawnThreatEvent;
+  | DespawnThreatEvent
+  | AbortRouteEvent;
 
 /** The mutable mission-overlay carried in the World alongside FA/vehicle state. */
 export interface EventOverlay {
@@ -103,6 +113,8 @@ function eventId(e: MissionEvent): string {
     case "spawn-threat":
     case "despawn-threat":
       return e.threatId;
+    case "abort-route":
+      return e.routeId;
   }
 }
 
@@ -112,6 +124,7 @@ const KIND_ORDER: Record<MissionEvent["kind"], number> = {
   "capability-available": 2,
   "spawn-threat": 3,
   "despawn-threat": 4,
+  "abort-route": 5,
 };
 
 /** Drop undefined fields so the stored profile / payload stays a clean object. */
@@ -161,6 +174,8 @@ export function applyEvents(
   let threats = overlay.threats;
   let unavailableCaps = fa.unavailableCaps;
   let secondaryControllers = fa.secondaryControllers;
+  let routePlans = fa.routePlans;
+  let executingRouteId = fa.executingRouteId;
   const outbound: Message[] = [];
 
   for (const e of due) {
@@ -221,12 +236,31 @@ export function applyEvents(
         threats = threats.filter((t) => t.id !== e.threatId);
         break;
       }
+      case "abort-route": {
+        const rp = routePlans[e.routeId];
+        // Only abort a route that is actually executing; otherwise a no-op (defensive).
+        if (rp && rp.executionState === "EXECUTING") {
+          routePlans = { ...routePlans, [e.routeId]: { ...rp, executionState: "CANCELED" } };
+          if (executingRouteId === e.routeId) executingRouteId = null;
+          outbound.push(
+            msg("RoutePlanExecutionStatusMT", "FA", "MA", {
+              RoutePlanID: e.routeId,
+              PlanExecutionState: "CANCELED",
+            }),
+          );
+        }
+        break;
+      }
     }
   }
 
-  const nextFa =
-    unavailableCaps === fa.unavailableCaps && secondaryControllers === fa.secondaryControllers
-      ? fa
-      : { ...fa, unavailableCaps, secondaryControllers };
+  const faChanged =
+    unavailableCaps !== fa.unavailableCaps ||
+    secondaryControllers !== fa.secondaryControllers ||
+    routePlans !== fa.routePlans ||
+    executingRouteId !== fa.executingRouteId;
+  const nextFa = faChanged
+    ? { ...fa, unavailableCaps, secondaryControllers, routePlans, executingRouteId }
+    : fa;
   return { fa: nextFa, overlay: { dynamicEnvelope, threats }, outbound };
 }

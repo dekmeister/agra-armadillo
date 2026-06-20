@@ -80,6 +80,29 @@ export interface MsTrackObjective {
   readonly holdTicks: number;
 }
 
+/** Fly an uploaded route plan to its terminal loiter and hold it (level 2.1). The
+ *  protocol half (route reached COMPLETE) is read from FA state; the geometric half
+ *  (vehicle in the loiter zone at altitude) reuses inZoneAtAltitude — the route analogue
+ *  of ms-strike (a state latched by FA + a world-state check). */
+export interface RouteCompleteObjective {
+  readonly kind: "route-complete";
+  readonly routeId: string; // RoutePlanID FA must report COMPLETE
+  readonly zone: Zone; // terminal loiter / hold zone
+  readonly altitude?: number;
+  readonly altitudeTolerance?: number;
+  readonly holdTicks: number;
+}
+
+/** Fly a curve (CurveFollowing mode) to its terminal hold zone and hold it (level 2.4).
+ *  Win = FA's active curve reached CURVE_COMPLETED and the vehicle is in the zone. */
+export interface CurveCompleteObjective {
+  readonly kind: "curve-complete";
+  readonly zone: Zone; // terminal hold zone
+  readonly altitude?: number;
+  readonly altitudeTolerance?: number;
+  readonly holdTicks: number;
+}
+
 /** Complete a weapon strike through the fire + release-consent chain (level 3.3 / 3.4).
  *  Win = `ms.strikeTasks[taskId].activityState === "COMPLETED"`. With a DLZ body the MS
  *  engine only completes the strike when the FA vehicle is inside the zone, so a completed
@@ -94,9 +117,38 @@ export type Objective =
   | ReachHoldObjective
   | HoldControlObjective
   | WaypointSequenceObjective
+  | RouteCompleteObjective
+  | CurveCompleteObjective
   | MsStatusObjective
   | MsTrackObjective
   | MsStrikeObjective;
+
+/** One leg of an uploaded route plan: a point the vehicle flies to, with an optional
+ *  commanded altitude/speed for that leg. The brain never authors this — it is level
+ *  data FA flies once the route is ACTIVATED (the MA_RoutePlanMT message only names it). */
+export interface RouteLeg {
+  readonly x: number;
+  readonly y: number;
+  readonly altitude?: number;
+  readonly speed?: number;
+}
+
+/** An uploadable route plan: ordered legs ending in a terminal loiter/hold zone. */
+export interface RouteDef {
+  readonly id: string; // RoutePlanID referenced by MA_RoutePlanMT
+  readonly legs: readonly RouteLeg[];
+  /** Terminal loiter — FA reports COMPLETE on entering it; the route-complete objective
+   *  holds here. `speed` is flown slow so the vehicle dwells (lie #12). */
+  readonly loiter: Zone & { readonly altitude?: number; readonly speed?: number };
+}
+
+/** A commandable curve (level 2.4): FA flies a curvature-limited arc to the terminal
+ *  hold zone. The player commands the Curvature; the path/terminal are level geometry. */
+export interface CurveDef {
+  readonly terminal: Zone & { readonly altitude?: number };
+  /** Optional gate zones the curve threads (drawn for the player; not breach-checked). */
+  readonly gates?: readonly Zone[];
+}
 
 export interface LevelPars {
   readonly ticks: number;
@@ -137,6 +189,11 @@ export interface LevelDef {
   /** Deterministic scheduled mid-mission changes (envelope degrade, capability pull,
    *  threat spawn). Each fires in the step advancing the world to its `tick`. */
   readonly events?: readonly MissionEvent[];
+  /** Uploadable route plans FA flies once ACTIVATED (levels 2.1 / 2.3). The
+   *  MA_RoutePlanMT message references a plan here by RoutePlanID. */
+  readonly routes?: readonly RouteDef[];
+  /** Curve geometry FA flies on a CurveFollowing command (level 2.4). */
+  readonly curve?: CurveDef;
   readonly pars?: LevelPars;
   /** Fidelity-note references surfaced in-game (docs/02 list indices). */
   readonly fidelityNotes?: readonly number[];

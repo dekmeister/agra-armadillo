@@ -1,0 +1,34 @@
+{
+  "id": "2.4",
+  "title": "First Curve",
+  "body": "ax-01",
+  "capabilityId": "MULE-01",
+  "brief": "Heading commands snap to straight legs. This time fly a smooth arc: after taking control, send ONE flight command carrying a Curvature and let Flight Autonomy steer the curve to the terminal. Keep the curvature inside the airframe's turn limit.",
+  "teaches": "CurveFollowing is a distinct flight mode selected by a Curvature on the flight command. FA validates the curvature against the body's minimum turn radius — too tight and it REJECTS with PERFORMANCE_LIMIT_EXCEEDED. A valid curve runs itself: FA reports START_CURVE_FOLLOWING → CURVE_IN_PROGRESS → CURVE_COMPLETED.",
+  "objective": {
+    "_doc": "curve-complete: FA's curve must reach CURVE_COMPLETED and the vehicle holds the terminal zone at (500,500), altitude 3000. The Mule's 6 deg/tick rate easily flies a 0.002 curvature arc from heading 0 (north) round to the north-east terminal.",
+    "kind": "curve-complete",
+    "zone": { "x": 500, "y": 500, "radius": 200 },
+    "altitude": 3000,
+    "altitudeTolerance": 60,
+    "holdTicks": 10
+  },
+  "curve": {
+    "terminal": { "x": 500, "y": 500, "radius": 200, "altitude": 3000 },
+    "gates": [{ "x": 200, "y": 350, "radius": 80 }]
+  },
+  "start": { "x": 0, "y": 0, "altitude": 3000, "heading": 0, "speed": 25 },
+  "availableMessages": [
+    "MA_FlightCapabilityStatusMT",
+    "MA_ControlRequestMT",
+    "MA_ControlRequestStatusMT",
+    "ControlStatusMT",
+    "MA_FlightCommandMT",
+    "MA_FlightCommandStatusMT",
+    "MA_FlightActivityMT",
+    "MA_PositionReportDetailedMT"
+  ],
+  "maxTicks": 220,
+  "pars": { "ticks": 36, "busTraffic": 2, "rejections": 0, "brainSize": 7 },
+  "fidelityNotes": [10, 27]
+}

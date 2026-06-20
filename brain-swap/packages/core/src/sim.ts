@@ -12,10 +12,17 @@
 
 import { reactToMessage } from "./brain/interpreter.ts";
 import { enqueueAll, takeDue } from "./bus.ts";
-import { faAdvanceApprovals, faCollisionCheck, faHandleInbound, faPublish } from "./fa/engine.ts";
+import {
+  faAdvanceApprovals,
+  faAdvanceCurve,
+  faAdvanceRoute,
+  faCollisionCheck,
+  faHandleInbound,
+  faPublish,
+} from "./fa/engine.ts";
 import { advanceThreats, applyEvents } from "./level/events.ts";
-import { msAdvanceState, msCountDeliveredEntity, msHandleInbound, msPublish } from "./ms/engine.ts";
 import { evaluateWin } from "./level/runtime.ts";
+import { msAdvanceState, msCountDeliveredEntity, msHandleInbound, msPublish } from "./ms/engine.ts";
 import { DELIVERED, type Message, type MessageLogEntry, msg } from "./types.ts";
 import { integrate } from "./vehicle/pointmass.ts";
 import { initWorld, type Outcome, type Scenario, type World } from "./world.ts";
@@ -79,7 +86,15 @@ export function step(world: World): World {
   for (const q of taken.due) {
     const m = q.message;
     if (m.to === "FA") {
-      const res = faHandleInbound(body, fa, m, dynamicEnvelope, vehicle, threats);
+      const res = faHandleInbound(
+        body,
+        fa,
+        m,
+        dynamicEnvelope,
+        vehicle,
+        threats,
+        scenario.level?.routes ?? [],
+      );
       fa = res.fa;
       if (res.targetUpdate !== undefined) vehicle = { ...vehicle, target: res.targetUpdate };
       bus = enqueueAll(bus, res.outbound, tick);
@@ -115,6 +130,18 @@ export function step(world: World): World {
     ms = msPub.ms;
     bus = enqueueAll(bus, msPub.outbound, tick);
   }
+
+  // Phase C″ — advance an EXECUTING route plan / active curve (FA steers the vehicle).
+  // Each may override the vehicle target this tick (consumed like the collision override).
+  const rte = faAdvanceRoute(fa, vehicle, scenario.level?.routes ?? []);
+  fa = rte.fa;
+  if (rte.targetOverride !== undefined) vehicle = { ...vehicle, target: rte.targetOverride };
+  bus = enqueueAll(bus, rte.outbound, tick);
+
+  const crv = faAdvanceCurve(body, fa, vehicle, scenario.level?.curve);
+  fa = crv.fa;
+  if (crv.targetOverride !== undefined) vehicle = { ...vehicle, target: crv.targetOverride };
+  bus = enqueueAll(bus, crv.outbound, tick);
 
   // Phase C′ — collision-avoidance interrupt (CAUTION fault + fly-away override).
   const col = faCollisionCheck(body, fa, vehicle, threats);

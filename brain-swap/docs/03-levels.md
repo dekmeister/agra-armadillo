@@ -118,9 +118,10 @@ new **"Mission Systems"** world. No playable id changed (2.2 keeps its id; the n
   commands: update *only* `Direction` each leg (bus-traffic par is unreachable if
   you resend full commands), `CommandState` UPDATE vs NEW. *(Built: four-corner
   waypoint sequence steered by position thresholds — no timed legs yet.)*
-- **1.5 Winds Aloft.** Reach a narrow corridor in a stiff crosswind read from
-  `WeatherObservationMT`. Heading (HSA) vs course (CSA, `Course` field) — command
-  course or compute your own crab angle. Teaches: H vs C is not pedantry.
+- **1.5 Winds Aloft. [Deferred → `PLAN_LEVELS_FINALS.md`]** Reach a narrow corridor in a
+  stiff crosswind read from `WeatherObservationMT`. Heading (HSA) vs course (CSA, `Course`
+  field) — command course or compute your own crab angle. Teaches: H vs C is not pedantry.
+  Needs wind in the integrator + 1 new message; grey row removed from the catalog.
 - **1.6 Bingo. [Built]** Distant zone, thin fuel. `NavigationReportMT` (fuel mass/percent/
   duration) + `SpeedOptimizationEnum` MAX_ENDURANCE vs explicit speed. Greedy max
   cruise → `VIOLATION_ENDURANCE` rejection. Teaches: FA validates against
@@ -131,25 +132,29 @@ new **"Mission Systems"** world. No playable id changed (2.2 keeps its id; the n
   efficient cruise to make the range; the naive max-throttle brain is rejected
   `VIOLATION_ENDURANCE` and flames out short. Speed delegation via
   `SpeedOptimizationEnum` and `Duration` are not built — fidelity lie #17.)*
-- **1.7 Counter-Offer.** Mission parameters FA won't accept as-asked; FA rejects
-  *with a best-effort `MA_TaskMT`* (Flight field). Brain must read the suggested
-  parameters and resend. Teaches: rejection is the start of a negotiation, not a
-  dead end.
+- **1.7 Counter-Offer. [Deferred → `PLAN_LEVELS_FINALS.md`]** Mission parameters FA won't
+  accept as-asked; FA rejects *with a best-effort `MA_TaskMT`* (Flight field). Brain must
+  read the suggested parameters and resend. Teaches: rejection is the start of a negotiation,
+  not a dead end. Needs `MA_TaskMT` on the FA bus + an FA counter-offer path; grey row removed.
 
-## World 2 — Navigation (5 levels, merged W2 Waypoint + old W3 Curve; bodies AX-01/02/03)
+## World 2 — Navigation (4 levels, merged W2 Waypoint + old W3 Curve; bodies AX-01/02/03)
 
-Merged per `RESEARCH_MS.md` §6: the route-upload liturgy, geofence avoidance, retask,
-and curve following condensed to five levels (loiters/read-only/append folded in as
-techniques rather than standalone lessons).
+Merged per `RESEARCH_MS.md` §6: the route-upload liturgy, geofence avoidance, retask, and a
+first curve. **All four built and playable** (route/curve execution state lives in `FaState`,
+modelled on the `ms/engine.ts` lifecycle; see fidelity lies #25–#27). 2.5 Canyon was **cut**.
 
-- **2.1 Upload.** A route is given; getting FA to fly it is the puzzle:
-  `MA_MissionPlanActivationCommandMT` PREPARE_FOR_UPLOAD → COMPLETED → publish
-  `MA_RoutePlanMT` → `MA_SystemNotificationMT` CONFIRMED → UPLOAD → COMPLETED →
-  prepare-for-activation → READY_FOR_ACTIVATION → ACTIVATE → route executes. Skipping
-  or reordering any step fails with the real status semantics. The route ends at a
-  loiter hold-point (Racetrack) set as a route parameter — loiter is just another route
-  element, not a separate command. The route-plan state machine becomes the player's
-  first big reusable interaction block.
+- **2.1 Upload. [Built]** A route is given; getting FA to fly it is the puzzle. Liturgy:
+  `MA_MissionPlanActivationCommandMT` PREPARE_FOR_UPLOAD → READY_FOR_UPLOAD → publish
+  `MA_RoutePlanMT` → UPLOAD → UPLOADED → PREPARE_FOR_ACTIVATION → READY_FOR_ACTIVATION →
+  ACTIVATE → ACTIVATED, then FA flies RTE-1 and reports `RoutePlanExecutionStatusMT`
+  EXECUTING → COMPLETE. Skipping or reordering any step fails with the real `*_FAILED`
+  status. The route ends at a RACETRACK loiter hold-point set as a route parameter. The
+  upload confirmation collapses `MA_SystemNotificationMT` into the activation-status
+  transitions (lie #25); route content is pruned (lie #26). Naive brain ACTIVATEs first →
+  ACTIVATION_FAILED → times out. The airframe is a route-following Mule variant
+  (`ax-01-route`): its `MULE-01` capability advertises `WAYPOINT_FOLLOWING`, not `HSA_CSA`,
+  so a hand-flown `MA_FlightCommandMT` is honestly REJECTED `CAPABILITY_NOT_SUPPORTED` (real
+  `MA_FlightCapabilityEnum`) — you fly this one by uploading a plan, not by direct vectors.
 - **2.2 Avoid. [Built]** Build the route's waypoints yourself around geozones. Lazy
   straight line → `VIOLATION_GEOFENCE` (offending segment identified, per
   `RouteValidationInvalidPathType`). Optional pre-check via Validate Route Plan
@@ -158,23 +163,24 @@ techniques rather than standalone lessons).
   the direct line; entering it is a world-state breach → `failed` (no geofence rejection).
   The reference brain dog-legs with a Direction-only `UPDATE`; the naive straight-line
   brain breaches. Route-plan geozones / `Validate Route Plan` are the unbuilt upgrade.)*
-- **2.3 Retask.** Mid-route the objective moves, and FA may abort the active route itself
-  (`RoutePlanExecutionStatusMT` CANCELED). DEACTIVATE on an EXECUTING route returns FAILED
-  (real); the correct move is superseding with a new flight command or a replacement
-  route. The brain must detect the cancel, fall back to an HSA hold (block reuse from
-  World 1!), and re-plan. Merges the old 2.5 Retask + 2.6 FA Says No. First robustness exam.
-- **2.4 First Curve.** One quintic Bézier segment (six control points, ownship NED
-  reference) through two gates. Teaches the curve command payload; knot vector and weights
-  shown read-only. Over-tight radius → `PERFORMANCE_LIMIT_EXCEEDED` with the offending
-  section.
-- **2.5 Canyon.** Multi-segment curve through terrain, each segment appended while the
-  previous executes (`AppendCurve` — only valid while EXECUTING, real rule; the old 3.3
-  Append folded in as a required technique). A pipeline gap triggers `EndOfCurveBehavior`
-  (loiter) and blows the time par; terrain clips → `VIOLATION_TERRAIN`. Teaches: pipelining
-  segments vs the acceleration limits in `CurveFollowingPerformanceProfile`.
+- **2.3 Retask. [Built]** Mid-route FA aborts the active route itself (an `abort-route`
+  event → `RoutePlanExecutionStatusMT` CANCELED) and the loiter has moved. The brain must
+  detect the cancel and fall back to an HSA hold at the moved zone (block reuse from World
+  1!). DEACTIVATE on an EXECUTING route returns FAILED (real, VI §1.2.5.4). Recovery is an
+  HSA hold, **not** a route re-upload (the brain DSL has no variables to re-author a route).
+  Naive brain ignores CANCELED → times out. First robustness exam.
+- **2.4 First Curve. [Built]** Take control, then send ONE `MA_FlightCommandMT` carrying a
+  `Curvature`; the presence of `Curvature` selects CurveFollowing mode. FA validates against
+  the body's minimum turn radius, accepts, and flies the curvature-limited arc to the
+  terminal, reporting `MA_FlightActivityMT` START_CURVE_FOLLOWING → CURVE_IN_PROGRESS →
+  CURVE_COMPLETED. Simplified to a single `Curvature` (lie #27, extends #10). Over-tight
+  curvature → `PERFORMANCE_LIMIT_EXCEEDED`; a curveless body (AX-03) → `CAPABILITY_NOT_SUPPORTED`.
+  Naive brain commands an over-tight curve → REJECTED → times out.
 
-*(Trimmed from the original 10-level design, per `RESEARCH_MS.md` §6: 2.3 On Station,
-2.4 Read-Only, 3.3 Append (absorbed into 2.5), 3.4 Exit Strategy.)*
+*(**2.5 Canyon cut**: multi-segment curve + `AppendCurve` pipelining + terrain needs a full
+multi-segment curve/terrain system — least fun to author in realtime, deferred indefinitely.
+Original 10-level trim per `RESEARCH_MS.md` §6 also folded away 2.3 On Station, 2.4 Read-Only,
+3.3 Append, 3.4 Exit Strategy.)*
 
 ## World 3 — Mission Systems (5 levels; FA airframe + an MS body in parallel)
 
@@ -238,11 +244,12 @@ interaction analysis and `PLAN_MS.md` for the deferred 3.2–3.4 build.
   re-advert (`{msg: MinAirspeed}`) and loiters valid; the naive caches the boot value
   and is rejected `PERFORMANCE_LIMIT_EXCEEDED`, blowing through the station. No
   `MA_FaultMT` in this build — the re-advert alone carries the lesson.)*
-- **4.4 Heartbeat Discipline.** AX-04 (isolator modeled): the brain must publish
-  `ServiceStatusMT` every N ticks; on missed FA heartbeats it must issue
-  `SubsystemStatusDataRequestMT` before assuming failure (real comms-failure
+- **4.4 Heartbeat Discipline. [Deferred → `PLAN_LEVELS_FINALS.md`]** AX-04 (isolator
+  modeled): the brain must publish `ServiceStatusMT` every N ticks; on missed FA heartbeats
+  it must issue `SubsystemStatusDataRequestMT` before assuming failure (real comms-failure
   interaction). Mishandling earns revocation: `MA_ControlRequestStatusMT` CANCELED
-  + `MA_ControlAssignmentMT` listing your remaining capabilities (none).
+  + `MA_ControlAssignmentMT` listing your remaining capabilities (none). Needs a new AX-04
+  body + a heartbeat/revocation path (and likely a periodic brain trigger); grey row removed.
 - **4.5 Type Certificate (capstone). [Built]** One brain, locked: it flies the same
   mission on AX-01, AX-02, AX-03 back-to-back with zero edits. Score = worst of
   the three runs. Score screen styled as a compliance test report. *(Built headless:

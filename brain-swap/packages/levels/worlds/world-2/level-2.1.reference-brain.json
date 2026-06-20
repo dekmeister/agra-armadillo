@@ -1,0 +1,104 @@
+{
+  "id": "ref-2.1",
+  "_doc": "Handshake, then the upload liturgy driven off each FA status reply: PREPARE_FOR_UPLOAD → (READY_FOR_UPLOAD) send the plan + UPLOAD → (UPLOADED) PREPARE_FOR_ACTIVATION → (READY_FOR_ACTIVATION) ACTIVATE. FA then flies RTE-1 to the loiter; the win is world-state.",
+  "initial": "await-capability",
+  "states": [
+    "await-capability",
+    "awaiting-approval",
+    "confirming-control",
+    "await-ready-upload",
+    "await-uploaded",
+    "await-ready-activation",
+    "executing"
+  ],
+  "transitions": [
+    {
+      "from": "await-capability",
+      "trigger": { "messageType": "MA_FlightCapabilityStatusMT" },
+      "guard": { "field": "Availability", "op": "==", "value": "AVAILABLE" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "MA_ControlRequestMT",
+          "fields": { "RequestType": "ACQUIRE", "CapabilityID": { "cap": "CapabilityID" } }
+        }
+      ],
+      "target": "awaiting-approval"
+    },
+    {
+      "from": "awaiting-approval",
+      "trigger": { "messageType": "MA_ControlRequestStatusMT" },
+      "guard": { "field": "ApprovalRequestProcessingState", "op": "==", "value": "APPROVED" },
+      "target": "confirming-control"
+    },
+    {
+      "from": "confirming-control",
+      "trigger": { "messageType": "ControlStatusMT" },
+      "guard": { "field": "SecondaryController", "op": "==", "value": "MA" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "MA_MissionPlanActivationCommandMT",
+          "fields": {
+            "CommandID": "MPC-1",
+            "RoutePlanID": "RTE-1",
+            "ActivationCommand": "PREPARE_FOR_UPLOAD"
+          }
+        }
+      ],
+      "target": "await-ready-upload"
+    },
+    {
+      "from": "await-ready-upload",
+      "trigger": { "messageType": "MA_MissionPlanActivationCommandStatusMT" },
+      "guard": { "field": "ActivationState", "op": "==", "value": "READY_FOR_UPLOAD" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "MA_RoutePlanMT",
+          "fields": { "RoutePlanID": "RTE-1", "OrbitShape": "RACETRACK" }
+        },
+        {
+          "kind": "send",
+          "message": "MA_MissionPlanActivationCommandMT",
+          "fields": { "CommandID": "MPC-1", "RoutePlanID": "RTE-1", "ActivationCommand": "UPLOAD" }
+        }
+      ],
+      "target": "await-uploaded"
+    },
+    {
+      "from": "await-uploaded",
+      "trigger": { "messageType": "MA_MissionPlanActivationCommandStatusMT" },
+      "guard": { "field": "ActivationState", "op": "==", "value": "UPLOADED" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "MA_MissionPlanActivationCommandMT",
+          "fields": {
+            "CommandID": "MPC-1",
+            "RoutePlanID": "RTE-1",
+            "ActivationCommand": "PREPARE_FOR_ACTIVATION"
+          }
+        }
+      ],
+      "target": "await-ready-activation"
+    },
+    {
+      "from": "await-ready-activation",
+      "trigger": { "messageType": "MA_MissionPlanActivationCommandStatusMT" },
+      "guard": { "field": "ActivationState", "op": "==", "value": "READY_FOR_ACTIVATION" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "MA_MissionPlanActivationCommandMT",
+          "fields": {
+            "CommandID": "MPC-1",
+            "RoutePlanID": "RTE-1",
+            "ActivationCommand": "ACTIVATE"
+          }
+        }
+      ],
+      "target": "executing"
+    }
+  ]
+}

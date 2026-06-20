@@ -29,7 +29,7 @@ messages:
       enforces later — the pedagogical contract (docs/04).
     fields:
       - { name: CapabilityID, path: MessageData.Capability.CapabilityID, type: string, required: true }
-      - { name: CapabilityType, path: MessageData.Capability.CapabilityType, type: enum, values: [HSA_CSA], required: true }
+      - { name: CapabilityType, path: MessageData.Capability.CapabilityType, type: enum, values: [HSA_CSA, WAYPOINT_FOLLOWING], required: true }
       - { name: MinAltitude, path: MessageData.Capability.FlightCapabilityPerformanceProfile.HSA_CSA_PerformanceProfile.MinAltitude, type: number, required: false }
       - { name: MaxAltitude, path: MessageData.Capability.FlightCapabilityPerformanceProfile.HSA_CSA_PerformanceProfile.MaxAltitude, type: number, required: false }
       - { name: MinAirspeed, path: MessageData.Capability.FlightCapabilityPerformanceProfile.HSA_CSA_PerformanceProfile.MinAirspeed, type: number, required: false }
@@ -96,6 +96,11 @@ messages:
       - { name: Speed, path: MessageData.Command.Capability.FlightControlMode.HSA_CSA.Speed, type: number, required: false }
       - { name: Heading, path: MessageData.Command.Capability.FlightControlMode.HSA_CSA.Direction.Heading, type: number, required: false }
       - { name: Course, path: MessageData.Command.Capability.FlightControlMode.HSA_CSA.Direction.Course, type: number, required: false }
+      # Curve-following mode (VI §1.2.2.2, MA_CurveControlType). The presence of Curvature
+      # selects the CurveFollowing control mode (the sibling of HSA_CSA in the
+      # MA_FlightControlModesChoiceType). The 6-control-point quintic is collapsed to a
+      # single commanded Curvature (1/turn-radius), the rest auto-filled (fidelity lie #10).
+      - { name: Curvature, path: MessageData.Command.Capability.FlightControlMode.CurveFollowing.CurveSegments.Curvature, type: number, required: false }
 
   - name: MA_FlightCommandStatusMT
     tier: 1
@@ -118,6 +123,9 @@ messages:
       - { name: Altitude, path: MessageData.Activity.VehicleCommandState.Altitude, type: number, required: false }
       - { name: Heading, path: MessageData.Activity.VehicleCommandState.Heading, type: number, required: false }
       - { name: Speed, path: MessageData.Activity.VehicleCommandState.Speed, type: number, required: false }
+      # Curve-following progress (MA_CurveFollowingStatusType.CurveStatus) — surfaced on
+      # the activity report so the brain can see the curve complete (level 2.4).
+      - { name: CurveStatus, path: MessageData.Activity.CurveFollowingStatus.CurveStatus, type: enum, values: [START_CURVE_FOLLOWING, CURVE_IN_PROGRESS, CURVE_COMPLETED], required: false }
 
   - name: MA_PositionReportDetailedMT
     tier: 1
@@ -162,3 +170,55 @@ messages:
     fields:
       - { name: Fuel, path: MessageData.Endurance.Fuel, type: number, required: false }
       - { name: Percent, path: MessageData.Endurance.Percent, type: number, required: false }
+
+  # --- Mission Plan (route) upload + activation (VI §1.2.5) -----------------
+  - name: MA_RoutePlanMT
+    tier: 1
+    direction: MA->FA
+    citation: "VI Vol §1.2.5 Receive Mission Data (route plan)"
+    summary: >-
+      MA uploads a named route plan (a list of legs ending in a loiter). The full
+      RouteType/Path/PathSegment nesting is pruned to a RoutePlanID + a terminal
+      RACETRACK loiter; the actual leg geometry is level data (fidelity lie #5/#21).
+    fields:
+      - { name: RoutePlanID, path: MessageData.RoutePlan.RoutePlanID, type: string, required: true }
+      - { name: OrbitShape, path: MessageData.RoutePlan.Route.Path.LoiterElement.Orbit.OrbitShape, type: enum, values: [RACETRACK, CIRCLE, FIGURE_EIGHT], required: false }
+
+  - name: MA_MissionPlanActivationCommandMT
+    tier: 1
+    direction: MA->FA
+    citation: "VI Vol §1.2.5.2 Activate Mission Plan"
+    summary: >-
+      MA drives the upload/activation liturgy for a route plan: PREPARE_FOR_UPLOAD →
+      UPLOAD → PREPARE_FOR_ACTIVATION → ACTIVATE. Steps taken out of order fail
+      (the ordering puzzle). DEACTIVATE while EXECUTING fails (VI §1.2.5.4).
+    fields:
+      - { name: CommandID, path: MessageData.Command.CommandID, type: string, required: true }
+      - { name: RoutePlanID, path: MessageData.Command.RoutePlanID, type: string, required: true }
+      - { name: ActivationCommand, path: MessageData.Command.ActivationCommand, type: enum, values: [PREPARE_FOR_UPLOAD, UPLOAD, PREPARE_FOR_ACTIVATION, ACTIVATE, DEACTIVATE], required: true }
+
+  - name: MA_MissionPlanActivationCommandStatusMT
+    tier: 1
+    direction: FA->MA
+    citation: "VI Vol §1.2.5.2 Activate Mission Plan (status)"
+    summary: >-
+      FA reports the activation state machine's response to each liturgy step. A
+      well-ordered step advances the state (READY_FOR_UPLOAD → UPLOADED →
+      READY_FOR_ACTIVATION → ACTIVATED, CommandStatus COMPLETED); a bad step replies
+      a *_FAILED state with CommandStatus FAILED.
+    fields:
+      - { name: CommandID, path: MessageData.CommandStatus.CommandID, type: string, required: true }
+      - { name: ActivationState, path: MessageData.CommandStatus.ActivationState, type: enum, values: [INACTIVE, READY_FOR_UPLOAD, UPLOADED, READY_FOR_ACTIVATION, ACTIVATED, UPLOAD_FAILED, PREPARATION_FOR_ACTIVATION_FAILED, ACTIVATION_FAILED, DEACTIVATION_FAILED], required: true }
+      - { name: CommandStatus, path: MessageData.CommandStatus.ProcessingStatus, type: enum, values: [QUEUED, PROCESSING, COMPLETED, FAILED], required: false }
+
+  - name: RoutePlanExecutionStatusMT
+    tier: 1
+    direction: FA->MA
+    citation: "VI Vol §1.2.5.6 Receive Route Plan Execution Status"
+    summary: >-
+      FA reports the execution state of the active route plan: EXECUTING while it
+      flies the legs, COMPLETE at the terminal loiter, CANCELED if FA aborts the
+      route mid-flight (level 2.3), FAILED on an illegal DEACTIVATE while EXECUTING.
+    fields:
+      - { name: RoutePlanID, path: MessageData.RoutePlanExecutionStatus.RoutePlanID, type: string, required: true }
+      - { name: PlanExecutionState, path: MessageData.RoutePlanExecutionStatus.PlanExecutionState, type: enum, values: [PENDING, EXECUTING, COMPLETE, SUPERCEDED, CANCELED, FAILED], required: true }

@@ -44,6 +44,9 @@ export function MessageComposer() {
   const commandSeq = useStore((s) => s.commandSeq);
   const world = useStore((s) => s.world());
   const heldCapId = useMemo(() => controlledCapabilityId(world.log), [world.log]);
+  // The level's uploadable route ids (usually one). Used to prefill RoutePlanID so the
+  // player doesn't have to retype the route name onto every liturgy step.
+  const routeIds = useMemo(() => (level.routes ?? []).map((r) => r.id), [level.routes]);
 
   // Sendable = MA-originated messages the level exposes (MA→FA and MA→MS).
   const sendable = useMemo(
@@ -75,6 +78,7 @@ export function MessageComposer() {
       capabilityId={level.capabilityId}
       commandSeq={commandSeq}
       heldCapabilityId={heldCapId}
+      routeIds={routeIds}
       onBack={sendable.length > 1 ? () => setMessageType(null) : undefined}
       onCancel={cancel}
       onSend={(payload) =>
@@ -189,6 +193,7 @@ function FieldForm({
   capabilityId: _capabilityId,
   commandSeq,
   heldCapabilityId,
+  routeIds,
   onBack,
   onCancel,
   onSend,
@@ -198,6 +203,7 @@ function FieldForm({
   capabilityId: string;
   commandSeq: number;
   heldCapabilityId?: string;
+  routeIds: readonly string[];
   onBack?: () => void;
   onCancel: () => void;
   onSend: (payload: Record<string, unknown>) => void;
@@ -205,12 +211,14 @@ function FieldForm({
   const fields = catalogEntry(messageType).fields;
   // Prefill the IDs that are pure bookkeeping for the player: CommandID auto-increments
   // (CMD-1, CMD-2, …); CapabilityID is filled once control has been taken (they type it the
-  // first time, on the control request, when heldCapabilityId is still undefined).
+  // first time, on the control request, when heldCapabilityId is still undefined);
+  // RoutePlanID is filled from the level's route (so the liturgy doesn't make them retype it).
   const [values, setValues] = useState<Record<string, string>>(() =>
     Object.fromEntries(
       fields.map((f) => {
         if (f.name === "CommandID") return [f.name, `CMD-${commandSeq}`];
         if (f.name === "CapabilityID" && heldCapabilityId) return [f.name, heldCapabilityId];
+        if (f.name === "RoutePlanID" && routeIds.length > 0) return [f.name, routeIds[0]!];
         return [f.name, f.values?.[0] ?? ""];
       }),
     ),

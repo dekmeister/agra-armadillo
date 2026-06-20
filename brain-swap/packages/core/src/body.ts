@@ -13,7 +13,10 @@ export interface CapabilityProfile {
 
 export interface BodyCapability {
   readonly id: string; // CapabilityID (short id — fidelity lie #4)
-  readonly type: "HSA_CSA";
+  /** Real MA_FlightCapabilityEnum member. `HSA_CSA` advertises direct heading/speed/altitude
+   *  vectoring; `WAYPOINT_FOLLOWING` advertises route-plan following but NOT direct vectoring,
+   *  so FA rejects a direct MA_FlightCommandMT on such a capability (CAPABILITY_NOT_SUPPORTED). */
+  readonly type: "HSA_CSA" | "WAYPOINT_FOLLOWING";
   readonly profile: CapabilityProfile;
 }
 
@@ -92,6 +95,15 @@ export interface BodyProfile {
   readonly fuel?: FuelModel;
   /** Lookahead (ticks) for FA's collision-avoidance interrupt; absent ⇒ no interrupt. */
   readonly collisionLookaheadTicks?: number;
+  /** Curve-following performance (level 2.4). Absent ⇒ the airframe doesn't support the
+   *  CurveFollowing flight mode and FA rejects a curve command with CAPABILITY_NOT_SUPPORTED. */
+  readonly curve?: CurveProfile;
+}
+
+/** Curve-following limits. `maxCurvature` is the tightest commandable curvature (1/m);
+ *  a command above it is rejected PERFORMANCE_LIMIT_EXCEEDED (min radius = 1/maxCurvature). */
+export interface CurveProfile {
+  readonly maxCurvature: number;
 }
 
 export function findCapability(

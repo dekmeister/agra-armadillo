@@ -110,6 +110,35 @@ export function evaluateWin(
       const holdTicks = satisfied ? progress.holdTicks + 1 : 0;
       return { satisfied, holdTicks, waypointIndex, won: holdTicks >= o.holdTicks, failed };
     }
+    case "route-complete": {
+      // Protocol half: FA reported the route COMPLETE (flew the upload→activate liturgy
+      // and reached the terminal loiter). Geometric half: vehicle holding the loiter zone.
+      const complete = fa.routePlans[o.routeId]?.executionState === "COMPLETE";
+      const satisfied =
+        complete && inZoneAtAltitude(vehicle, o.zone, o.altitude, o.altitudeTolerance);
+      const holdTicks = satisfied ? progress.holdTicks + 1 : 0;
+      return {
+        satisfied,
+        holdTicks,
+        waypointIndex: progress.waypointIndex,
+        won: holdTicks >= o.holdTicks,
+        failed,
+      };
+    }
+    case "curve-complete": {
+      // FA's curve-following reached CURVE_COMPLETED and the vehicle holds the terminal zone.
+      const complete = fa.activeCurve?.status === "CURVE_COMPLETED";
+      const satisfied =
+        complete && inZoneAtAltitude(vehicle, o.zone, o.altitude, o.altitudeTolerance);
+      const holdTicks = satisfied ? progress.holdTicks + 1 : 0;
+      return {
+        satisfied,
+        holdTicks,
+        waypointIndex: progress.waypointIndex,
+        won: holdTicks >= o.holdTicks,
+        failed,
+      };
+    }
     case "ms-status": {
       // MS analogue of hold-control: the on-demand status reply must have latched the
       // subsystem at the required state (e.g. OPERATE). MS isn't safety-critical, so an

@@ -173,6 +173,44 @@ the XSD: `INVALID_CURVE`, `INVALID_WAYPOINT`, `PERFORMANCE_LIMIT_EXCEEDED`,
     status, not a validator gate. In 3.1, an on-demand `SubsystemStatusDataRequestMT` sent
     before the subsystem reaches OPERATE simply reflects the current state and never wins.
     The subsystem state timeline (INITIALIZATION→OPERATE) is deterministic, no RNG (rule #3).
+21. **Sensor scheduling is simplified (level 3.2).** Real MS schedulers manage resource
+    contention across many sensors and time-deconflict requests. The game models one AMTI
+    capability with deterministic scheduling: a valid `AMTI_CommandMT` (advertised
+    `CapabilityID`, a tasking interval that hasn't passed) is always accepted, goes ACTIVE
+    after a fixed delay, and reports its tracks on a fixed timetable.
+22. **Tracks are simulated, not sensed (level 3.2).** `EntityMT` tracks appear at
+    deterministic ticks after the AMTI activity goes ACTIVE — there is no real radar return,
+    and a track's position is authored, not computed from a sensor model. The teaching point
+    (wait for the activity and the entity report rather than assuming instant intelligence)
+    is preserved; the physics behind it is not.
+23. **Store inventory is static; consent's C2 leg is implicit (level 3.3).** Real store
+    management tracks station-by-station load, MDF variants, and compatibility testing; the
+    game provides a fixed `StrikeCapabilityMT` at level start (one store type, one station).
+    The real release-consent chain (MS Vol §1.2.10.10) also involves C2 authorizers beyond
+    MA — the game models only the MA↔MS consent leg and assumes the C2 authorization.
+24. **The DLZ is a single range ring (level 3.4).** A real Dynamic Launch Zone is an
+    azimuth-array of ranges (min/optimal/max per bearing) and the WEZ complement adds more.
+    The game collapses it to scalar minimum/optimal/maximum ranges and gates the strike on a
+    single circular maximum: the weapon only releases once the vehicle is within
+    `RangeMaxAero` of the target.
+25. **Upload confirmation collapses `MA_SystemNotificationMT` (levels 2.1 / 2.3).** A
+    route-upload handshake would naturally end in an `MA_SystemNotificationMT CONFIRMED`
+    step, but that message carries no CONFIRMED state in the XSD. The game models upload and
+    activation confirmation purely through `MA_MissionPlanActivationCommandStatusMT` state
+    transitions (`READY_FOR_UPLOAD`→`UPLOADED`→`READY_FOR_ACTIVATION`→`ACTIVATED`, with
+    `*_FAILED` on an out-of-order step) — fewer messages, all real, matching the spec's
+    status-driven handshake.
+26. **Pruned route content (levels 2.1 / 2.3, extends #5).** `MA_RoutePlanMT` shows a
+    `RoutePlanID` plus a flat leg list ending in a terminal `RACETRACK` loiter
+    (`OrbitEnum` on `MA_OrbitType`), not the full `RouteType`/`Path`/`PathSegment` nesting.
+    The legs the player never authors are level geometry; FA flies them once the route is
+    ACTIVATED and reports `RoutePlanExecutionStatusMT` `EXECUTING`→`COMPLETE`.
+27. **Simplified curve — one `Curvature` (level 2.4, extends #10).** A curve is commanded
+    with a single `Curvature` on `MA_FlightCommandMT`; the control points, `KnotVector`, and
+    `Weight`s are auto-filled and shown read-only. The presence of `Curvature` selects the
+    CurveFollowing mode. A curvature tighter than the body's `curve.maxCurvature` (radius
+    below the minimum turn radius) is rejected with `PERFORMANCE_LIMIT_EXCEEDED`; a body that
+    advertises no curve capability rejects with `CAPABILITY_NOT_SUPPORTED`.
 
 > **Added by Phase 2–4:** #5/#6/#12 again for 2.2 (hand-flown no-fly avoidance), 1.6
 > (Bingo), 4.2 (The Flinch) and 4.3 (Degraded); #17 (flat fuel + U-curve burn +
@@ -181,9 +219,15 @@ the XSD: `INVALID_CURVE`, `INVALID_WAYPOINT`, `PERFORMANCE_LIMIT_EXCEEDED`,
 >
 > **Added by Phase 5 (Mission Systems foundation):** #19 (same message on the VI and MS
 > buses) and #20 (MS is not safety-critical — no REJECT gate), both surfaced by 3.1 Meet
-> MS. Further MS simplifications (sensor scheduling, simulated `EntityMT` tracks, static
-> store inventory, the implicit C2 leg of release consent) land with the sensor/weapon/DLZ
-> levels — recorded in `PLAN_MS.md` and `RESEARCH_MS.md` §7, to be added here when built.
+> MS. The further MS simplifications #21–#24 (sensor scheduling, simulated `EntityMT`
+> tracks, static store inventory, the implicit C2 leg of release consent) landed with the
+> sensor/weapon/DLZ levels 3.2–3.4.
+>
+> **Added by World 2 (Navigation):** #25 (upload confirmation collapses
+> `MA_SystemNotificationMT` into activation-status transitions) and #26 (pruned route
+> content) for 2.1 Upload / 2.3 Retask, and #27 (a curve is one `Curvature`) for 2.4 First
+> Curve. The route/curve execution state lives in `FaState` (`ms/engine.ts` lifecycle
+> shape), tick-driven and deterministic (rule #3).
 
 ## 4. Honesty mechanisms
 

@@ -60,6 +60,16 @@ export function MissionCard({ collapsed, onToggleCollapse }: CollapseProps) {
           <div className="win">
             WIN ▸ complete the strike on task {o.taskId} — answer the consent request to release.
           </div>
+        ) : o.kind === "route-complete" ? (
+          <div className="win">
+            WIN ▸ upload &amp; activate route {o.routeId}; FA flies it to COMPLETE, then hold the
+            loiter for {o.holdTicks} ticks.
+          </div>
+        ) : o.kind === "curve-complete" ? (
+          <div className="win">
+            WIN ▸ command a valid curve to CURVE_COMPLETED, then hold the terminal for {o.holdTicks}{" "}
+            ticks.
+          </div>
         ) : (
           <div className="win">
             WIN ▸ pass {o.waypoints.length} waypoints in order, then hold for {o.holdTicks} ticks.

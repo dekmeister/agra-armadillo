@@ -1,11 +1,11 @@
 {
-  "id": "ax-01",
+  "id": "ax-01-route",
   "name": "Mule",
-  "_doc": "Forgiving trainer (docs/03): wide HSA envelope, instant approvals, no quirks.",
+  "_doc": "Route-following Mule (level 2.1): identical kinematics to AX-01, but its MULE-01 capability advertises WAYPOINT_FOLLOWING, not HSA_CSA. FA therefore REJECTS a hand-flown MA_FlightCommandMT (CAPABILITY_NOT_SUPPORTED) — this aircraft is flown by uploading a route plan, not by direct vectors.",
   "capabilities": [
     {
       "id": "MULE-01",
-      "type": "HSA_CSA",
+      "type": "WAYPOINT_FOLLOWING",
       "profile": {
         "minAltitude": 0,
         "maxAltitude": 12000,
@@ -21,9 +21,6 @@
   },
   "control": {
     "approvalLatencyTicks": 0
-  },
-  "curve": {
-    "maxCurvature": 0.004
   },
   "publish": {
     "positionIntervalTicks": 1,

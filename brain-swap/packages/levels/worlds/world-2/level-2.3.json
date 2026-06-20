@@ -1,0 +1,41 @@
+{
+  "id": "2.3",
+  "title": "Retask",
+  "body": "ax-01",
+  "capabilityId": "MULE-01",
+  "brief": "Upload and activate the route as before — then the tasking changes. Flight Autonomy aborts the active route mid-leg (RoutePlanExecutionStatusMT CANCELED). Don't wait on a dead plan: take manual control and hand-fly to the new objective.",
+  "teaches": "A route is not a guarantee. When FA cancels the active plan, the route stops flying itself and you must fall back to the basics — a hand-flown HSA command to the relocated objective. Recovering from a yanked plan is the first robustness exam (and DEACTIVATE can't save a running route — that fails).",
+  "objective": {
+    "_doc": "reach-hold at the MOVED objective (-1000,-700). The uploaded RTE-1 heads for (-1400,-400); the abort-route event cancels it mid-leg, so the only way to win is to take manual control and hand-fly south to the new zone.",
+    "kind": "reach-hold",
+    "zone": { "x": -1000, "y": -700, "radius": 200 },
+    "altitude": 3000,
+    "altitudeTolerance": 60,
+    "holdTicks": 10
+  },
+  "routes": [
+    {
+      "id": "RTE-1",
+      "legs": [{ "x": -800, "y": 0, "altitude": 3000, "speed": 30 }],
+      "loiter": { "x": -1400, "y": -400, "radius": 200, "altitude": 3000, "speed": 25 }
+    }
+  ],
+  "events": [{ "kind": "abort-route", "tick": 28, "routeId": "RTE-1" }],
+  "start": { "x": 0, "y": 0, "altitude": 3000, "heading": 270, "speed": 30 },
+  "availableMessages": [
+    "MA_FlightCapabilityStatusMT",
+    "MA_ControlRequestMT",
+    "MA_ControlRequestStatusMT",
+    "ControlStatusMT",
+    "MA_RoutePlanMT",
+    "MA_MissionPlanActivationCommandMT",
+    "MA_MissionPlanActivationCommandStatusMT",
+    "RoutePlanExecutionStatusMT",
+    "MA_FlightCommandMT",
+    "MA_FlightCommandStatusMT",
+    "MA_PositionReportDetailedMT"
+  ],
+  "maxTicks": 220,
+  "pars": { "ticks": 56, "busTraffic": 7, "rejections": 0, "brainSize": 15 },
+  "fidelityNotes": [5, 25, 26]
+}

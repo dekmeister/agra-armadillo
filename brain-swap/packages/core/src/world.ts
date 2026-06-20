@@ -9,7 +9,7 @@ import { type BusState, emptyBus, enqueueAll } from "./bus.ts";
 import { type FaState, faBootMessages, initFaState } from "./fa/engine.ts";
 import type { ActiveThreat } from "./level/events.ts";
 import type { LevelDef } from "./level/types.ts";
-import { initMsState, msBootMessages, type MsState } from "./ms/engine.ts";
+import { initMsState, type MsState, msBootMessages } from "./ms/engine.ts";
 import type { MessageLogEntry } from "./types.ts";
 import { initVehicle, type VehicleState } from "./vehicle/pointmass.ts";
 

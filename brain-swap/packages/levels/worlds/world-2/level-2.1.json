@@ -1,0 +1,41 @@
+{
+  "id": "2.1",
+  "title": "Upload",
+  "body": "ax-01-route",
+  "capabilityId": "MULE-01",
+  "brief": "Don't hand-fly this one — upload a route plan and let Flight Autonomy fly it. Two messages work together: MA_RoutePlanMT is the route itself (the data); MA_MissionPlanActivationCommandMT is the protocol that uploads and activates it (its ActivationCommand field). Walk it in order: (1) PREPARE_FOR_UPLOAD, (2) send the plan + UPLOAD, (3) PREPARE_FOR_ACTIVATION, (4) ACTIVATE. Each FA reply names the next state — click it for the next step — then watch the route run to the loiter.",
+  "teaches": "A route plan is committed through an ordered handshake, not a single command. Each step is gated on the one before — skip or reorder a step and FA replies a *_FAILED state. Once ACTIVATED, FA flies the legs itself and reports RoutePlanExecutionStatusMT EXECUTING → COMPLETE. This airframe's capability is WAYPOINT_FOLLOWING, not HSA_CSA: a hand-flown MA_FlightCommandMT is REJECTED CAPABILITY_NOT_SUPPORTED — you fly it by uploading a route, not by direct vectors.",
+  "objective": {
+    "_doc": "route-complete: FA must report RTE-1 COMPLETE (flew the liturgy + the leg) and the vehicle holds the terminal RACETRACK loiter at (-1200,-500). Geometry is turn-friendly for the Mule's 6 deg/tick rate (gentle left turn onto the loiter).",
+    "kind": "route-complete",
+    "routeId": "RTE-1",
+    "zone": { "x": -1200, "y": -500, "radius": 220 },
+    "altitude": 3000,
+    "altitudeTolerance": 60,
+    "holdTicks": 10
+  },
+  "routes": [
+    {
+      "id": "RTE-1",
+      "legs": [{ "x": -800, "y": 0, "altitude": 3000, "speed": 30 }],
+      "loiter": { "x": -1200, "y": -500, "radius": 220, "altitude": 3000, "speed": 25 }
+    }
+  ],
+  "start": { "x": 0, "y": 0, "altitude": 3000, "heading": 270, "speed": 30 },
+  "availableMessages": [
+    "MA_FlightCapabilityStatusMT",
+    "MA_ControlRequestMT",
+    "MA_ControlRequestStatusMT",
+    "ControlStatusMT",
+    "MA_RoutePlanMT",
+    "MA_MissionPlanActivationCommandMT",
+    "MA_MissionPlanActivationCommandStatusMT",
+    "RoutePlanExecutionStatusMT",
+    "MA_PositionReportDetailedMT",
+    "MA_FlightCommandMT",
+    "MA_FlightCommandStatusMT"
+  ],
+  "maxTicks": 220,
+  "pars": { "ticks": 55, "busTraffic": 6, "rejections": 0, "brainSize": 13 },
+  "fidelityNotes": [5, 25, 26]
+}

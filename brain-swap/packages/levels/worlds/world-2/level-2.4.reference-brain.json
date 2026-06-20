@@ -1,0 +1,47 @@
+{
+  "id": "ref-2.4",
+  "_doc": "Handshake (ACQUIRE → APPROVED → ControlStatus), then send ONE curve command: a flight command carrying a Curvature within the Mule's turn limit. FA validates, accepts, and flies the arc to the terminal; the win is world-state (CURVE_COMPLETED + hold terminal).",
+  "initial": "await-capability",
+  "states": ["await-capability", "awaiting-approval", "confirming-control", "flying"],
+  "transitions": [
+    {
+      "from": "await-capability",
+      "trigger": { "messageType": "MA_FlightCapabilityStatusMT" },
+      "guard": { "field": "Availability", "op": "==", "value": "AVAILABLE" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "MA_ControlRequestMT",
+          "fields": { "RequestType": "ACQUIRE", "CapabilityID": { "cap": "CapabilityID" } }
+        }
+      ],
+      "target": "awaiting-approval"
+    },
+    {
+      "from": "awaiting-approval",
+      "trigger": { "messageType": "MA_ControlRequestStatusMT" },
+      "guard": { "field": "ApprovalRequestProcessingState", "op": "==", "value": "APPROVED" },
+      "target": "confirming-control"
+    },
+    {
+      "from": "confirming-control",
+      "trigger": { "messageType": "ControlStatusMT" },
+      "guard": { "field": "SecondaryController", "op": "==", "value": "MA" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "MA_FlightCommandMT",
+          "fields": {
+            "CommandID": "CMD-1",
+            "CommandState": "NEW",
+            "CapabilityID": "MULE-01",
+            "Curvature": 0.002,
+            "Altitude": 3000,
+            "Speed": 25
+          }
+        }
+      ],
+      "target": "flying"
+    }
+  ]
+}

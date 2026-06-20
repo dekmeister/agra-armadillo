@@ -4,7 +4,7 @@
 
 export interface MA_FlightCapabilityMT {
   CapabilityID: string;
-  CapabilityType: "HSA_CSA";
+  CapabilityType: "HSA_CSA" | "WAYPOINT_FOLLOWING";
   MinAltitude?: number;
   MaxAltitude?: number;
   MinAirspeed?: number;
@@ -40,12 +40,22 @@ export interface MA_FlightCommandMT {
   Speed?: number;
   Heading?: number;
   Course?: number;
+  Curvature?: number;
 }
 
 export interface MA_FlightCommandStatusMT {
   CommandID: string;
   CommandProcessingState: "RECEIVED" | "ACCEPTED" | "REJECTED" | "CANCELED";
-  ValidationResult?: "FLIGHT_COMMAND_VALID" | "PERFORMANCE_LIMIT_EXCEEDED" | "CAPABILITY_NOT_SUPPORTED" | "VIOLATION_ENDURANCE" | "VIOLATION_GEOFENCE" | "VIOLATION_AIR_TRAFFIC" | "VIOLATION_TERRAIN" | "INVALID_WAYPOINT" | "INVALID_CURVE";
+  ValidationResult?:
+    | "FLIGHT_COMMAND_VALID"
+    | "PERFORMANCE_LIMIT_EXCEEDED"
+    | "CAPABILITY_NOT_SUPPORTED"
+    | "VIOLATION_ENDURANCE"
+    | "VIOLATION_GEOFENCE"
+    | "VIOLATION_AIR_TRAFFIC"
+    | "VIOLATION_TERRAIN"
+    | "INVALID_WAYPOINT"
+    | "INVALID_CURVE";
 }
 
 export interface MA_FlightActivityMT {
@@ -53,6 +63,7 @@ export interface MA_FlightActivityMT {
   Altitude?: number;
   Heading?: number;
   Speed?: number;
+  CurveStatus?: "START_CURVE_FOLLOWING" | "CURVE_IN_PROGRESS" | "CURVE_COMPLETED";
 }
 
 export interface MA_PositionReportDetailedMT {
@@ -73,6 +84,42 @@ export interface MA_FaultMT {
 export interface NavigationReportMT {
   Fuel?: number;
   Percent?: number;
+}
+
+export interface MA_RoutePlanMT {
+  RoutePlanID: string;
+  OrbitShape?: "RACETRACK" | "CIRCLE" | "FIGURE_EIGHT";
+}
+
+export interface MA_MissionPlanActivationCommandMT {
+  CommandID: string;
+  RoutePlanID: string;
+  ActivationCommand:
+    | "PREPARE_FOR_UPLOAD"
+    | "UPLOAD"
+    | "PREPARE_FOR_ACTIVATION"
+    | "ACTIVATE"
+    | "DEACTIVATE";
+}
+
+export interface MA_MissionPlanActivationCommandStatusMT {
+  CommandID: string;
+  ActivationState:
+    | "INACTIVE"
+    | "READY_FOR_UPLOAD"
+    | "UPLOADED"
+    | "READY_FOR_ACTIVATION"
+    | "ACTIVATED"
+    | "UPLOAD_FAILED"
+    | "PREPARATION_FOR_ACTIVATION_FAILED"
+    | "ACTIVATION_FAILED"
+    | "DEACTIVATION_FAILED";
+  CommandStatus?: "QUEUED" | "PROCESSING" | "COMPLETED" | "FAILED";
+}
+
+export interface RoutePlanExecutionStatusMT {
+  RoutePlanID: string;
+  PlanExecutionState: "PENDING" | "EXECUTING" | "COMPLETE" | "SUPERCEDED" | "CANCELED" | "FAILED";
 }
 
 export interface SubsystemStatusMT {
@@ -205,6 +252,10 @@ export interface MessagePayloads {
   MA_PositionReportDetailedMT: MA_PositionReportDetailedMT;
   MA_FaultMT: MA_FaultMT;
   NavigationReportMT: NavigationReportMT;
+  MA_RoutePlanMT: MA_RoutePlanMT;
+  MA_MissionPlanActivationCommandMT: MA_MissionPlanActivationCommandMT;
+  MA_MissionPlanActivationCommandStatusMT: MA_MissionPlanActivationCommandStatusMT;
+  RoutePlanExecutionStatusMT: RoutePlanExecutionStatusMT;
   SubsystemStatusMT: SubsystemStatusMT;
   ServiceStatusMT: ServiceStatusMT;
   SubsystemStatusDataRequestMT: SubsystemStatusDataRequestMT;
@@ -252,245 +303,232 @@ export interface CatalogMessageMeta {
 
 /** Runtime metadata for every Tier-1 message, keyed by type name. */
 export const MESSAGE_CATALOG = {
-  "MA_FlightCapabilityMT": {
-    "name": "MA_FlightCapabilityMT",
-    "tier": 1,
-    "direction": "FA->MA",
-    "citation": "VI Vol §1.2.2.4 Control Mode Authorization",
-    "summary": "FA advertises a commandable flight capability and its per-mode performance envelope. The envelope FA advertises here is exactly what its validator enforces later — the pedagogical contract (docs/04).",
-    "fields": [
+  MA_FlightCapabilityMT: {
+    name: "MA_FlightCapabilityMT",
+    tier: 1,
+    direction: "FA->MA",
+    citation: "VI Vol §1.2.2.4 Control Mode Authorization",
+    summary:
+      "FA advertises a commandable flight capability and its per-mode performance envelope. The envelope FA advertises here is exactly what its validator enforces later — the pedagogical contract (docs/04).",
+    fields: [
       {
-        "name": "CapabilityID",
-        "path": "MessageData.Capability.CapabilityID",
-        "type": "string",
-        "required": true
+        name: "CapabilityID",
+        path: "MessageData.Capability.CapabilityID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "CapabilityType",
-        "path": "MessageData.Capability.CapabilityType",
-        "type": "enum",
-        "values": [
-          "HSA_CSA"
-        ],
-        "required": true
+        name: "CapabilityType",
+        path: "MessageData.Capability.CapabilityType",
+        type: "enum",
+        values: ["HSA_CSA", "WAYPOINT_FOLLOWING"],
+        required: true,
       },
       {
-        "name": "MinAltitude",
-        "path": "MessageData.Capability.FlightCapabilityPerformanceProfile.HSA_CSA_PerformanceProfile.MinAltitude",
-        "type": "number",
-        "required": false
+        name: "MinAltitude",
+        path: "MessageData.Capability.FlightCapabilityPerformanceProfile.HSA_CSA_PerformanceProfile.MinAltitude",
+        type: "number",
+        required: false,
       },
       {
-        "name": "MaxAltitude",
-        "path": "MessageData.Capability.FlightCapabilityPerformanceProfile.HSA_CSA_PerformanceProfile.MaxAltitude",
-        "type": "number",
-        "required": false
+        name: "MaxAltitude",
+        path: "MessageData.Capability.FlightCapabilityPerformanceProfile.HSA_CSA_PerformanceProfile.MaxAltitude",
+        type: "number",
+        required: false,
       },
       {
-        "name": "MinAirspeed",
-        "path": "MessageData.Capability.FlightCapabilityPerformanceProfile.HSA_CSA_PerformanceProfile.MinAirspeed",
-        "type": "number",
-        "required": false
+        name: "MinAirspeed",
+        path: "MessageData.Capability.FlightCapabilityPerformanceProfile.HSA_CSA_PerformanceProfile.MinAirspeed",
+        type: "number",
+        required: false,
       },
       {
-        "name": "MaxAirspeed",
-        "path": "MessageData.Capability.FlightCapabilityPerformanceProfile.HSA_CSA_PerformanceProfile.MaxAirspeed",
-        "type": "number",
-        "required": false
-      }
-    ]
+        name: "MaxAirspeed",
+        path: "MessageData.Capability.FlightCapabilityPerformanceProfile.HSA_CSA_PerformanceProfile.MaxAirspeed",
+        type: "number",
+        required: false,
+      },
+    ],
   },
-  "MA_FlightCapabilityStatusMT": {
-    "name": "MA_FlightCapabilityStatusMT",
-    "tier": 1,
-    "direction": "FA->MA",
-    "citation": "VI Vol §1.2.2.4 Control Mode Authorization (readiness)",
-    "summary": "FA signals whether an advertised capability is ready to be controlled.",
-    "fields": [
+  MA_FlightCapabilityStatusMT: {
+    name: "MA_FlightCapabilityStatusMT",
+    tier: 1,
+    direction: "FA->MA",
+    citation: "VI Vol §1.2.2.4 Control Mode Authorization (readiness)",
+    summary: "FA signals whether an advertised capability is ready to be controlled.",
+    fields: [
       {
-        "name": "CapabilityID",
-        "path": "MessageData.CapabilityStatus.CapabilityID",
-        "type": "string",
-        "required": true
+        name: "CapabilityID",
+        path: "MessageData.CapabilityStatus.CapabilityID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "Availability",
-        "path": "MessageData.CapabilityStatus.AvailabilityInfo.Availability",
-        "type": "enum",
-        "values": [
-          "AVAILABLE",
-          "UNAVAILABLE",
-          "TEMPORARILY_UNAVAILABLE"
-        ],
-        "required": true
-      }
-    ]
+        name: "Availability",
+        path: "MessageData.CapabilityStatus.AvailabilityInfo.Availability",
+        type: "enum",
+        values: ["AVAILABLE", "UNAVAILABLE", "TEMPORARILY_UNAVAILABLE"],
+        required: true,
+      },
+    ],
   },
-  "MA_ControlRequestMT": {
-    "name": "MA_ControlRequestMT",
-    "tier": 1,
-    "direction": "MA->FA",
-    "citation": "VI Vol §1.2.2.7 Receive Control Request",
-    "summary": "MA requests control of a capability. The game correlates the request to a capability by CapabilityID (fidelity lie #4: the real assignment links via Controllee/ControlType; correlation semantics preserved, format shortened).",
-    "fields": [
+  MA_ControlRequestMT: {
+    name: "MA_ControlRequestMT",
+    tier: 1,
+    direction: "MA->FA",
+    citation: "VI Vol §1.2.2.7 Receive Control Request",
+    summary:
+      "MA requests control of a capability. The game correlates the request to a capability by CapabilityID (fidelity lie #4: the real assignment links via Controllee/ControlType; correlation semantics preserved, format shortened).",
+    fields: [
       {
-        "name": "RequestType",
-        "path": "MessageData.RequestType",
-        "type": "enum",
-        "values": [
-          "ACQUIRE",
-          "RELEASE"
-        ],
-        "required": true
+        name: "RequestType",
+        path: "MessageData.RequestType",
+        type: "enum",
+        values: ["ACQUIRE", "RELEASE"],
+        required: true,
       },
       {
-        "name": "CapabilityID",
-        "path": "MessageData.ControlAssignment.CapabilityID",
-        "type": "string",
-        "required": true
-      }
-    ]
+        name: "CapabilityID",
+        path: "MessageData.ControlAssignment.CapabilityID",
+        type: "string",
+        required: true,
+      },
+    ],
   },
-  "MA_ControlRequestStatusMT": {
-    "name": "MA_ControlRequestStatusMT",
-    "tier": 1,
-    "direction": "FA->MA",
-    "citation": "VI Vol §1.2.2.7 Receive Control Request (status)",
-    "summary": "FA approves, defers (PENDING), or rejects a control request.",
-    "fields": [
+  MA_ControlRequestStatusMT: {
+    name: "MA_ControlRequestStatusMT",
+    tier: 1,
+    direction: "FA->MA",
+    citation: "VI Vol §1.2.2.7 Receive Control Request (status)",
+    summary: "FA approves, defers (PENDING), or rejects a control request.",
+    fields: [
       {
-        "name": "CapabilityID",
-        "path": "MessageData.ControlAssignment.CapabilityID",
-        "type": "string",
-        "required": true
+        name: "CapabilityID",
+        path: "MessageData.ControlAssignment.CapabilityID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "ApprovalRequestProcessingState",
-        "path": "MessageData.ApprovalRequestProcessingState",
-        "type": "enum",
-        "values": [
-          "APPROVED",
-          "PENDING",
-          "REJECTED",
-          "CANCELED"
-        ],
-        "required": true
-      }
-    ]
+        name: "ApprovalRequestProcessingState",
+        path: "MessageData.ApprovalRequestProcessingState",
+        type: "enum",
+        values: ["APPROVED", "PENDING", "REJECTED", "CANCELED"],
+        required: true,
+      },
+    ],
   },
-  "ControlStatusMT": {
-    "name": "ControlStatusMT",
-    "tier": 1,
-    "direction": "FA->MA",
-    "citation": "VI Vol §1.2.6.2 Publish Control Status",
-    "summary": "Who FA is listening to per capability. FA is always PrimaryController; MA is at most SecondaryController. Commands are honored only while MA appears as the SecondaryController for that capability (fidelity lie #8).",
-    "fields": [
+  ControlStatusMT: {
+    name: "ControlStatusMT",
+    tier: 1,
+    direction: "FA->MA",
+    citation: "VI Vol §1.2.6.2 Publish Control Status",
+    summary:
+      "Who FA is listening to per capability. FA is always PrimaryController; MA is at most SecondaryController. Commands are honored only while MA appears as the SecondaryController for that capability (fidelity lie #8).",
+    fields: [
       {
-        "name": "CapabilityID",
-        "path": "MessageData.ControlType.CapabilityControl.CapabilityID",
-        "type": "string",
-        "required": true
+        name: "CapabilityID",
+        path: "MessageData.ControlType.CapabilityControl.CapabilityID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "PrimaryController",
-        "path": "MessageData.ControlType.CapabilityControl.PrimaryController",
-        "type": "string",
-        "required": false
+        name: "PrimaryController",
+        path: "MessageData.ControlType.CapabilityControl.PrimaryController",
+        type: "string",
+        required: false,
       },
       {
-        "name": "SecondaryController",
-        "path": "MessageData.ControlType.CapabilityControl.SecondaryController.SystemID",
-        "type": "string",
-        "required": false
-      }
-    ]
+        name: "SecondaryController",
+        path: "MessageData.ControlType.CapabilityControl.SecondaryController.SystemID",
+        type: "string",
+        required: false,
+      },
+    ],
   },
-  "MA_FlightCommandMT": {
-    "name": "MA_FlightCommandMT",
-    "tier": 1,
-    "direction": "MA->FA",
-    "citation": "VI Vol §1.2.2.2 Control by HSA/CSA Command",
-    "summary": "Persistent HSA/CSA flight vector command. HSA has no completion state — the brain infers arrival from position reports (the 1.2 lesson).",
-    "fields": [
+  MA_FlightCommandMT: {
+    name: "MA_FlightCommandMT",
+    tier: 1,
+    direction: "MA->FA",
+    citation: "VI Vol §1.2.2.2 Control by HSA/CSA Command",
+    summary:
+      "Persistent HSA/CSA flight vector command. HSA has no completion state — the brain infers arrival from position reports (the 1.2 lesson).",
+    fields: [
       {
-        "name": "CommandID",
-        "path": "MessageData.Command.Capability.CommandID",
-        "type": "string",
-        "required": true
+        name: "CommandID",
+        path: "MessageData.Command.Capability.CommandID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "CommandState",
-        "path": "MessageData.Command.Capability.CommandState",
-        "type": "enum",
-        "values": [
-          "NEW",
-          "UPDATE",
-          "CANCEL"
-        ],
-        "required": true
+        name: "CommandState",
+        path: "MessageData.Command.Capability.CommandState",
+        type: "enum",
+        values: ["NEW", "UPDATE", "CANCEL"],
+        required: true,
       },
       {
-        "name": "CapabilityID",
-        "path": "MessageData.Command.Capability.CapabilityID",
-        "type": "string",
-        "required": true
+        name: "CapabilityID",
+        path: "MessageData.Command.Capability.CapabilityID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "Altitude",
-        "path": "MessageData.Command.Capability.FlightControlMode.HSA_CSA.Altitude",
-        "type": "number",
-        "required": false
+        name: "Altitude",
+        path: "MessageData.Command.Capability.FlightControlMode.HSA_CSA.Altitude",
+        type: "number",
+        required: false,
       },
       {
-        "name": "Speed",
-        "path": "MessageData.Command.Capability.FlightControlMode.HSA_CSA.Speed",
-        "type": "number",
-        "required": false
+        name: "Speed",
+        path: "MessageData.Command.Capability.FlightControlMode.HSA_CSA.Speed",
+        type: "number",
+        required: false,
       },
       {
-        "name": "Heading",
-        "path": "MessageData.Command.Capability.FlightControlMode.HSA_CSA.Direction.Heading",
-        "type": "number",
-        "required": false
+        name: "Heading",
+        path: "MessageData.Command.Capability.FlightControlMode.HSA_CSA.Direction.Heading",
+        type: "number",
+        required: false,
       },
       {
-        "name": "Course",
-        "path": "MessageData.Command.Capability.FlightControlMode.HSA_CSA.Direction.Course",
-        "type": "number",
-        "required": false
-      }
-    ]
+        name: "Course",
+        path: "MessageData.Command.Capability.FlightControlMode.HSA_CSA.Direction.Course",
+        type: "number",
+        required: false,
+      },
+      {
+        name: "Curvature",
+        path: "MessageData.Command.Capability.FlightControlMode.CurveFollowing.CurveSegments.Curvature",
+        type: "number",
+        required: false,
+      },
+    ],
   },
-  "MA_FlightCommandStatusMT": {
-    "name": "MA_FlightCommandStatusMT",
-    "tier": 1,
-    "direction": "FA->MA",
-    "citation": "VI Vol §1.2.2.2 Control by HSA/CSA Command (status)",
-    "summary": "FA accepts or rejects a flight command; rejection carries a ValidationResult reason.",
-    "fields": [
+  MA_FlightCommandStatusMT: {
+    name: "MA_FlightCommandStatusMT",
+    tier: 1,
+    direction: "FA->MA",
+    citation: "VI Vol §1.2.2.2 Control by HSA/CSA Command (status)",
+    summary: "FA accepts or rejects a flight command; rejection carries a ValidationResult reason.",
+    fields: [
       {
-        "name": "CommandID",
-        "path": "MessageData.CommandID",
-        "type": "string",
-        "required": true
+        name: "CommandID",
+        path: "MessageData.CommandID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "CommandProcessingState",
-        "path": "MessageData.CommandProcessingState",
-        "type": "enum",
-        "values": [
-          "RECEIVED",
-          "ACCEPTED",
-          "REJECTED",
-          "CANCELED"
-        ],
-        "required": true
+        name: "CommandProcessingState",
+        path: "MessageData.CommandProcessingState",
+        type: "enum",
+        values: ["RECEIVED", "ACCEPTED", "REJECTED", "CANCELED"],
+        required: true,
       },
       {
-        "name": "ValidationResult",
-        "path": "MessageData.CannotComplyDetails.ValidationResult",
-        "type": "enum",
-        "values": [
+        name: "ValidationResult",
+        path: "MessageData.CannotComplyDetails.ValidationResult",
+        type: "enum",
+        values: [
           "FLIGHT_COMMAND_VALID",
           "PERFORMANCE_LIMIT_EXCEEDED",
           "CAPABILITY_NOT_SUPPORTED",
@@ -499,740 +537,862 @@ export const MESSAGE_CATALOG = {
           "VIOLATION_AIR_TRAFFIC",
           "VIOLATION_TERRAIN",
           "INVALID_WAYPOINT",
-          "INVALID_CURVE"
+          "INVALID_CURVE",
         ],
-        "required": false
-      }
-    ]
+        required: false,
+      },
+    ],
   },
-  "MA_FlightActivityMT": {
-    "name": "MA_FlightActivityMT",
-    "tier": 1,
-    "direction": "FA->MA",
-    "citation": "VI Vol §1.2.6.8 Receive Vehicle State Data (activity)",
-    "summary": "FA reports the active flight activity resulting from an accepted command.",
-    "fields": [
+  MA_FlightActivityMT: {
+    name: "MA_FlightActivityMT",
+    tier: 1,
+    direction: "FA->MA",
+    citation: "VI Vol §1.2.6.8 Receive Vehicle State Data (activity)",
+    summary: "FA reports the active flight activity resulting from an accepted command.",
+    fields: [
       {
-        "name": "ActivityID",
-        "path": "MessageData.Activity.ActivityID",
-        "type": "string",
-        "required": true
+        name: "ActivityID",
+        path: "MessageData.Activity.ActivityID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "Altitude",
-        "path": "MessageData.Activity.VehicleCommandState.Altitude",
-        "type": "number",
-        "required": false
+        name: "Altitude",
+        path: "MessageData.Activity.VehicleCommandState.Altitude",
+        type: "number",
+        required: false,
       },
       {
-        "name": "Heading",
-        "path": "MessageData.Activity.VehicleCommandState.Heading",
-        "type": "number",
-        "required": false
+        name: "Heading",
+        path: "MessageData.Activity.VehicleCommandState.Heading",
+        type: "number",
+        required: false,
       },
       {
-        "name": "Speed",
-        "path": "MessageData.Activity.VehicleCommandState.Speed",
-        "type": "number",
-        "required": false
-      }
-    ]
+        name: "Speed",
+        path: "MessageData.Activity.VehicleCommandState.Speed",
+        type: "number",
+        required: false,
+      },
+      {
+        name: "CurveStatus",
+        path: "MessageData.Activity.CurveFollowingStatus.CurveStatus",
+        type: "enum",
+        values: ["START_CURVE_FOLLOWING", "CURVE_IN_PROGRESS", "CURVE_COMPLETED"],
+        required: false,
+      },
+    ],
   },
-  "MA_PositionReportDetailedMT": {
-    "name": "MA_PositionReportDetailedMT",
-    "tier": 1,
-    "direction": "FA->MA",
-    "citation": "VI Vol §1.2.6.8 Receive Vehicle State Data (position)",
-    "summary": "Periodic ownship state. The brain consumes this to know where it is and whether it has arrived (win conditions are world-state, never message-sent).",
-    "fields": [
+  MA_PositionReportDetailedMT: {
+    name: "MA_PositionReportDetailedMT",
+    tier: 1,
+    direction: "FA->MA",
+    citation: "VI Vol §1.2.6.8 Receive Vehicle State Data (position)",
+    summary:
+      "Periodic ownship state. The brain consumes this to know where it is and whether it has arrived (win conditions are world-state, never message-sent).",
+    fields: [
       {
-        "name": "Latitude",
-        "path": "MessageData.PositionReportData.Kinematics.Position.Latitude",
-        "type": "number",
-        "required": false
+        name: "Latitude",
+        path: "MessageData.PositionReportData.Kinematics.Position.Latitude",
+        type: "number",
+        required: false,
       },
       {
-        "name": "Longitude",
-        "path": "MessageData.PositionReportData.Kinematics.Position.Longitude",
-        "type": "number",
-        "required": false
+        name: "Longitude",
+        path: "MessageData.PositionReportData.Kinematics.Position.Longitude",
+        type: "number",
+        required: false,
       },
       {
-        "name": "Altitude",
-        "path": "MessageData.PositionReportData.Kinematics.Position.Altitude",
-        "type": "number",
-        "required": false
+        name: "Altitude",
+        path: "MessageData.PositionReportData.Kinematics.Position.Altitude",
+        type: "number",
+        required: false,
       },
       {
-        "name": "NavigationSolutionState",
-        "path": "MessageData.PositionReportData.NavigationSolutionState",
-        "type": "enum",
-        "values": [
-          "ALIGNING",
-          "FREE_INERTIAL",
-          "GPS",
-          "BLENDED"
+        name: "NavigationSolutionState",
+        path: "MessageData.PositionReportData.NavigationSolutionState",
+        type: "enum",
+        values: ["ALIGNING", "FREE_INERTIAL", "GPS", "BLENDED"],
+        required: false,
+      },
+    ],
+  },
+  MA_FaultMT: {
+    name: "MA_FaultMT",
+    tier: 1,
+    direction: "FA->MA",
+    citation: "VI Vol §1.2.6 Receive Vehicle State Data (fault information)",
+    summary:
+      "FA reports a subsystem fault. Used here for the collision-avoidance interrupt: when MA commands a vector into a threat, FA takes the aircraft and raises a CAUTION fault. Real MA_SubsystemFaultType also carries FaultState/ComponentID — pruned to the fields the player reads (fidelity lie #5).",
+    fields: [
+      {
+        name: "FaultID",
+        path: "MessageData.FaultInformation.FaultID",
+        type: "string",
+        required: true,
+      },
+      {
+        name: "Severity",
+        path: "MessageData.FaultInformation.Severity",
+        type: "enum",
+        values: ["NOMINAL", "ADVISORY", "CAUTION", "WARNING", "FAILED"],
+        required: true,
+      },
+      {
+        name: "FaultCode",
+        path: "MessageData.FaultInformation.FaultCode",
+        type: "string",
+        required: false,
+      },
+      {
+        name: "FaultDescription",
+        path: "MessageData.FaultInformation.FaultDescription",
+        type: "string",
+        required: false,
+      },
+      {
+        name: "CapabilityID",
+        path: "MessageData.FaultInformation.CapabilityID",
+        type: "string",
+        required: false,
+      },
+    ],
+  },
+  NavigationReportMT: {
+    name: "NavigationReportMT",
+    tier: 1,
+    direction: "FA->MA",
+    citation: "VI Vol §1.2.6.8 Receive Vehicle State Data (endurance)",
+    summary:
+      "Periodic ownship endurance. FA publishes remaining fuel (mass, kg) and percent of capacity; the brain reads it to fly a sustainable profile (the Bingo lesson). Real Endurance carries Fuel/Duration/DurationEnd/Percent — pruned here to flat Fuel + Percent (fidelity lie #5).",
+    fields: [
+      {
+        name: "Fuel",
+        path: "MessageData.Endurance.Fuel",
+        type: "number",
+        required: false,
+      },
+      {
+        name: "Percent",
+        path: "MessageData.Endurance.Percent",
+        type: "number",
+        required: false,
+      },
+    ],
+  },
+  MA_RoutePlanMT: {
+    name: "MA_RoutePlanMT",
+    tier: 1,
+    direction: "MA->FA",
+    citation: "VI Vol §1.2.5 Receive Mission Data (route plan)",
+    summary:
+      "MA uploads a named route plan (a list of legs ending in a loiter). The full RouteType/Path/PathSegment nesting is pruned to a RoutePlanID + a terminal RACETRACK loiter; the actual leg geometry is level data (fidelity lie #5/#21).",
+    fields: [
+      {
+        name: "RoutePlanID",
+        path: "MessageData.RoutePlan.RoutePlanID",
+        type: "string",
+        required: true,
+      },
+      {
+        name: "OrbitShape",
+        path: "MessageData.RoutePlan.Route.Path.LoiterElement.Orbit.OrbitShape",
+        type: "enum",
+        values: ["RACETRACK", "CIRCLE", "FIGURE_EIGHT"],
+        required: false,
+      },
+    ],
+  },
+  MA_MissionPlanActivationCommandMT: {
+    name: "MA_MissionPlanActivationCommandMT",
+    tier: 1,
+    direction: "MA->FA",
+    citation: "VI Vol §1.2.5.2 Activate Mission Plan",
+    summary:
+      "MA drives the upload/activation liturgy for a route plan: PREPARE_FOR_UPLOAD → UPLOAD → PREPARE_FOR_ACTIVATION → ACTIVATE. Steps taken out of order fail (the ordering puzzle). DEACTIVATE while EXECUTING fails (VI §1.2.5.4).",
+    fields: [
+      {
+        name: "CommandID",
+        path: "MessageData.Command.CommandID",
+        type: "string",
+        required: true,
+      },
+      {
+        name: "RoutePlanID",
+        path: "MessageData.Command.RoutePlanID",
+        type: "string",
+        required: true,
+      },
+      {
+        name: "ActivationCommand",
+        path: "MessageData.Command.ActivationCommand",
+        type: "enum",
+        values: [
+          "PREPARE_FOR_UPLOAD",
+          "UPLOAD",
+          "PREPARE_FOR_ACTIVATION",
+          "ACTIVATE",
+          "DEACTIVATE",
         ],
-        "required": false
-      }
-    ]
+        required: true,
+      },
+    ],
   },
-  "MA_FaultMT": {
-    "name": "MA_FaultMT",
-    "tier": 1,
-    "direction": "FA->MA",
-    "citation": "VI Vol §1.2.6 Receive Vehicle State Data (fault information)",
-    "summary": "FA reports a subsystem fault. Used here for the collision-avoidance interrupt: when MA commands a vector into a threat, FA takes the aircraft and raises a CAUTION fault. Real MA_SubsystemFaultType also carries FaultState/ComponentID — pruned to the fields the player reads (fidelity lie #5).",
-    "fields": [
+  MA_MissionPlanActivationCommandStatusMT: {
+    name: "MA_MissionPlanActivationCommandStatusMT",
+    tier: 1,
+    direction: "FA->MA",
+    citation: "VI Vol §1.2.5.2 Activate Mission Plan (status)",
+    summary:
+      "FA reports the activation state machine's response to each liturgy step. A well-ordered step advances the state (READY_FOR_UPLOAD → UPLOADED → READY_FOR_ACTIVATION → ACTIVATED, CommandStatus COMPLETED); a bad step replies a *_FAILED state with CommandStatus FAILED.",
+    fields: [
       {
-        "name": "FaultID",
-        "path": "MessageData.FaultInformation.FaultID",
-        "type": "string",
-        "required": true
+        name: "CommandID",
+        path: "MessageData.CommandStatus.CommandID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "Severity",
-        "path": "MessageData.FaultInformation.Severity",
-        "type": "enum",
-        "values": [
-          "NOMINAL",
-          "ADVISORY",
-          "CAUTION",
-          "WARNING",
-          "FAILED"
+        name: "ActivationState",
+        path: "MessageData.CommandStatus.ActivationState",
+        type: "enum",
+        values: [
+          "INACTIVE",
+          "READY_FOR_UPLOAD",
+          "UPLOADED",
+          "READY_FOR_ACTIVATION",
+          "ACTIVATED",
+          "UPLOAD_FAILED",
+          "PREPARATION_FOR_ACTIVATION_FAILED",
+          "ACTIVATION_FAILED",
+          "DEACTIVATION_FAILED",
         ],
-        "required": true
+        required: true,
       },
       {
-        "name": "FaultCode",
-        "path": "MessageData.FaultInformation.FaultCode",
-        "type": "string",
-        "required": false
+        name: "CommandStatus",
+        path: "MessageData.CommandStatus.ProcessingStatus",
+        type: "enum",
+        values: ["QUEUED", "PROCESSING", "COMPLETED", "FAILED"],
+        required: false,
       },
-      {
-        "name": "FaultDescription",
-        "path": "MessageData.FaultInformation.FaultDescription",
-        "type": "string",
-        "required": false
-      },
-      {
-        "name": "CapabilityID",
-        "path": "MessageData.FaultInformation.CapabilityID",
-        "type": "string",
-        "required": false
-      }
-    ]
+    ],
   },
-  "NavigationReportMT": {
-    "name": "NavigationReportMT",
-    "tier": 1,
-    "direction": "FA->MA",
-    "citation": "VI Vol §1.2.6.8 Receive Vehicle State Data (endurance)",
-    "summary": "Periodic ownship endurance. FA publishes remaining fuel (mass, kg) and percent of capacity; the brain reads it to fly a sustainable profile (the Bingo lesson). Real Endurance carries Fuel/Duration/DurationEnd/Percent — pruned here to flat Fuel + Percent (fidelity lie #5).",
-    "fields": [
+  RoutePlanExecutionStatusMT: {
+    name: "RoutePlanExecutionStatusMT",
+    tier: 1,
+    direction: "FA->MA",
+    citation: "VI Vol §1.2.5.6 Receive Route Plan Execution Status",
+    summary:
+      "FA reports the execution state of the active route plan: EXECUTING while it flies the legs, COMPLETE at the terminal loiter, CANCELED if FA aborts the route mid-flight (level 2.3), FAILED on an illegal DEACTIVATE while EXECUTING.",
+    fields: [
       {
-        "name": "Fuel",
-        "path": "MessageData.Endurance.Fuel",
-        "type": "number",
-        "required": false
+        name: "RoutePlanID",
+        path: "MessageData.RoutePlanExecutionStatus.RoutePlanID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "Percent",
-        "path": "MessageData.Endurance.Percent",
-        "type": "number",
-        "required": false
-      }
-    ]
+        name: "PlanExecutionState",
+        path: "MessageData.RoutePlanExecutionStatus.PlanExecutionState",
+        type: "enum",
+        values: ["PENDING", "EXECUTING", "COMPLETE", "SUPERCEDED", "CANCELED", "FAILED"],
+        required: true,
+      },
+    ],
   },
-  "SubsystemStatusMT": {
-    "name": "SubsystemStatusMT",
-    "tier": 2,
-    "direction": "MS->MA",
-    "citation": "MS Vol §1.2.9.1 Capability Heartbeat (subsystem status)",
-    "summary": "An MS subsystem reports its operating state. MS broadcasts this periodically (the MS heartbeat) and on demand. Same message type appears on the VI and MS buses in the real standard; the game collapses both onto one bus (lie #2), distinguished by the `from` party.",
-    "fields": [
+  SubsystemStatusMT: {
+    name: "SubsystemStatusMT",
+    tier: 2,
+    direction: "MS->MA",
+    citation: "MS Vol §1.2.9.1 Capability Heartbeat (subsystem status)",
+    summary:
+      "An MS subsystem reports its operating state. MS broadcasts this periodically (the MS heartbeat) and on demand. Same message type appears on the VI and MS buses in the real standard; the game collapses both onto one bus (lie #2), distinguished by the `from` party.",
+    fields: [
       {
-        "name": "SubsystemID",
-        "path": "MessageData.SubsystemID",
-        "type": "string",
-        "required": true
+        name: "SubsystemID",
+        path: "MessageData.SubsystemID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "SubsystemState",
-        "path": "MessageData.SubsystemState",
-        "type": "enum",
-        "values": [
-          "INITIALIZATION",
-          "STANDBY",
-          "OPERATE",
-          "DEGRADED"
-        ],
-        "required": true
-      }
-    ]
+        name: "SubsystemState",
+        path: "MessageData.SubsystemState",
+        type: "enum",
+        values: ["INITIALIZATION", "STANDBY", "OPERATE", "DEGRADED"],
+        required: true,
+      },
+    ],
   },
-  "ServiceStatusMT": {
-    "name": "ServiceStatusMT",
-    "tier": 2,
-    "direction": "MS->MA",
-    "citation": "MS Vol §1.2.9.4 Periodic Status (service health)",
-    "summary": "An MS service reports its health and uptime. Read alongside SubsystemStatusMT to judge whether the MS interface is fit to task before commanding it.",
-    "fields": [
+  ServiceStatusMT: {
+    name: "ServiceStatusMT",
+    tier: 2,
+    direction: "MS->MA",
+    citation: "MS Vol §1.2.9.4 Periodic Status (service health)",
+    summary:
+      "An MS service reports its health and uptime. Read alongside SubsystemStatusMT to judge whether the MS interface is fit to task before commanding it.",
+    fields: [
       {
-        "name": "ServiceID",
-        "path": "MessageData.ServiceID",
-        "type": "string",
-        "required": true
+        name: "ServiceID",
+        path: "MessageData.ServiceID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "ServiceState",
-        "path": "MessageData.ServiceState",
-        "type": "enum",
-        "values": [
-          "NORMAL",
-          "DEGRADED",
-          "INITIALIZING",
-          "INOPERABLE"
-        ],
-        "required": true
+        name: "ServiceState",
+        path: "MessageData.ServiceState",
+        type: "enum",
+        values: ["NORMAL", "DEGRADED", "INITIALIZING", "INOPERABLE"],
+        required: true,
       },
       {
-        "name": "TimeUp",
-        "path": "MessageData.TimeUp",
-        "type": "number",
-        "required": false
-      }
-    ]
+        name: "TimeUp",
+        path: "MessageData.TimeUp",
+        type: "number",
+        required: false,
+      },
+    ],
   },
-  "SubsystemStatusDataRequestMT": {
-    "name": "SubsystemStatusDataRequestMT",
-    "tier": 2,
-    "direction": "MA->MS",
-    "citation": "MS Vol §1.2.9.5 On-Demand Subsystem Status",
-    "summary": "MA asks a named MS subsystem to report its status now (rather than waiting for the next heartbeat). MS replies with a fresh SubsystemStatusMT. The lesson: confirm a subsystem is OPERATE on demand before relying on it — MS does not validate/REJECT like FA (it isn't safety-critical), it just reflects state.",
-    "fields": [
+  SubsystemStatusDataRequestMT: {
+    name: "SubsystemStatusDataRequestMT",
+    tier: 2,
+    direction: "MA->MS",
+    citation: "MS Vol §1.2.9.5 On-Demand Subsystem Status",
+    summary:
+      "MA asks a named MS subsystem to report its status now (rather than waiting for the next heartbeat). MS replies with a fresh SubsystemStatusMT. The lesson: confirm a subsystem is OPERATE on demand before relying on it — MS does not validate/REJECT like FA (it isn't safety-critical), it just reflects state.",
+    fields: [
       {
-        "name": "SubsystemID",
-        "path": "MessageData.SubsystemID",
-        "type": "string",
-        "required": true
-      }
-    ]
+        name: "SubsystemID",
+        path: "MessageData.SubsystemID",
+        type: "string",
+        required: true,
+      },
+    ],
   },
-  "MA_AMTI_CapabilityMT": {
-    "name": "MA_AMTI_CapabilityMT",
-    "tier": 2,
-    "direction": "MS->MA",
-    "citation": "MS Vol §1.2.8.1 Sensor Capability Advertisement (AMTI)",
-    "summary": "MS advertises an available AMTI radar capability — a CapabilityID an AMTI_CommandMT must reference, and the search type (VOLUME search or TRACK update). The MS analogue of FA's MA_FlightCapabilityMT.",
-    "fields": [
+  MA_AMTI_CapabilityMT: {
+    name: "MA_AMTI_CapabilityMT",
+    tier: 2,
+    direction: "MS->MA",
+    citation: "MS Vol §1.2.8.1 Sensor Capability Advertisement (AMTI)",
+    summary:
+      "MS advertises an available AMTI radar capability — a CapabilityID an AMTI_CommandMT must reference, and the search type (VOLUME search or TRACK update). The MS analogue of FA's MA_FlightCapabilityMT.",
+    fields: [
       {
-        "name": "CapabilityID",
-        "path": "MessageData.Capability.CapabilityID",
-        "type": "string",
-        "required": true
+        name: "CapabilityID",
+        path: "MessageData.Capability.CapabilityID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "CapabilityType",
-        "path": "MessageData.Capability.CapabilityType",
-        "type": "enum",
-        "values": [
-          "VOLUME",
-          "TRACK"
-        ],
-        "required": true
-      }
-    ]
+        name: "CapabilityType",
+        path: "MessageData.Capability.CapabilityType",
+        type: "enum",
+        values: ["VOLUME", "TRACK"],
+        required: true,
+      },
+    ],
   },
-  "AMTI_CommandMT": {
-    "name": "AMTI_CommandMT",
-    "tier": 2,
-    "direction": "MA->MS",
-    "citation": "MS Vol §1.2.8.4 Sensor Command (AMTI)",
-    "summary": "MA schedules an AMTI sensor: reference the advertised CapabilityID, give a tasking interval (StartTimeWindow/EndTimeWindow, in ticks) and a TargetVolume. Sensors are scheduled, not pointed — submit a request, then wait for the activity to confirm. CommandState CANCEL stops an active task (used after a sensor fault).",
-    "fields": [
+  AMTI_CommandMT: {
+    name: "AMTI_CommandMT",
+    tier: 2,
+    direction: "MA->MS",
+    citation: "MS Vol §1.2.8.4 Sensor Command (AMTI)",
+    summary:
+      "MA schedules an AMTI sensor: reference the advertised CapabilityID, give a tasking interval (StartTimeWindow/EndTimeWindow, in ticks) and a TargetVolume. Sensors are scheduled, not pointed — submit a request, then wait for the activity to confirm. CommandState CANCEL stops an active task (used after a sensor fault).",
+    fields: [
       {
-        "name": "CommandID",
-        "path": "MessageData.CommandID",
-        "type": "string",
-        "required": true
+        name: "CommandID",
+        path: "MessageData.CommandID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "CapabilityID",
-        "path": "MessageData.CapabilityID",
-        "type": "string",
-        "required": true
+        name: "CapabilityID",
+        path: "MessageData.CapabilityID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "CommandState",
-        "path": "MessageData.CommandState",
-        "type": "enum",
-        "values": [
-          "NEW",
-          "CANCEL"
-        ],
-        "required": true
+        name: "CommandState",
+        path: "MessageData.CommandState",
+        type: "enum",
+        values: ["NEW", "CANCEL"],
+        required: true,
       },
       {
-        "name": "StartTimeWindow",
-        "path": "MessageData.Command.StartTimeWindow",
-        "type": "number",
-        "required": false
+        name: "StartTimeWindow",
+        path: "MessageData.Command.StartTimeWindow",
+        type: "number",
+        required: false,
       },
       {
-        "name": "EndTimeWindow",
-        "path": "MessageData.Command.EndTimeWindow",
-        "type": "number",
-        "required": false
+        name: "EndTimeWindow",
+        path: "MessageData.Command.EndTimeWindow",
+        type: "number",
+        required: false,
       },
       {
-        "name": "TargetVolume",
-        "path": "MessageData.Command.TargetVolume",
-        "type": "string",
-        "required": false
-      }
-    ]
+        name: "TargetVolume",
+        path: "MessageData.Command.TargetVolume",
+        type: "string",
+        required: false,
+      },
+    ],
   },
-  "AMTI_CommandStatusMT": {
-    "name": "AMTI_CommandStatusMT",
-    "tier": 2,
-    "direction": "MS->MA",
-    "citation": "MS Vol §1.2.8.4 Sensor Command Status (AMTI)",
-    "summary": "MS acknowledges an AMTI command and reports its processing state. A valid command is RECEIVED then ACCEPTED; an invalid one (unknown capability, or an interval already passed) is CANCELED — MS isn't safety-critical, so it reflects status, it doesn't REJECT a gate (lie #20).",
-    "fields": [
+  AMTI_CommandStatusMT: {
+    name: "AMTI_CommandStatusMT",
+    tier: 2,
+    direction: "MS->MA",
+    citation: "MS Vol §1.2.8.4 Sensor Command Status (AMTI)",
+    summary:
+      "MS acknowledges an AMTI command and reports its processing state. A valid command is RECEIVED then ACCEPTED; an invalid one (unknown capability, or an interval already passed) is CANCELED — MS isn't safety-critical, so it reflects status, it doesn't REJECT a gate (lie #20).",
+    fields: [
       {
-        "name": "CommandID",
-        "path": "MessageData.CommandID",
-        "type": "string",
-        "required": true
+        name: "CommandID",
+        path: "MessageData.CommandID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "CommandProcessingState",
-        "path": "MessageData.CommandProcessingState",
-        "type": "enum",
-        "values": [
-          "RECEIVED",
-          "ACCEPTED",
-          "REJECTED",
-          "CANCELED"
-        ],
-        "required": true
-      }
-    ]
+        name: "CommandProcessingState",
+        path: "MessageData.CommandProcessingState",
+        type: "enum",
+        values: ["RECEIVED", "ACCEPTED", "REJECTED", "CANCELED"],
+        required: true,
+      },
+    ],
   },
-  "AMTI_ActivityMT": {
-    "name": "AMTI_ActivityMT",
-    "tier": 2,
-    "direction": "MS->MA",
-    "citation": "MS Vol §1.2.8 Sensor Activity Report (AMTI)",
-    "summary": "MS reports the scheduled sensor activity. Watch ActivityState advance ENABLED → ACTIVE_UNCONSTRAINED → COMPLETED before treating tracks as authoritative.",
-    "fields": [
+  AMTI_ActivityMT: {
+    name: "AMTI_ActivityMT",
+    tier: 2,
+    direction: "MS->MA",
+    citation: "MS Vol §1.2.8 Sensor Activity Report (AMTI)",
+    summary:
+      "MS reports the scheduled sensor activity. Watch ActivityState advance ENABLED → ACTIVE_UNCONSTRAINED → COMPLETED before treating tracks as authoritative.",
+    fields: [
       {
-        "name": "CapabilityID",
-        "path": "MessageData.Activity.CapabilityID",
-        "type": "string",
-        "required": true
+        name: "CapabilityID",
+        path: "MessageData.Activity.CapabilityID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "ActivityState",
-        "path": "MessageData.Activity.ActivityState",
-        "type": "enum",
-        "values": [
-          "ENABLED",
-          "ACTIVE_UNCONSTRAINED",
-          "COMPLETED"
-        ],
-        "required": true
+        name: "ActivityState",
+        path: "MessageData.Activity.ActivityState",
+        type: "enum",
+        values: ["ENABLED", "ACTIVE_UNCONSTRAINED", "COMPLETED"],
+        required: true,
       },
       {
-        "name": "EstimatedStartTime",
-        "path": "MessageData.Activity.EstimatedStartTime",
-        "type": "number",
-        "required": false
+        name: "EstimatedStartTime",
+        path: "MessageData.Activity.EstimatedStartTime",
+        type: "number",
+        required: false,
       },
       {
-        "name": "EstimatedCompletionTime",
-        "path": "MessageData.Activity.EstimatedCompletionTime",
-        "type": "number",
-        "required": false
-      }
-    ]
+        name: "EstimatedCompletionTime",
+        path: "MessageData.Activity.EstimatedCompletionTime",
+        type: "number",
+        required: false,
+      },
+    ],
   },
-  "EntityMT": {
-    "name": "EntityMT",
-    "tier": 2,
-    "direction": "MS->MA",
-    "citation": "MS Vol §1.2.8 Entity (sensor track)",
-    "summary": "A sensor track: MA's evidence the AMTI sensor is collecting. Position carried as Longitude/Latitude in the world frame (the same convention as MA_PositionReportDetailedMT; tracks are simulated, not sensed — fidelity).",
-    "fields": [
+  EntityMT: {
+    name: "EntityMT",
+    tier: 2,
+    direction: "MS->MA",
+    citation: "MS Vol §1.2.8 Entity (sensor track)",
+    summary:
+      "A sensor track: MA's evidence the AMTI sensor is collecting. Position carried as Longitude/Latitude in the world frame (the same convention as MA_PositionReportDetailedMT; tracks are simulated, not sensed — fidelity).",
+    fields: [
       {
-        "name": "EntityID",
-        "path": "MessageData.EntityID",
-        "type": "string",
-        "required": true
+        name: "EntityID",
+        path: "MessageData.EntityID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "Longitude",
-        "path": "MessageData.Kinematics.Position.Longitude",
-        "type": "number",
-        "required": false
+        name: "Longitude",
+        path: "MessageData.Kinematics.Position.Longitude",
+        type: "number",
+        required: false,
       },
       {
-        "name": "Latitude",
-        "path": "MessageData.Kinematics.Position.Latitude",
-        "type": "number",
-        "required": false
-      }
-    ]
+        name: "Latitude",
+        path: "MessageData.Kinematics.Position.Latitude",
+        type: "number",
+        required: false,
+      },
+    ],
   },
-  "StrikeCapabilityMT": {
-    "name": "StrikeCapabilityMT",
-    "tier": 2,
-    "direction": "MS->MA",
-    "citation": "MS Vol §1.2.10.11 Store Inventory (Strike Capability)",
-    "summary": "MS advertises a loaded weapon store: what is loaded and how many. MA needs this before tasking a strike.",
-    "fields": [
+  StrikeCapabilityMT: {
+    name: "StrikeCapabilityMT",
+    tier: 2,
+    direction: "MS->MA",
+    citation: "MS Vol §1.2.10.11 Store Inventory (Strike Capability)",
+    summary:
+      "MS advertises a loaded weapon store: what is loaded and how many. MA needs this before tasking a strike.",
+    fields: [
       {
-        "name": "CapabilityID",
-        "path": "MessageData.Capability.CapabilityID",
-        "type": "string",
-        "required": true
+        name: "CapabilityID",
+        path: "MessageData.Capability.CapabilityID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "StoreType",
-        "path": "MessageData.Capability.WeaponList.StoreInformation.StoreType",
-        "type": "string",
-        "required": true
+        name: "StoreType",
+        path: "MessageData.Capability.WeaponList.StoreInformation.StoreType",
+        type: "string",
+        required: true,
       },
       {
-        "name": "StoreQuantity",
-        "path": "MessageData.Capability.WeaponList.StoreInformation.StoreQuantity",
-        "type": "number",
-        "required": false
-      }
-    ]
+        name: "StoreQuantity",
+        path: "MessageData.Capability.WeaponList.StoreInformation.StoreQuantity",
+        type: "number",
+        required: false,
+      },
+    ],
   },
-  "StrikeCapabilityStatusMT": {
-    "name": "StrikeCapabilityStatusMT",
-    "tier": 2,
-    "direction": "MS->MA",
-    "citation": "MS Vol §1.2.10.8 Store Status",
-    "summary": "MS reports a store's state (READY → ARMED → AWAY). Static per level in the game (one store type, one station — fidelity).",
-    "fields": [
+  StrikeCapabilityStatusMT: {
+    name: "StrikeCapabilityStatusMT",
+    tier: 2,
+    direction: "MS->MA",
+    citation: "MS Vol §1.2.10.8 Store Status",
+    summary:
+      "MS reports a store's state (READY → ARMED → AWAY). Static per level in the game (one store type, one station — fidelity).",
+    fields: [
       {
-        "name": "CapabilityID",
-        "path": "MessageData.CapabilityID",
-        "type": "string",
-        "required": true
+        name: "CapabilityID",
+        path: "MessageData.CapabilityID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "StoreState",
-        "path": "MessageData.StoreStatus.StoreState",
-        "type": "enum",
-        "values": [
-          "READY",
-          "ARMED",
-          "AWAY"
-        ],
-        "required": true
-      }
-    ]
+        name: "StoreState",
+        path: "MessageData.StoreStatus.StoreState",
+        type: "enum",
+        values: ["READY", "ARMED", "AWAY"],
+        required: true,
+      },
+    ],
   },
-  "MA_TaskMT": {
-    "name": "MA_TaskMT",
-    "tier": 2,
-    "direction": "MA->MS",
-    "citation": "MS Vol §1.2.10.5 Fire Command (task description)",
-    "summary": "MA describes a strike task — the target and the weapon to use. This is the *what*, a task description, not yet a fire command (that is MA_TaskCommandMT).",
-    "fields": [
+  MA_TaskMT: {
+    name: "MA_TaskMT",
+    tier: 2,
+    direction: "MA->MS",
+    citation: "MS Vol §1.2.10.5 Fire Command (task description)",
+    summary:
+      "MA describes a strike task — the target and the weapon to use. This is the *what*, a task description, not yet a fire command (that is MA_TaskCommandMT).",
+    fields: [
       {
-        "name": "TaskID",
-        "path": "MessageData.TaskID",
-        "type": "string",
-        "required": true
+        name: "TaskID",
+        path: "MessageData.TaskID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "TaskType",
-        "path": "MessageData.TaskType",
-        "type": "enum",
-        "values": [
-          "STRIKE"
-        ],
-        "required": true
+        name: "TaskType",
+        path: "MessageData.TaskType",
+        type: "enum",
+        values: ["STRIKE"],
+        required: true,
       },
       {
-        "name": "Target",
-        "path": "MessageData.TaskGuidance.Target",
-        "type": "string",
-        "required": false
+        name: "Target",
+        path: "MessageData.TaskGuidance.Target",
+        type: "string",
+        required: false,
       },
       {
-        "name": "StoreType",
-        "path": "MessageData.TaskGuidance.WeaponList.StoreInformation.StoreType",
-        "type": "string",
-        "required": false
+        name: "StoreType",
+        path: "MessageData.TaskGuidance.WeaponList.StoreInformation.StoreType",
+        type: "string",
+        required: false,
       },
       {
-        "name": "StoreQuantity",
-        "path": "MessageData.TaskGuidance.WeaponList.StoreInformation.StoreQuantity",
-        "type": "number",
-        "required": false
-      }
-    ]
+        name: "StoreQuantity",
+        path: "MessageData.TaskGuidance.WeaponList.StoreInformation.StoreQuantity",
+        type: "number",
+        required: false,
+      },
+    ],
   },
-  "MA_TaskStatusMT": {
-    "name": "MA_TaskStatusMT",
-    "tier": 2,
-    "direction": "MS->MA",
-    "citation": "MS Vol §1.2.10.5 Task Status",
-    "summary": "MS accepts the task description and assigns the CapabilityID(s) that will service it.",
-    "fields": [
+  MA_TaskStatusMT: {
+    name: "MA_TaskStatusMT",
+    tier: 2,
+    direction: "MS->MA",
+    citation: "MS Vol §1.2.10.5 Task Status",
+    summary:
+      "MS accepts the task description and assigns the CapabilityID(s) that will service it.",
+    fields: [
       {
-        "name": "TaskID",
-        "path": "MessageData.TaskID",
-        "type": "string",
-        "required": true
+        name: "TaskID",
+        path: "MessageData.TaskID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "CapabilityID",
-        "path": "MessageData.CapabilityID",
-        "type": "string",
-        "required": false
-      }
-    ]
+        name: "CapabilityID",
+        path: "MessageData.CapabilityID",
+        type: "string",
+        required: false,
+      },
+    ],
   },
-  "MA_TaskCommandMT": {
-    "name": "MA_TaskCommandMT",
-    "tier": 2,
-    "direction": "MA->MS",
-    "citation": "MS Vol §1.2.10.5 Fire Command (execution order)",
-    "summary": "MA's execution order for a task (CommandState NEW, referencing the TaskID) — the *when*, separate from the task description. CANCEL aborts the task.",
-    "fields": [
+  MA_TaskCommandMT: {
+    name: "MA_TaskCommandMT",
+    tier: 2,
+    direction: "MA->MS",
+    citation: "MS Vol §1.2.10.5 Fire Command (execution order)",
+    summary:
+      "MA's execution order for a task (CommandState NEW, referencing the TaskID) — the *when*, separate from the task description. CANCEL aborts the task.",
+    fields: [
       {
-        "name": "TaskID",
-        "path": "MessageData.Command.TaskID",
-        "type": "string",
-        "required": true
+        name: "TaskID",
+        path: "MessageData.Command.TaskID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "CommandState",
-        "path": "MessageData.Command.CommandState",
-        "type": "enum",
-        "values": [
-          "NEW",
-          "CANCEL"
-        ],
-        "required": true
-      }
-    ]
+        name: "CommandState",
+        path: "MessageData.Command.CommandState",
+        type: "enum",
+        values: ["NEW", "CANCEL"],
+        required: true,
+      },
+    ],
   },
-  "MA_TaskCommandStatusMT": {
-    "name": "MA_TaskCommandStatusMT",
-    "tier": 2,
-    "direction": "MS->MA",
-    "citation": "MS Vol §1.2.10.5 Task Command Status",
-    "summary": "MS acknowledges the execution order. ACCEPTED means the strike is armed for consent.",
-    "fields": [
+  MA_TaskCommandStatusMT: {
+    name: "MA_TaskCommandStatusMT",
+    tier: 2,
+    direction: "MS->MA",
+    citation: "MS Vol §1.2.10.5 Task Command Status",
+    summary: "MS acknowledges the execution order. ACCEPTED means the strike is armed for consent.",
+    fields: [
       {
-        "name": "TaskID",
-        "path": "MessageData.TaskID",
-        "type": "string",
-        "required": true
+        name: "TaskID",
+        path: "MessageData.TaskID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "CommandProcessingState",
-        "path": "MessageData.CommandProcessingState",
-        "type": "enum",
-        "values": [
-          "RECEIVED",
-          "ACCEPTED",
-          "REJECTED"
-        ],
-        "required": true
-      }
-    ]
+        name: "CommandProcessingState",
+        path: "MessageData.CommandProcessingState",
+        type: "enum",
+        values: ["RECEIVED", "ACCEPTED", "REJECTED"],
+        required: true,
+      },
+    ],
   },
-  "StrikeConsentRequestMT": {
-    "name": "StrikeConsentRequestMT",
-    "tier": 2,
-    "direction": "MS->MA",
-    "citation": "MS Vol §1.2.10.10 Release Consent (request)",
-    "summary": "MS requests consent to fire — the inverted power relationship: MS holds the capability but asks MA for the key. It will not release autonomously.",
-    "fields": [
+  StrikeConsentRequestMT: {
+    name: "StrikeConsentRequestMT",
+    tier: 2,
+    direction: "MS->MA",
+    citation: "MS Vol §1.2.10.10 Release Consent (request)",
+    summary:
+      "MS requests consent to fire — the inverted power relationship: MS holds the capability but asks MA for the key. It will not release autonomously.",
+    fields: [
       {
-        "name": "SubsystemID",
-        "path": "MessageData.SubsystemID",
-        "type": "string",
-        "required": true
+        name: "SubsystemID",
+        path: "MessageData.SubsystemID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "TaskID",
-        "path": "MessageData.ConsentRequest.TaskID",
-        "type": "string",
-        "required": false
+        name: "TaskID",
+        path: "MessageData.ConsentRequest.TaskID",
+        type: "string",
+        required: false,
       },
       {
-        "name": "ConsentState",
-        "path": "MessageData.ConsentRequest.Consent",
-        "type": "enum",
-        "values": [
-          "REQUESTED",
-          "APPROVED",
-          "REJECTED"
-        ],
-        "required": false
-      }
-    ]
+        name: "ConsentState",
+        path: "MessageData.ConsentRequest.Consent",
+        type: "enum",
+        values: ["REQUESTED", "APPROVED", "REJECTED"],
+        required: false,
+      },
+    ],
   },
-  "StrikeConsentRequestStatusMT": {
-    "name": "StrikeConsentRequestStatusMT",
-    "tier": 2,
-    "direction": "MA->MS",
-    "citation": "MS Vol §1.2.10.10 Release Consent (reply)",
-    "summary": "MA's consent decision. APPROVED releases the weapon; REJECTED (or no reply) withholds it. The single most important MS lesson — MA holds the key.",
-    "fields": [
+  StrikeConsentRequestStatusMT: {
+    name: "StrikeConsentRequestStatusMT",
+    tier: 2,
+    direction: "MA->MS",
+    citation: "MS Vol §1.2.10.10 Release Consent (reply)",
+    summary:
+      "MA's consent decision. APPROVED releases the weapon; REJECTED (or no reply) withholds it. The single most important MS lesson — MA holds the key.",
+    fields: [
       {
-        "name": "TaskID",
-        "path": "MessageData.TaskID",
-        "type": "string",
-        "required": true
+        name: "TaskID",
+        path: "MessageData.TaskID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "ConsentState",
-        "path": "MessageData.Consent",
-        "type": "enum",
-        "values": [
-          "APPROVED",
-          "REJECTED"
-        ],
-        "required": true
-      }
-    ]
+        name: "ConsentState",
+        path: "MessageData.Consent",
+        type: "enum",
+        values: ["APPROVED", "REJECTED"],
+        required: true,
+      },
+    ],
   },
-  "MA_StrikeActivityMT": {
-    "name": "MA_StrikeActivityMT",
-    "tier": 2,
-    "direction": "MS->MA",
-    "citation": "MS Vol §1.2.10 Strike Activity",
-    "summary": "MS reports the strike activity: ENABLED → ACTIVE_FULLY_CONSTRAINED → COMPLETED once consent is granted (and, with a DLZ, the target is in range).",
-    "fields": [
+  MA_StrikeActivityMT: {
+    name: "MA_StrikeActivityMT",
+    tier: 2,
+    direction: "MS->MA",
+    citation: "MS Vol §1.2.10 Strike Activity",
+    summary:
+      "MS reports the strike activity: ENABLED → ACTIVE_FULLY_CONSTRAINED → COMPLETED once consent is granted (and, with a DLZ, the target is in range).",
+    fields: [
       {
-        "name": "SubsystemID",
-        "path": "MessageData.SubsystemID",
-        "type": "string",
-        "required": true
+        name: "SubsystemID",
+        path: "MessageData.SubsystemID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "TaskID",
-        "path": "MessageData.Activity.TaskID",
-        "type": "string",
-        "required": false
+        name: "TaskID",
+        path: "MessageData.Activity.TaskID",
+        type: "string",
+        required: false,
       },
       {
-        "name": "ActivityState",
-        "path": "MessageData.Activity.ActivityState",
-        "type": "enum",
-        "values": [
-          "ENABLED",
-          "ACTIVE_FULLY_CONSTRAINED",
-          "COMPLETED"
-        ],
-        "required": true
-      }
-    ]
+        name: "ActivityState",
+        path: "MessageData.Activity.ActivityState",
+        type: "enum",
+        values: ["ENABLED", "ACTIVE_FULLY_CONSTRAINED", "COMPLETED"],
+        required: true,
+      },
+    ],
   },
-  "DLZ_RequestMT": {
-    "name": "DLZ_RequestMT",
-    "tier": 2,
-    "direction": "MA->MS",
-    "citation": "MS Vol §1.2.10.3 Dynamic Launch Zone (request)",
-    "summary": "MA asks MS for the launch zone before committing to a strike — the pre-fire geometry check, answered by data, not guesswork.",
-    "fields": [
+  DLZ_RequestMT: {
+    name: "DLZ_RequestMT",
+    tier: 2,
+    direction: "MA->MS",
+    citation: "MS Vol §1.2.10.3 Dynamic Launch Zone (request)",
+    summary:
+      "MA asks MS for the launch zone before committing to a strike — the pre-fire geometry check, answered by data, not guesswork.",
+    fields: [
       {
-        "name": "DLZ_RequestID",
-        "path": "MessageData.DLZ_RequestID",
-        "type": "string",
-        "required": true
+        name: "DLZ_RequestID",
+        path: "MessageData.DLZ_RequestID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "CapabilityID",
-        "path": "MessageData.CapabilityID",
-        "type": "string",
-        "required": false
+        name: "CapabilityID",
+        path: "MessageData.CapabilityID",
+        type: "string",
+        required: false,
       },
       {
-        "name": "ResultsInNativeMessage",
-        "path": "MessageData.ResultsInNativeMessage",
-        "type": "boolean",
-        "required": false
-      }
-    ]
+        name: "ResultsInNativeMessage",
+        path: "MessageData.ResultsInNativeMessage",
+        type: "boolean",
+        required: false,
+      },
+    ],
   },
-  "DLZ_RequestStatusMT": {
-    "name": "DLZ_RequestStatusMT",
-    "tier": 2,
-    "direction": "MS->MA",
-    "citation": "MS Vol §1.2.10.3 DLZ Request Status",
-    "summary": "MS acknowledges the DLZ request before sending the zone.",
-    "fields": [
+  DLZ_RequestStatusMT: {
+    name: "DLZ_RequestStatusMT",
+    tier: 2,
+    direction: "MS->MA",
+    citation: "MS Vol §1.2.10.3 DLZ Request Status",
+    summary: "MS acknowledges the DLZ request before sending the zone.",
+    fields: [
       {
-        "name": "DLZ_RequestID",
-        "path": "MessageData.DLZ_RequestID",
-        "type": "string",
-        "required": true
+        name: "DLZ_RequestID",
+        path: "MessageData.DLZ_RequestID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "CommandProcessingState",
-        "path": "MessageData.CommandProcessingState",
-        "type": "enum",
-        "values": [
-          "RECEIVED",
-          "ACCEPTED"
-        ],
-        "required": true
-      }
-    ]
+        name: "CommandProcessingState",
+        path: "MessageData.CommandProcessingState",
+        type: "enum",
+        values: ["RECEIVED", "ACCEPTED"],
+        required: true,
+      },
+    ],
   },
-  "DLZ_MT": {
-    "name": "DLZ_MT",
-    "tier": 2,
-    "direction": "MS->MA",
-    "citation": "MS Vol §1.2.10.3 Dynamic Launch Zone (result)",
-    "summary": "The launch zone: minimum / optimal / maximum ranges (metres). The strike completes only when the vehicle is inside the maximum — close the target before you fire.",
-    "fields": [
+  DLZ_MT: {
+    name: "DLZ_MT",
+    tier: 2,
+    direction: "MS->MA",
+    citation: "MS Vol §1.2.10.3 Dynamic Launch Zone (result)",
+    summary:
+      "The launch zone: minimum / optimal / maximum ranges (metres). The strike completes only when the vehicle is inside the maximum — close the target before you fire.",
+    fields: [
       {
-        "name": "DLZ_RequestID",
-        "path": "MessageData.DLZ_RequestID",
-        "type": "string",
-        "required": true
+        name: "DLZ_RequestID",
+        path: "MessageData.DLZ_RequestID",
+        type: "string",
+        required: true,
       },
       {
-        "name": "DLZ_ID",
-        "path": "MessageData.DLZ_ID",
-        "type": "string",
-        "required": false
+        name: "DLZ_ID",
+        path: "MessageData.DLZ_ID",
+        type: "string",
+        required: false,
       },
       {
-        "name": "RangeMinimum",
-        "path": "MessageData.DLZ_Data.RangeMinimum",
-        "type": "number",
-        "required": false
+        name: "RangeMinimum",
+        path: "MessageData.DLZ_Data.RangeMinimum",
+        type: "number",
+        required: false,
       },
       {
-        "name": "RangeOptimal",
-        "path": "MessageData.DLZ_Data.RangeOptimal",
-        "type": "number",
-        "required": false
+        name: "RangeOptimal",
+        path: "MessageData.DLZ_Data.RangeOptimal",
+        type: "number",
+        required: false,
       },
       {
-        "name": "RangeMaxAero",
-        "path": "MessageData.DLZ_Data.RangeMaxAero",
-        "type": "number",
-        "required": false
-      }
-    ]
-  }
+        name: "RangeMaxAero",
+        path: "MessageData.DLZ_Data.RangeMaxAero",
+        type: "number",
+        required: false,
+      },
+    ],
+  },
 } as const satisfies Record<MessageTypeName, CatalogMessageMeta>;
 
 /** All Tier-1 message type names, in catalog order. */
-export const MESSAGE_TYPE_NAMES = ["MA_FlightCapabilityMT","MA_FlightCapabilityStatusMT","MA_ControlRequestMT","MA_ControlRequestStatusMT","ControlStatusMT","MA_FlightCommandMT","MA_FlightCommandStatusMT","MA_FlightActivityMT","MA_PositionReportDetailedMT","MA_FaultMT","NavigationReportMT","SubsystemStatusMT","ServiceStatusMT","SubsystemStatusDataRequestMT","MA_AMTI_CapabilityMT","AMTI_CommandMT","AMTI_CommandStatusMT","AMTI_ActivityMT","EntityMT","StrikeCapabilityMT","StrikeCapabilityStatusMT","MA_TaskMT","MA_TaskStatusMT","MA_TaskCommandMT","MA_TaskCommandStatusMT","StrikeConsentRequestMT","StrikeConsentRequestStatusMT","MA_StrikeActivityMT","DLZ_RequestMT","DLZ_RequestStatusMT","DLZ_MT"] as const satisfies readonly MessageTypeName[];
+export const MESSAGE_TYPE_NAMES = [
+  "MA_FlightCapabilityMT",
+  "MA_FlightCapabilityStatusMT",
+  "MA_ControlRequestMT",
+  "MA_ControlRequestStatusMT",
+  "ControlStatusMT",
+  "MA_FlightCommandMT",
+  "MA_FlightCommandStatusMT",
+  "MA_FlightActivityMT",
+  "MA_PositionReportDetailedMT",
+  "MA_FaultMT",
+  "NavigationReportMT",
+  "MA_RoutePlanMT",
+  "MA_MissionPlanActivationCommandMT",
+  "MA_MissionPlanActivationCommandStatusMT",
+  "RoutePlanExecutionStatusMT",
+  "SubsystemStatusMT",
+  "ServiceStatusMT",
+  "SubsystemStatusDataRequestMT",
+  "MA_AMTI_CapabilityMT",
+  "AMTI_CommandMT",
+  "AMTI_CommandStatusMT",
+  "AMTI_ActivityMT",
+  "EntityMT",
+  "StrikeCapabilityMT",
+  "StrikeCapabilityStatusMT",
+  "MA_TaskMT",
+  "MA_TaskStatusMT",
+  "MA_TaskCommandMT",
+  "MA_TaskCommandStatusMT",
+  "StrikeConsentRequestMT",
+  "StrikeConsentRequestStatusMT",
+  "MA_StrikeActivityMT",
+  "DLZ_RequestMT",
+  "DLZ_RequestStatusMT",
+  "DLZ_MT",
+] as const satisfies readonly MessageTypeName[];

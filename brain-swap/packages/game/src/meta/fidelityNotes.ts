@@ -128,6 +128,21 @@ const FIDELITY_NOTES: FidelityNote[] = [
     title: "The DLZ is a single range ring",
     body: "A real Dynamic Launch Zone is an azimuth-array of ranges (min/optimal/max per bearing around the target) and the WEZ complement adds more. The game collapses it to scalar minimum/optimal/maximum ranges and gates the strike on a single circular maximum: the weapon only releases once the vehicle is within RangeMaxAero of the target. (Level 3.4 In the Zone.)",
   },
+  {
+    index: 25,
+    title: "Upload confirmation collapses MA_SystemNotificationMT",
+    body: "A route-upload handshake would naturally end in an MA_SystemNotificationMT CONFIRMED step, but that message carries no CONFIRMED state in the XSD. The game confirms upload and activation purely through MA_MissionPlanActivationCommandStatusMT state transitions (READY_FOR_UPLOAD → UPLOADED → READY_FOR_ACTIVATION → ACTIVATED; *_FAILED on an out-of-order step). (Levels 2.1 Upload / 2.3 Retask.)",
+  },
+  {
+    index: 26,
+    title: "Pruned route content",
+    body: "MA_RoutePlanMT shows a RoutePlanID plus a flat leg list ending in a terminal RACETRACK loiter, not the full RouteType/Path/PathSegment nesting (extends lie #5). The legs are level geometry the player never authors; FA flies them once the route is ACTIVATED and reports RoutePlanExecutionStatusMT EXECUTING → COMPLETE. (Levels 2.1 Upload / 2.3 Retask.)",
+  },
+  {
+    index: 27,
+    title: "A curve is one Curvature",
+    body: "A curve is commanded with a single Curvature on MA_FlightCommandMT; the control points, KnotVector, and Weights are auto-filled and shown read-only (extends lie #10). A curvature tighter than the body's turn limit is REJECTED with PERFORMANCE_LIMIT_EXCEEDED; a body advertising no curve capability rejects with CAPABILITY_NOT_SUPPORTED. (Level 2.4 First Curve.)",
+  },
 ];
 
 export function notesFor(indices: readonly number[] | undefined): FidelityNote[] {

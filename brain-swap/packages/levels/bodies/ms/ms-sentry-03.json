@@ -6,10 +6,7 @@
     {
       "id": "PRIMARY-RADAR",
       "kind": "AESA radar (primary)",
-      "states": [
-        { "atTick": 0, "state": "OPERATE" },
-        { "atTick": 5, "state": "DEGRADED" }
-      ]
+      "states": [{ "atTick": 0, "state": "OPERATE" }, { "atTick": 5, "state": "DEGRADED" }]
     },
     {
       "id": "BACKUP-RADAR",

@@ -23,7 +23,45 @@ const VALIDATION_HINTS: Record<string, string> = {
   INVALID_CURVE: "A curve segment in the command is invalid. (Curve levels.)",
 };
 
+// Route-plan upload/activation liturgy (levels 2.1 / 2.3). Each FA reply carries the new
+// PlanActivationState / PlanExecutionState; the hint tells the player the next step, so the
+// two message types (MA_RoutePlanMT = the route data, MA_MissionPlanActivationCommandMT = the
+// protocol that uploads and activates it) and their order become self-teaching.
+const LITURGY_HINTS: Record<string, Hint> = {
+  READY_FOR_UPLOAD: {
+    severity: "info",
+    title: "Next: send the plan, then UPLOAD",
+    body: "FA has opened a slot for this RoutePlanID. Now send the route itself (MA_RoutePlanMT) and then MA_MissionPlanActivationCommandMT with ActivationCommand UPLOAD to store it. The activation command is the protocol; the route plan is the data it uploads.",
+  },
+  UPLOADED: {
+    severity: "info",
+    title: "Next: PREPARE_FOR_ACTIVATION",
+    body: "The plan is stored. Send MA_MissionPlanActivationCommandMT with ActivationCommand PREPARE_FOR_ACTIVATION to validate and arm it (FA replies READY_FOR_ACTIVATION).",
+  },
+  READY_FOR_ACTIVATION: {
+    severity: "info",
+    title: "Next: ACTIVATE",
+    body: "The plan is armed. Send MA_MissionPlanActivationCommandMT with ActivationCommand ACTIVATE to commit it — FA then flies the route itself.",
+  },
+  ACTIVATED: {
+    severity: "info",
+    title: "Route is live",
+    body: "FA accepted activation and is now flying the legs. Watch RoutePlanExecutionStatusMT report EXECUTING → COMPLETE; you don't send flight commands — the route flies itself.",
+  },
+  EXECUTING: {
+    severity: "info",
+    title: "FA is flying the route",
+    body: "The route is running. FA steers the legs to the terminal loiter and will report COMPLETE on arrival. No further command is needed unless the route is canceled.",
+  },
+};
+
 export function hintFor(kind: BadgeKind, reason?: string): Hint | null {
+  // Liturgy progress hints fire on the accepted/pending FA replies whose detail is a known
+  // PlanActivation/PlanExecution state (other accepted messages — e.g. control APPROVED —
+  // carry no such reason and fall through to null).
+  if ((kind === "accepted" || kind === "pending") && reason && LITURGY_HINTS[reason]) {
+    return LITURGY_HINTS[reason];
+  }
   if (kind === "ignored") {
     return {
       severity: "info",

@@ -48,7 +48,9 @@ describe("level 3.2 golden run (reference brain)", () => {
   it("the reference brain wins by collecting two sensor tracks", () => {
     const w = solve();
     expect(w.outcome).toBe("won");
-    expect(w.ms?.entitiesReported).toBeGreaterThanOrEqual(level32.objective.kind === "ms-track" ? level32.objective.requiredCount : 0);
+    expect(w.ms?.entitiesReported).toBeGreaterThanOrEqual(
+      level32.objective.kind === "ms-track" ? level32.objective.requiredCount : 0,
+    );
   });
 
   it("produces the exact golden message log", () => {

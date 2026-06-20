@@ -40,6 +40,10 @@ export function validateFlightCommand(
 ): ValidationOutcome {
   const cap = findCapability(body, cmd.CapabilityID);
   if (!cap) return reject("CAPABILITY_NOT_SUPPORTED");
+  // A route-following (WAYPOINT_FOLLOWING) capability doesn't advertise direct HSA/CSA
+  // vectoring, so FA rejects a hand-flown MA_FlightCommandMT against it — the route-only
+  // levels are flown by uploading a plan, not by direct commands (VI MA_FlightCapabilityEnum).
+  if (cap.type !== "HSA_CSA") return reject("CAPABILITY_NOT_SUPPORTED");
 
   // CANCEL clears the active vector; always valid for a known capability.
   if (cmd.CommandState === "CANCEL") {
@@ -82,4 +86,41 @@ export function validateFlightCommand(
     ...(cmd.Speed !== undefined ? { speed: cmd.Speed } : {}),
   };
   return { accepted: true, result: "FLIGHT_COMMAND_VALID", target };
+}
+
+/**
+ * Validate a curve-following command (MA_FlightCommandMT with a Curvature, level 2.4).
+ * The airframe must support the CurveFollowing mode (body.curve) — else
+ * CAPABILITY_NOT_SUPPORTED — and the commanded Curvature must sit within the body's
+ * limit (radius >= min radius) — else PERFORMANCE_LIMIT_EXCEEDED. Altitude/airspeed are
+ * still checked against the envelope, reusing the HSA path's reasons.
+ */
+export function validateCurveCommand(
+  body: BodyProfile,
+  cmd: MA_FlightCommandMT,
+  profileOverride?: CapabilityProfile,
+): ValidationOutcome {
+  const cap = findCapability(body, cmd.CapabilityID);
+  if (!cap || body.curve === undefined) return reject("CAPABILITY_NOT_SUPPORTED");
+  if (cmd.Curvature !== undefined && cmd.Curvature > body.curve.maxCurvature) {
+    return reject("PERFORMANCE_LIMIT_EXCEEDED");
+  }
+  const p = profileOverride ?? cap.profile;
+  if (cmd.Altitude !== undefined) {
+    if (p.maxAltitude !== undefined && cmd.Altitude > p.maxAltitude) {
+      return reject("PERFORMANCE_LIMIT_EXCEEDED");
+    }
+    if (p.minAltitude !== undefined && cmd.Altitude < p.minAltitude) {
+      return reject("PERFORMANCE_LIMIT_EXCEEDED");
+    }
+  }
+  if (cmd.Speed !== undefined) {
+    if (p.maxAirspeed !== undefined && cmd.Speed > p.maxAirspeed) {
+      return reject("PERFORMANCE_LIMIT_EXCEEDED");
+    }
+    if (p.minAirspeed !== undefined && cmd.Speed < p.minAirspeed) {
+      return reject("PERFORMANCE_LIMIT_EXCEEDED");
+    }
+  }
+  return { accepted: true, result: "FLIGHT_COMMAND_VALID" };
 }

@@ -1,0 +1,47 @@
+{
+  "id": "naive-2.4",
+  "_doc": "Same handshake, but commands a curvature far tighter than the Mule's minimum turn radius (0.01 > 0.004). FA REJECTS with PERFORMANCE_LIMIT_EXCEEDED, no curve runs, and the run times out.",
+  "initial": "await-capability",
+  "states": ["await-capability", "awaiting-approval", "confirming-control", "flying"],
+  "transitions": [
+    {
+      "from": "await-capability",
+      "trigger": { "messageType": "MA_FlightCapabilityStatusMT" },
+      "guard": { "field": "Availability", "op": "==", "value": "AVAILABLE" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "MA_ControlRequestMT",
+          "fields": { "RequestType": "ACQUIRE", "CapabilityID": { "cap": "CapabilityID" } }
+        }
+      ],
+      "target": "awaiting-approval"
+    },
+    {
+      "from": "awaiting-approval",
+      "trigger": { "messageType": "MA_ControlRequestStatusMT" },
+      "guard": { "field": "ApprovalRequestProcessingState", "op": "==", "value": "APPROVED" },
+      "target": "confirming-control"
+    },
+    {
+      "from": "confirming-control",
+      "trigger": { "messageType": "ControlStatusMT" },
+      "guard": { "field": "SecondaryController", "op": "==", "value": "MA" },
+      "actions": [
+        {
+          "kind": "send",
+          "message": "MA_FlightCommandMT",
+          "fields": {
+            "CommandID": "CMD-1",
+            "CommandState": "NEW",
+            "CapabilityID": "MULE-01",
+            "Curvature": 0.01,
+            "Altitude": 3000,
+            "Speed": 25
+          }
+        }
+      ],
+      "target": "flying"
+    }
+  ]
+}
