@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { PHASES } from "../lib/phases.ts";
   import type { ModalKind } from "../lib/ui.ts";
+  import OV1Map from "./OV1Map.svelte";
   let { kind, onClose }: { kind: ModalKind; onClose: () => void } = $props();
 
   const titles: Record<ModalKind, string> = {
@@ -7,6 +9,10 @@
     background: "Background — A-GRA & the Abstract Service Bus",
     help: "How to play",
   };
+
+  // Levels picker: which OV-1 phase is highlighted. Default to the one playable phase.
+  let selected = $state(6);
+  const phase = $derived(PHASES.find((p) => p.id === selected) ?? PHASES[5]);
 </script>
 
 <svelte:window onkeydown={(e) => e.key === "Escape" && onClose()} />
@@ -20,7 +26,7 @@
   aria-label="Close"
 ></div>
 
-<div class="modal card" role="dialog" aria-modal="true" aria-label={titles[kind]}>
+<div class="modal card" class:wide={kind === "levels"} role="dialog" aria-modal="true" aria-label={titles[kind]}>
   <div class="mhead">
     <h2>{titles[kind]}</h2>
     <button class="x" onclick={onClose} aria-label="Close">✕</button>
@@ -28,22 +34,24 @@
 
   <div class="body">
     {#if kind === "levels"}
-      <p class="lead">One mission is available in this prototype. Future missions will unlock here,
-        overlaid on the OV-1 operational view.</p>
-      <button class="level" onclick={onClose}>
-        <span class="num">01</span>
+      <p class="lead">Select a phase on the OV-1 operational view to read its briefing. One mission is
+        playable in this prototype; the other phases unlock here later.</p>
+
+      <OV1Map {selected} onSelect={(id) => (selected = id)} />
+
+      <div class="level" class:locked={!phase.playable}>
+        <span class="num">{String(phase.id).padStart(2, "0")}</span>
         <span class="ldetail">
-          <span class="ltitle">Threat Engagement at CAP</span>
-          <span class="lsub">OV-1 Phase 6 · interfaces C2 + P2P · one contingency</span>
-          <span class="lblurb">Push a deadline-critical strike-approval reply through a degraded
-            return link before the WEZ window closes.</span>
+          <span class="ltitle">{phase.name}</span>
+          <span class="lsub">OV-1 Phase {phase.id} · {phase.interfaces}</span>
+          <span class="lblurb">{phase.blurb}</span>
+          <span class="teaches"><b>Teaches:</b> {phase.teaches}</span>
         </span>
-        <span class="play">Resume ▸</span>
-      </button>
-      <div class="locked">
-        <span class="num">02–08</span>
-        <span class="ldetail"><span class="ltitle">Launch · Transit · CAP · RTB · …</span>
-          <span class="lsub">locked — the other OV-1 phases</span></span>
+        {#if phase.playable}
+          <button class="play" onclick={onClose}>Resume ▸</button>
+        {:else}
+          <span class="lockedtag">Locked — coming soon</span>
+        {/if}
       </div>
 
     {:else if kind === "background"}
@@ -99,6 +107,7 @@
     position: fixed; z-index: 41; top: 50%; left: 50%; transform: translate(-50%, -50%);
     width: min(640px, 92vw); max-height: 84vh; display: flex; flex-direction: column; padding: 0;
   }
+  .modal.wide { width: min(820px, 94vw); }
   .mhead {
     display: flex; align-items: center; justify-content: space-between;
     padding: 18px 22px 12px; border-bottom: 1px solid var(--hair);
@@ -111,19 +120,23 @@
   .body ol { margin: 6px 0; padding-left: 20px; }
   .body li { margin: 5px 0; }
   .lead { color: var(--sub); }
-  .level, .locked {
+  .level {
     display: flex; align-items: center; gap: 14px; width: 100%; text-align: left;
     border: 1px solid var(--hair); border-radius: 14px; padding: 14px 16px; margin-top: 12px; background: #fff;
   }
-  .level { cursor: pointer; }
-  .level:hover { border-color: var(--c2); }
-  .locked { opacity: 0.5; }
-  .num { font-size: 20px; font-weight: 800; color: var(--c2); min-width: 56px; }
-  .locked .num { color: var(--sub); font-size: 14px; }
+  .level.locked { background: var(--seg-track); }
+  .num { font-size: 20px; font-weight: 800; color: var(--c2); min-width: 44px; }
+  .level.locked .num { color: var(--sub); }
   .ldetail { display: flex; flex-direction: column; flex: 1; }
   .ltitle { font-weight: 800; font-size: 14px; }
   .lsub { font-size: 11px; color: var(--sub); font-weight: 600; }
   .lblurb { font-size: 12px; color: #34383e; margin-top: 3px; }
-  .play { font-weight: 800; color: var(--c2); }
+  .teaches { font-size: 11.5px; color: var(--sub); margin-top: 5px; }
+  .teaches b { color: #34383e; }
+  .play {
+    border: none; background: var(--tint-green); color: var(--green);
+    font-weight: 800; font-size: 13px; padding: 8px 14px; border-radius: 10px; white-space: nowrap;
+  }
+  .lockedtag { font-size: 11px; font-weight: 700; color: var(--sub); white-space: nowrap; }
   .win { margin-top: 14px; padding: 10px 12px; background: var(--tint-green); border-radius: 10px; font-weight: 600; }
 </style>

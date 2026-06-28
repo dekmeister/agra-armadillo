@@ -67,6 +67,13 @@ team-split/re-election, dynamic ACP geometry, ROE/WEZ detail beyond one gate fla
 Build order: deterministic sim + DMS lifecycle + headless harness **first**, then RBAC gate, then COP
 fan-out, then view, then param-sweep CSV.
 
+## Dev environment
+- **Browser for screenshots:** `chromium` is NOT installed. Use `google-chrome-stable` instead.
+  Headless screenshot: `google-chrome-stable --headless --disable-gpu --screenshot=<path> --window-size=1280,720 <url>`
+  The `vaInitialize failed: unknown libva error` warning is harmless — ignore it.
+- **Playwright:** `npx playwright` (v1.61.1) is available globally but has no cached browser bundles.
+  If a skill or tool tries to launch `chromium` via Playwright and fails, fall back to the `google-chrome-stable` command above.
+
 ## Working conventions
 - Keep the sim deterministic and headless-testable; no rendering coupling. Seeded RNG only.
 - Use real A-GRA message/interaction names in code identifiers and comments where practical.
