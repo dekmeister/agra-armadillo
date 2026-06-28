@@ -27,3 +27,27 @@ whom, over which interface, gated by what. Every simplification is flagged `[S]`
 - Five RBAC roles (Admin/QB/AVC/LRE/Observer) gate command authority at the destination.
 - Five named leader-election methods (Bully/Raft/Static-Fitness/Max-Consensus/Off-Nominal) modelled with
   distinct message costs under burst (Gilbert–Elliott) link loss.
+
+## MVP build (Phase 6 vertical slice)
+
+A deterministic, headless-testable sim core drives a Svelte + SVG console (Direction-B handoff).
+
+```
+packages/core   pure TS sim — tick(state)->state', seeded PRNG, DMS lifecycle, RBAC, links   (no DOM)
+packages/game   Svelte + SVG mission console, wired to live core snapshots                    (Vite)
+scenarios/      phase6.json — the MVP scenario tunables
+tools/          run-sweep.ts — headless seed sweep -> CSV (the "RF sandbox")
+```
+
+```sh
+npm install
+npm test                                   # core unit tests (determinism, RBAC, contingency, scoring)
+npm run typecheck                           # tsc across core + tools
+npm run sweep -- scenarios/phase6.json --compare --seeds 500   # win-rate by recovery strategy
+npm run dev                                 # the playable console (http://localhost:5174/games/servicebus/)
+```
+
+The emergent lesson (from the sweep): doing nothing (FIFO) wins ~28%; re-prioritising the BAD link
+(EDF/Class) ~90%; rerouting via the DMS relay ~95%; **re-requesting onto the same BAD link ~22%** — i.e.
+*delivery ≠ approval*, *authority is checked at the destination*, and routing/queue discipline — not
+retrying — is what gets the deadline-critical reply through.

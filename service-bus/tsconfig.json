@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "types": ["node"],
+    "paths": {
+      "@service-bus/core": ["packages/core/src/index.ts"],
+      "@service-bus/core/*": ["packages/core/src/*"]
+    }
+  },
+  "include": [
+    "packages/*/src/**/*.ts",
+    "packages/*/test/**/*.ts",
+    "tools/**/*.ts",
+    "vitest.config.ts"
+  ],
+  "exclude": ["packages/game"]
+}

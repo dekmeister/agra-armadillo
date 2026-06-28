@@ -1,0 +1,18 @@
+{
+  "name": "Phase 6 — Threat Engagement at CAP",
+  "description": "MVP slice: C2 strike-approval round trip gated to the QB with a WEZ deadline, P2P COP fan-out, and the scripted QB->ACP-1 return-link drop (FAIL_MISSING_ACK).",
+  "interfaces": ["C2", "P2P"],
+  "contingency": "QB->ACP-1 return link degraded to bursty/lossy at the contingency tick; the approval reply stalls in FAIL_MISSING_ACK.",
+  "config": {
+    "wezWindow": 18,
+    "contingencyTick": 2,
+    "copDecay": 0.4,
+    "copStart": 62,
+    "copThreshold": 25,
+    "copSyncPeriod": 6,
+    "bgC2Period": 4,
+    "scoreStart": 7420,
+    "scoreWin": 850,
+    "scoreMiss": 300
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": ["tools/**/*.ts"],
+      "project": ["tools/**/*.ts"]
+    },
+    "packages/core": {
+      "project": ["src/**/*.ts", "test/**/*.ts"]
+    },
+    "packages/game": {
+      "project": ["src/**/*.{ts,svelte}"]
+    }
+  }
+}

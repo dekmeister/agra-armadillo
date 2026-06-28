@@ -1,0 +1,126 @@
+/* Direction B — "Minimalist" design tokens (from the handoff). Single source of
+   truth for color roles so the encoding axes never collide:
+     interface class = hue + shape · link health = texture + tint
+     lifecycle = icon/badge + fill + motion · authority = gold seal ornament. */
+@import url("https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap");
+
+:root {
+  --bg: #f1efe9;
+  --card: #ffffff;
+  --hair: #e8e5dd;
+  --seg-track: #f4f2ec;
+
+  --ink: #1b1f24;
+  --sub: #969ba2;
+  --faint: #c2c6cc;
+
+  --c2: #2f6df0; /* C2 = blue square */
+  --p2p: #8b5cf6; /* P2P = violet circle */
+
+  --good: #cfccc3; /* GOOD link line */
+  --bad: #ef9d18; /* BAD link (amber, marching) */
+
+  --green: #16b372; /* confirmed good */
+  --amber: #ef9d18; /* degraded / unconfirmed */
+  --red: #e6473d; /* hard fail */
+  --gold: #cf9a2e; /* authority seal only */
+
+  --tint-green: #e7f7ef;
+  --tint-red: #fdeceb;
+  --tint-amber: #fdf0d8;
+  --tint-cream: #fff5e0;
+
+  --r-card: 18px;
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.06);
+  --shadow-chip: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Hanken Grotesk", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.card {
+  background: var(--card);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-card);
+}
+
+.caps {
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--sub);
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* Animations from the handoff. */
+@keyframes badgap {
+  to {
+    stroke-dashoffset: -38;
+  }
+}
+@keyframes ringspin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes glow {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+@keyframes ghost {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+@keyframes selpulse {
+  0%,
+  100% {
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+@keyframes softpulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+@keyframes glide {
+  to {
+    offset-distance: 100%;
+  }
+}

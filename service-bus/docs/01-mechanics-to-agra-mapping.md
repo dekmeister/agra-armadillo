@@ -71,5 +71,23 @@ whom, over which interface, gated by what*.
 6. **Discrete tick simulation**, not continuous RF — but link metrics (BW/latency/loss/intermittency) are
    first-class and tunable (`[S]`, and the point of the RF-fidelity work; see `03`).
 
+## MVP implementation notes (Phase 6 vertical slice — `packages/core`)
+These `[S]` choices were introduced while building the playable MVP; each is reflected in code comments.
+7. **Loss split into two probabilities** for clarity: `blockGood/blockBad` (a dispatch can't get on the
+   air this tick → `FAIL_UNSENT`, gated by the Gilbert–Elliott burst) and `ackLoss` (a message that left
+   is never confirmed → `FAIL_MISSING_ACK`). Keeps the throughput lesson (queue policy vs. burst) distinct
+   from the unconfirmed-delivery lesson. (`[S]`; refinement of master item 6.)
+8. **Reply-link congestion is modelled as routine C2 traffic** (`MA_RulesOfEngagementCommandMT`) pre-seeded
+   ahead of the approval reply on the QB→ACP-1 link — **kept C2-only on purpose**. The Direction-B mock
+   shows a `P2P·3` backlog on that link; rendering P2P on a QB→ACP (C2) edge would mis-state topology, so
+   the sim diverges from the mock to honour the guard rail. (`[S]`.)
+9. **Relay reroute** of the stalled reply is modelled as a fixed two-hop path QB→DMS→ACP-1 over the MS
+   relay backbone (reliable, higher latency) — one of three genuinely-simulated recovery strategies
+   (re-prioritise queue / reroute via relay / re-request). (`[S]`.)
+10. **Leader election reduced to Raft + Static stubs**, wired but not exercised in Phase 6 (no team-split
+    in the MVP). The strategy seam is in place for later phases. (`[S]`; narrows master list item under §4.)
+11. **WEZ = one absolute deadline tick + one authority gate**; "armed on first interaction" lives in the
+    view layer only — the core deadline is a pure `wezDeadlineTick`. (`[S]`; refinement of item 2.)
+
 **Nothing in this list alters topology, endpoints, interface assignment, or authority gating** — the
 four things the guard rail protects.
