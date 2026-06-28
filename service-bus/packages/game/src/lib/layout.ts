@@ -9,8 +9,8 @@ export interface NodeGeom {
 }
 
 export const NODES: Record<string, NodeGeom> = {
-  qb: { x: 560, y: 70, r: 44 },
-  acp1: { x: 560, y: 234, r: 42 },
+  qb: { x: 560, y: 60, r: 44 },
+  acp1: { x: 560, y: 252, r: 42 },
   acp2: { x: 320, y: 350, r: 36 },
   acp3: { x: 800, y: 350, r: 36 },
   dms: { x: 560, y: 412, r: 23 },
@@ -26,7 +26,16 @@ export interface Pt {
  * ACP-1 share a centre line; offsetting both along their own (direction-relative)
  * perpendicular splits them onto opposite physical sides — two clear lanes.
  */
-export const LANE: Record<string, number> = { req: 14, bad: 14 };
+const C2_LANE = 22;
+export const LANE: Record<string, number> = { req: C2_LANE, bad: C2_LANE };
+
+/**
+ * Extra perpendicular push (px) that moves a message token OFF its rail centre,
+ * so a token and its link never share pixels (each stays independently clickable).
+ * Added on the same side as the link's lane offset, so opposing C2 tokens ride
+ * outboard on opposite sides of the corridor.
+ */
+export const TOKEN_SIDECAR = 12;
 
 /** Relay (MS) links bow around the ACP-1 node they would otherwise pass through. */
 const RELAY_BOW = 96;
@@ -108,13 +117,13 @@ function r(n: number): number {
 
 /** Inspection-highlight coordinates per selectable id (on each element's lane). */
 export const HIGHLIGHT: Record<string, [number, number, number]> = {
-  "node:qb": [560, 70, 58],
-  "node:acp1": [560, 234, 56],
+  "node:qb": [560, 60, 58],
+  "node:acp1": [560, 252, 56],
   "node:acp2": [320, 350, 50],
   "node:acp3": [800, 350, 50],
   "node:dms": [560, 412, 37],
-  "link:req": [574, 152, 24],
-  "link:bad": [546, 152, 28],
-  "link:p2p": [440, 292, 24],
-  "link:p2p3": [680, 292, 24],
+  "link:req": [582, 156, 24],
+  "link:bad": [538, 156, 28],
+  "link:p2p": [440, 301, 24],
+  "link:p2p3": [680, 301, 24],
 };

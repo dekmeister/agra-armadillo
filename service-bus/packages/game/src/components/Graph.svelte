@@ -19,8 +19,8 @@ function nodeCat(id: string): { ring: string; sub: string; subColor: string } {
   return { ring: "var(--ink)", sub: "", subColor: "var(--sub)" };
 }
 function tokClick(t: TokenVM): void {
-  if (t.id.startsWith("stack:")) game.select("link", t.id.slice(6));
-  else game.select("token", t.id);
+  // A token — including a queue stack — inspects the message; the rail inspects the link.
+  game.select("token", t.headId ?? t.id);
 }
 function key(e: KeyboardEvent, fn: () => void): void {
   if (e.key === "Enter" || e.key === " ") {
@@ -63,6 +63,11 @@ function key(e: KeyboardEvent, fn: () => void): void {
     {/if}
   {/each}
 
+  <!-- C2 lane labels: the QB↔ACP-1 round trip reads as two pipes. Sit in the clear
+       gap between the two rails (tokens ride outboard, the relay shadows the right). -->
+  <text x="560" y="124" class="railLabel" text-anchor="middle">request ▴</text>
+  <text x="560" y="198" class="railLabel" text-anchor="middle">reply ▾</text>
+
   <!-- Selection highlight -->
   {#if hl}
     <circle cx={hl[0]} cy={hl[1]} r={hl[2]} fill="none" stroke="var(--ink)"
@@ -71,18 +76,20 @@ function key(e: KeyboardEvent, fn: () => void): void {
 
   <!-- Message tokens (in-flight = moving; queues = one stack + count) -->
   {#each toks as t (t.id)}
+    {@const bx = t.x < 560 ? t.x - 14 : t.x + 14}
     <g class="tok" onclick={() => tokClick(t)}
       onkeydown={(e) => key(e, () => tokClick(t))} role="button" tabindex="0">
+      <circle cx={t.x} cy={t.y} r="15" fill="transparent" />
       {#if t.shape === "square"}
         <rect class="glide" x={t.x - 8} y={t.y - 8} width="16" height="16" rx="3" fill="var(--c2)" />
       {:else}
         <circle class="glide" cx={t.x} cy={t.y} r="9" fill="var(--p2p)" />
       {/if}
       {#if t.count}
-        <circle cx={t.x + 14} cy={t.y - 12} r="8.5"
+        <circle cx={bx} cy={t.y - 12} r="8.5"
           fill={t.count >= 3 ? "var(--tint-amber)" : "#fff"}
           stroke={t.count >= 3 ? "var(--amber)" : "var(--hair)"} stroke-width="1.5" />
-        <text x={t.x + 14} y={t.y - 8.5} class="tcount"
+        <text x={bx} y={t.y - 8.5} class="tcount"
           fill={t.count >= 3 ? "var(--amber)" : "var(--sub)"}>{t.count}</text>
       {/if}
     </g>
@@ -90,6 +97,8 @@ function key(e: KeyboardEvent, fn: () => void): void {
 
   <!-- Hero strike reply -->
   {#if hero}
+    {@const sgn = hero.labelSide === "left" ? -1 : 1}
+    {@const anc = hero.labelSide === "left" ? "end" : "start"}
     <g transform="translate({hero.x},{hero.y})" class="tok"
       onclick={() => game.select("token", hero.id)}
       onkeydown={(e) => key(e, () => game.select("token", hero.id))} role="button" tabindex="0">
@@ -101,7 +110,7 @@ function key(e: KeyboardEvent, fn: () => void): void {
         <circle r="14" fill="none" stroke="var(--red)" stroke-width="2.5"
           stroke-dasharray="14 8" class="ringspin" />
         <text class="glyph" y="5" fill="var(--red)">?</text>
-        <text x="34" y="5" class="floatlabel" fill="var(--red)">MISSING ACK</text>
+        <text x={sgn * 30} y="5" text-anchor={anc} class="floatlabel" fill="var(--red)">MISSING ACK</text>
       {:else if hero.ack === "sent"}
         <circle r="15" fill="var(--tint-green)" />
         <rect x="-8" y="-8" width="16" height="16" rx="3" fill="var(--c2)" />
@@ -109,12 +118,12 @@ function key(e: KeyboardEvent, fn: () => void): void {
         <text x="12" y="-8" class="mini" fill="#fff">✓</text>
         <circle cx="-12" cy="11" r="7" fill="var(--gold)" />
         <text x="-12" y="14" class="mini" fill="#fff">⚿</text>
-        <text x="30" y="5" class="floatlabel" fill="var(--green)">DELIVERED + AUTH</text>
+        <text x={sgn * 28} y="5" text-anchor={anc} class="floatlabel" fill="var(--green)">DELIVERED + AUTH</text>
       {:else}
         <circle r="15" fill="var(--tint-red)" />
         <rect x="-8" y="-8" width="16" height="16" rx="3" fill="#fff" stroke="var(--red)" stroke-width="2.5" />
         <text class="glyph" y="5" fill="var(--red)">✕</text>
-        <text x="28" y="5" class="floatlabel" fill="var(--red)">MISSED</text>
+        <text x={sgn * 26} y="5" text-anchor={anc} class="floatlabel" fill="var(--red)">MISSED</text>
       {/if}
     </g>
   {/if}
@@ -145,6 +154,7 @@ function key(e: KeyboardEvent, fn: () => void): void {
   .node, .link, .tok { cursor: pointer; }
   .nlabel { text-anchor: middle; font-weight: 800; fill: var(--ink); }
   .nsub { text-anchor: middle; font-size: 9px; font-weight: 700; letter-spacing: 0.5px; }
+  .railLabel { font-size: 10px; font-weight: 700; letter-spacing: 0.3px; fill: var(--sub); pointer-events: none; }
   .tcount { text-anchor: middle; font-size: 10px; font-weight: 800; }
   .glyph { text-anchor: middle; font-size: 16px; font-weight: 800; }
   .mini { text-anchor: middle; font-size: 9px; font-weight: 800; }

@@ -13,6 +13,7 @@ import {
   NODES,
   pointOnCurve,
   straightPath,
+  TOKEN_SIDECAR,
 } from "./layout.ts";
 
 export type Selection = { type: "node" | "link" | "token"; id: string } | null;
@@ -57,6 +58,8 @@ export function linkView(gs: GameState, linkId: string): LinkVM | null {
 export interface TokenVM {
   /** Real message id, or `stack:<linkId>` for a collapsed queue badge. */
   id: string;
+  /** For a stack, the head queued message it stands in for (so a click inspects it). */
+  headId?: string;
   x: number;
   y: number;
   shape: "square" | "circle";
@@ -68,8 +71,14 @@ export interface TokenVM {
 
 const SHAPE: Record<string, "square" | "circle"> = { C2: "square", P2P: "circle" };
 
+/**
+ * Token position: along the link at fraction `t`, but pushed off the rail centre
+ * by TOKEN_SIDECAR (on the lane side) so the token never overlaps the link's hit
+ * band. Relay tokens ride the curve itself (the curve already clears the nodes).
+ */
 function place(linkId: string, from: string, to: string, t: number): { x: number; y: number } {
-  return isRelay(linkId) ? pointOnCurve(from, to, t) : alongLink(from, to, t, LANE[linkId] ?? 0);
+  if (isRelay(linkId)) return pointOnCurve(from, to, t);
+  return alongLink(from, to, t, (LANE[linkId] ?? 0) + TOKEN_SIDECAR);
 }
 
 /**
@@ -88,7 +97,7 @@ export function tokens(gs: GameState, heroId: string | null): TokenVM[] {
     const link = gs.links[f.link];
     if (!m || !link) continue;
     const t = clamp01(1 - (f.arrivalTick - gs.tick) / Math.max(1, link.latency));
-    const p = place(gs, link.id, link.from, link.to, t);
+    const p = place(link.id, link.from, link.to, t);
     out.push({
       id: m.id,
       x: p.x,
@@ -104,9 +113,11 @@ export function tokens(gs: GameState, heroId: string | null): TokenVM[] {
     const queued = link.queue.filter((id) => id !== heroId && gs.messages[id]?.state === "PENDING");
     const head = queued[0] ? gs.messages[queued[0]] : undefined;
     if (!head) continue;
-    const p = place(gs, link.id, link.from, link.to, 0.22);
+    // Upper rail (0.3): clears the node rims and sits above the focal hero (t=0.5).
+    const p = place(link.id, link.from, link.to, 0.3);
     out.push({
       id: `stack:${link.id}`,
+      headId: head.id,
       x: p.x,
       y: p.y,
       shape: SHAPE[head.cls] ?? "circle",
@@ -126,6 +137,8 @@ export interface HeroVM {
   y: number;
   ack: "missing" | "sent" | "fail";
   label: string;
+  /** Which side the floating label hangs, so it points away from the corridor. */
+  labelSide: "left" | "right";
 }
 
 function activeStrike(gs: GameState): Interaction | null {
@@ -139,12 +152,9 @@ export function heroReply(gs: GameState): HeroVM | null {
   if (!reply) return null;
   const linkId = reply.route[reply.hop] ?? "bad";
   const link = gs.links[linkId];
-  let p: { x: number; y: number } = { x: 546, y: 152 };
-  if (link) {
-    p = isRelay(linkId)
-      ? pointOnCurve(link.from, link.to, 0.5)
-      : alongLink(link.from, link.to, 0.5, LANE[linkId] ?? 0);
-  }
+  // Same sidecar placement as ordinary tokens, so the reply rides beside its rail
+  // (not on it) and the rail stays clickable along its length.
+  const p = link ? place(linkId, link.from, link.to, 0.5) : { x: 526, y: 156 };
 
   let ack: HeroVM["ack"] = "missing";
   let label = "MISSING ACK";
@@ -155,7 +165,8 @@ export function heroReply(gs: GameState): HeroVM | null {
     ack = "fail";
     label = "MISSED";
   }
-  return { id: reply.id, x: p.x, y: p.y, ack, label };
+  // Hang the label outboard (away from the corridor centre at x=560).
+  return { id: reply.id, x: p.x, y: p.y, ack, label, labelSide: p.x < 560 ? "left" : "right" };
 }
 
 // ---- HUD -------------------------------------------------------------------
