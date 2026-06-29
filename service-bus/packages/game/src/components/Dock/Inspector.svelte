@@ -47,7 +47,7 @@ const stalled = $derived(gs.objective === "stalled");
       <button class="primary" onclick={() => game.setPolicy("bad", "edf")}>▸ Prioritise C2 reply (push through)</button>
     {/if}
     {#if sel?.type === "token" && stalled}
-      <button class="primary" onclick={() => game.reroute()}>▸ Reroute reply via DMS relay</button>
+      <button class="primary" onclick={() => game.reroute()}>▸ Reroute via ACP-2's DMS (QB→ACP-2→ACP-1)</button>
       <button class="ghost" onclick={() => game.rerequest()}>↻ Re-request approval</button>
     {/if}
     {#if isP2P}

@@ -44,7 +44,8 @@ token density on links demands it (defer). **Svelte** (via Vite) for the HUD/rea
 **One phase, two interfaces, one contingency** — the smallest thing that teaches a true topology lesson.
 
 **Scenario: "Threat Engagement at CAP" (Phase 6), pre-seeded with COP already flowing.**
-- **Network:** 3 ACPs (one is package leader), 1 **QB** node, 1 **DMS** relay. ~5 directed links.
+- **Network:** 3 ACPs (one is package leader) + 1 **QB** node. Each platform runs its own DMS instance
+  (no discrete relay node); the OTA region is the DMS/DDS mesh. 6 directed links.
 - **Interfaces in play:** **C2** (the gated strike-approval round trip) + **P2P** (COP keep-alive fan-out
   among the 3 ACPs). VI shown as on-platform/free to make the topology point; MS/MP/MD out of MVP.
 - **Demand:** (a) continuous P2P COP refresh that must stay under a freshness threshold; (b) a one-shot
@@ -53,8 +54,8 @@ token density on links demands it (defer). **Svelte** (via Vite) for the HUD/rea
 - **Authority:** the approval gate is satisfiable **only by the QB role**. A red-herring AVC node, if
   routed the request, yields `REJECTED` — the teaching beat that *delivery ≠ authority*.
 - **The one contingency:** at a scripted tick, the **QB→leader return link** goes BAD, so the approval
-  reply stalls in **`FAIL_MISSING_ACK`**. Player must reroute (relay/alternate path) or re-request before
-  the WEZ deadline, while not starving the COP fan-out of bandwidth.
+  reply stalls in **`FAIL_MISSING_ACK`**. Player must reroute (via a relay platform's DMS, QB→ACP-2→ACP-1)
+  or re-request before the WEZ deadline, while not starving the COP fan-out of bandwidth.
 
 **MVP win condition:** strike approval completes (correct round trip, QB authority, before deadline) AND
 COP freshness never breached. **Loss:** deadline missed, or approval acted under wrong authority.

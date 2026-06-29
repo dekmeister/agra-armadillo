@@ -50,7 +50,7 @@ export type IxnId = string;
 
 export interface SimNode {
   id: NodeId;
-  kind: "QB" | "ACP" | "DMS";
+  kind: "QB" | "ACP";
   /** RBAC role this node declares via the Authorize sequence. */
   role: Role;
   isLeader: boolean;
@@ -141,7 +141,7 @@ export interface LogEntry {
 export type Action =
   | { type: "arm" }
   | { type: "setPolicy"; linkId: LinkId; policy: QueuePolicy }
-  | { type: "reroute" } // reroute the stalled approval reply via the DMS relay
+  | { type: "reroute" } // reroute the stalled approval reply QB -> ACP-2 -> ACP-1 via ACP-2's DMS
   | { type: "rerequest" } // re-issue the approval request (fresh interaction)
   | { type: "refreshCop" }; // push a COP refresh over P2P
 

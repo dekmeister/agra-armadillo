@@ -369,11 +369,11 @@ function rerouteReply(s: GameState): void {
   // Pull it off whatever it's on (queue or in flight) and send it via the relay.
   for (const link of Object.values(s.links)) dequeue(s, reply.id, link.id);
   s.inFlight = s.inFlight.filter((f) => f.msg !== reply.id);
-  reply.route = ["relayQbDms", "relayDmsAcp1"];
+  reply.route = ["relayQbAcp2", "relayAcp2Acp1"];
   reply.hop = 0;
   reply.state = "PENDING";
-  s.links.relayQbDms?.queue.push(reply.id);
-  log(s, "Reply rerouted QB → DMS → ACP-1 over the relay backbone.", "info");
+  s.links.relayQbAcp2?.queue.push(reply.id);
+  log(s, "Reply rerouted QB → ACP-2 → ACP-1 via ACP-2's DMS.", "info");
 }
 
 function rerequestStrike(s: GameState): void {

@@ -13,7 +13,6 @@ export const NODES: Record<string, NodeGeom> = {
   acp1: { x: 560, y: 252, r: 42 },
   acp2: { x: 320, y: 350, r: 36 },
   acp3: { x: 800, y: 350, r: 36 },
-  dms: { x: 560, y: 412, r: 23 },
 };
 
 export interface Pt {
@@ -22,12 +21,42 @@ export interface Pt {
 }
 
 /**
- * Lateral lane offset (px) per link. The two opposing C2 links between QB and
- * ACP-1 share a centre line; offsetting both along their own (direction-relative)
- * perpendicular splits them onto opposite physical sides — two clear lanes.
+ * Lateral lane offset (px) per link. Opposing links that share a centre line are
+ * each offset along their own (direction-relative) perpendicular, which splits
+ * them onto opposite physical sides — two clear lanes. Two corridors need this:
+ *   - QB↔ACP-1 carries C2 `req` (up) and `bad` (down).
+ *   - ACP-1↔ACP-2 carries P2P `p2p` (down) and the MS reroute `relayAcp2Acp1` (up).
+ * `relayQbAcp2` and `p2p3` have no opposing link, so they ride lane 0.
  */
 const C2_LANE = 22;
-export const LANE: Record<string, number> = { req: C2_LANE, bad: C2_LANE };
+const P2P_LANE = 18;
+export const LANE: Record<string, number> = {
+  req: C2_LANE,
+  bad: C2_LANE,
+  p2p: P2P_LANE,
+  relayAcp2Acp1: P2P_LANE,
+};
+
+/**
+ * The contested OTA region: a shaded field standing in for the DMS / DDS-RTPS
+ * pub-sub mesh (no central broker — each platform runs its own DMS instance).
+ * Encloses the platforms whose OTA hops cross it. [S] (bounds are presentational.)
+ */
+export const MESH_HULL = { x: 250, y: 14, w: 640, h: 402, rx: 44 };
+
+/**
+ * Each platform's own DMS instance, drawn as a small port badge on the node rim
+ * facing the mesh interior — the seam where on-platform traffic meets the OTA mesh.
+ */
+const MESH_CENTER: Pt = { x: 560, y: 232 };
+export function dmsPort(id: string): Pt {
+  const n = NODES[id];
+  if (!n) return { x: 0, y: 0 };
+  const dx = MESH_CENTER.x - n.x;
+  const dy = MESH_CENTER.y - n.y;
+  const len = Math.hypot(dx, dy) || 1;
+  return { x: n.x + (dx / len) * n.r, y: n.y + (dy / len) * n.r };
+}
 
 /**
  * Extra perpendicular push (px) that moves a message token OFF its rail centre,
@@ -36,13 +65,6 @@ export const LANE: Record<string, number> = { req: C2_LANE, bad: C2_LANE };
  * outboard on opposite sides of the corridor.
  */
 export const TOKEN_SIDECAR = 12;
-
-/** Relay (MS) links bow around the ACP-1 node they would otherwise pass through. */
-const RELAY_BOW = 96;
-const RELAY_LINKS = new Set(["relayQbDms", "relayDmsAcp1"]);
-export function isRelay(id: string): boolean {
-  return RELAY_LINKS.has(id);
-}
 
 /** Endpoint of a directed link trimmed to each node's radius (so arrows sit on the rim). */
 function linkEndpoints(from: string, to: string): { a: Pt; b: Pt } {
@@ -78,39 +100,6 @@ export function straightPath(from: string, to: string, lane = 0): string {
   return `M ${r(a.x)} ${r(a.y)} L ${r(b.x)} ${r(b.y)}`;
 }
 
-/** Quadratic control point that always bows to the right (larger x). */
-function bowControl(from: string, to: string, bow: number): Pt {
-  const { a, b } = linkEndpoints(from, to);
-  const mx = (a.x + b.x) / 2;
-  const my = (a.y + b.y) / 2;
-  const dx = b.x - a.x;
-  const dy = b.y - a.y;
-  const len = Math.hypot(dx, dy) || 1;
-  const nx = -dy / len;
-  const ny = dx / len;
-  const c1 = { x: mx + nx * bow, y: my + ny * bow };
-  const c2 = { x: mx - nx * bow, y: my - ny * bow };
-  return c1.x >= c2.x ? c1 : c2;
-}
-
-/** SVG path for a relay link, bowed around the node between its endpoints. */
-export function curvedPath(from: string, to: string, bow = RELAY_BOW): string {
-  const { a, b } = linkEndpoints(from, to);
-  const c = bowControl(from, to, bow);
-  return `M ${r(a.x)} ${r(a.y)} Q ${r(c.x)} ${r(c.y)} ${r(b.x)} ${r(b.y)}`;
-}
-
-/** Point at fraction `t` along the bowed relay path (for tokens travelling the relay). */
-export function pointOnCurve(from: string, to: string, t: number, bow = RELAY_BOW): Pt {
-  const { a, b } = linkEndpoints(from, to);
-  const c = bowControl(from, to, bow);
-  const u = 1 - t;
-  return {
-    x: u * u * a.x + 2 * u * t * c.x + t * t * b.x,
-    y: u * u * a.y + 2 * u * t * c.y + t * t * b.y,
-  };
-}
-
 function r(n: number): number {
   return Math.round(n * 10) / 10;
 }
@@ -121,9 +110,10 @@ export const HIGHLIGHT: Record<string, [number, number, number]> = {
   "node:acp1": [560, 252, 56],
   "node:acp2": [320, 350, 50],
   "node:acp3": [800, 350, 50],
-  "node:dms": [560, 412, 37],
   "link:req": [582, 156, 24],
   "link:bad": [538, 156, 28],
-  "link:p2p": [440, 301, 24],
+  "link:p2p": [433, 284, 24],
   "link:p2p3": [680, 301, 24],
+  "link:relayQbAcp2": [440, 205, 26],
+  "link:relayAcp2Acp1": [447, 318, 24],
 };

@@ -1,12 +1,12 @@
 <script lang="ts">
-import { HIGHLIGHT, NODES } from "../lib/layout.ts";
+import { dmsPort, HIGHLIGHT, MESH_HULL, NODES } from "../lib/layout.ts";
 import { heroReply, linkView, type TokenVM, tokens } from "../lib/sim-adapter.ts";
 import { game } from "../lib/store.svelte.ts";
 
 const gs = $derived(game.gs);
 const hero = $derived(heroReply(gs));
 const toks = $derived(tokens(gs, hero?.id ?? null));
-const linkIds = ["relayQbDms", "relayDmsAcp1", "req", "p2p", "p2p3", "bad"];
+const linkIds = ["relayQbAcp2", "relayAcp2Acp1", "req", "p2p", "p2p3", "bad"];
 
 const sel = $derived(game.sel);
 const hl = $derived(sel ? HIGHLIGHT[`${sel.type}:${sel.id}`] : undefined);
@@ -15,7 +15,6 @@ function nodeCat(id: string): { ring: string; sub: string; subColor: string } {
   const n = gs.nodes[id];
   if (n?.kind === "QB") return { ring: "var(--gold)", sub: "AUTHORITY", subColor: "var(--gold)" };
   if (n?.isLeader) return { ring: "var(--ink)", sub: "★ LEADER", subColor: "var(--c2)" };
-  if (n?.kind === "DMS") return { ring: "var(--good)", sub: "relay", subColor: "var(--sub)" };
   return { ring: "var(--ink)", sub: "", subColor: "var(--sub)" };
 }
 function tokClick(t: TokenVM): void {
@@ -41,6 +40,16 @@ function key(e: KeyboardEvent, fn: () => void): void {
       <path d="M0,0 L12,6 L0,12 Z" fill="var(--bad)" />
     </marker>
   </defs>
+
+  <!-- The contested OTA region: the DMS / DDS-RTPS pub-sub mesh (no central broker;
+       each platform runs its own DMS instance). Painted first so links sit on top. -->
+  <g class="mesh" pointer-events="none">
+    <rect x={MESH_HULL.x} y={MESH_HULL.y} width={MESH_HULL.w} height={MESH_HULL.h}
+      rx={MESH_HULL.rx} />
+    <text x={MESH_HULL.x + 16} y={MESH_HULL.y + MESH_HULL.h - 14} class="meshlabel">
+      DMS / DDS-RTPS mesh — contested OTA [S]
+    </text>
+  </g>
 
   <!-- Links -->
   {#each linkIds as id (id)}
@@ -132,18 +141,21 @@ function key(e: KeyboardEvent, fn: () => void): void {
   {#each Object.keys(NODES) as id (id)}
     {@const g = NODES[id]}
     {@const cat = nodeCat(id)}
+    {@const port = dmsPort(id)}
     {#if g}
       <g class="node" onclick={() => game.select("node", id)}
         onkeydown={(e) => key(e, () => game.select("node", id))} role="button" tabindex="0">
         <circle cx={g.x} cy={g.y} r={g.r} fill="#fff" stroke={cat.ring}
-          stroke-width={id === "qb" ? 5 : id === "dms" ? 3 : 4}
-          stroke-dasharray={id === "dms" ? "5 5" : "none"} />
-        <text x={g.x} y={g.y - 2} class="nlabel" font-size={id === "dms" ? 12 : 15}>
+          stroke-width={id === "qb" ? 5 : 4} />
+        <text x={g.x} y={g.y - 2} class="nlabel" font-size="15">
           {gs.nodes[id]?.label}
         </text>
         {#if cat.sub}
           <text x={g.x} y={g.y + 14} class="nsub" fill={cat.subColor}>{cat.sub}</text>
         {/if}
+        <!-- This platform's own DMS instance: the port where it meets the OTA mesh. -->
+        <circle class="dmsport" cx={port.x} cy={port.y} r="5.5" />
+        <title>{gs.nodes[id]?.label} DMS instance — port onto the DDS/RTPS mesh</title>
       </g>
     {/if}
   {/each}
@@ -154,6 +166,11 @@ function key(e: KeyboardEvent, fn: () => void): void {
   .node, .link, .tok { cursor: pointer; }
   .nlabel { text-anchor: middle; font-weight: 800; fill: var(--ink); }
   .nsub { text-anchor: middle; font-size: 9px; font-weight: 700; letter-spacing: 0.5px; }
+  .mesh rect { fill: var(--c2); fill-opacity: 0.05; stroke: var(--c2); stroke-opacity: 0.35;
+    stroke-width: 1.5; stroke-dasharray: 6 7; }
+  .meshlabel { font-size: 10px; font-weight: 700; letter-spacing: 0.4px; fill: var(--c2);
+    fill-opacity: 0.7; }
+  .dmsport { fill: #fff; stroke: var(--c2); stroke-width: 2; }
   .railLabel { font-size: 10px; font-weight: 700; letter-spacing: 0.3px; fill: var(--sub); pointer-events: none; }
   .tcount { text-anchor: middle; font-size: 10px; font-weight: 800; }
   .glyph { text-anchor: middle; font-size: 16px; font-weight: 800; }

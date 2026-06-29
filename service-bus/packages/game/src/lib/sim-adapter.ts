@@ -5,16 +5,7 @@
 
 import type { GameState, Interaction, Link, Message } from "@service-bus/core";
 import { dispatchOrder } from "@service-bus/core";
-import {
-  alongLink,
-  curvedPath,
-  isRelay,
-  LANE,
-  NODES,
-  pointOnCurve,
-  straightPath,
-  TOKEN_SIDECAR,
-} from "./layout.ts";
+import { alongLink, LANE, NODES, straightPath, TOKEN_SIDECAR } from "./layout.ts";
 
 export type Selection = { type: "node" | "link" | "token"; id: string } | null;
 
@@ -41,9 +32,7 @@ export function linkView(gs: GameState, linkId: string): LinkVM | null {
   const l = gs.links[linkId];
   if (!l) return null;
   if (!NODES[l.from] || !NODES[l.to]) return null;
-  const d = isRelay(linkId)
-    ? curvedPath(l.from, l.to)
-    : straightPath(l.from, l.to, LANE[linkId] ?? 0);
+  const d = straightPath(l.from, l.to, LANE[linkId] ?? 0);
   return {
     id: linkId,
     d,
@@ -74,10 +63,9 @@ const SHAPE: Record<string, "square" | "circle"> = { C2: "square", P2P: "circle"
 /**
  * Token position: along the link at fraction `t`, but pushed off the rail centre
  * by TOKEN_SIDECAR (on the lane side) so the token never overlaps the link's hit
- * band. Relay tokens ride the curve itself (the curve already clears the nodes).
+ * band.
  */
 function place(linkId: string, from: string, to: string, t: number): { x: number; y: number } {
-  if (isRelay(linkId)) return pointOnCurve(from, to, t);
   return alongLink(from, to, t, (LANE[linkId] ?? 0) + TOKEN_SIDECAR);
 }
 
@@ -241,8 +229,7 @@ function inspectLink(gs: GameState, id: string): InspectorVM {
 function inspectNode(gs: GameState, id: string): InspectorVM {
   const n = gs.nodes[id];
   if (!n) return empty();
-  const cat =
-    n.kind === "QB" ? "AUTHORITY" : n.isLeader ? "LEADER" : n.kind === "DMS" ? "RELAY" : "AIRCRAFT";
+  const cat = n.kind === "QB" ? "AUTHORITY" : n.isLeader ? "LEADER" : "AIRCRAFT";
   return {
     title: n.label,
     badge: cat,

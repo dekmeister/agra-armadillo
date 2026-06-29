@@ -13,6 +13,7 @@
     <span class="caps">Link</span>
     <span class="item"><span class="ln good"></span>GOOD</span>
     <span class="item"><span class="ln bad"></span>BAD</span>
+    <span class="item"><span class="mesh"></span>DMS mesh</span>
   </div>
   <span class="div"></span>
   <div class="grp">
@@ -37,4 +38,6 @@
   .ln { width: 20px; height: 4px; border-radius: 2px; }
   .ln.good { background: var(--good); }
   .ln.bad { background: var(--bad); }
+  .mesh { width: 14px; height: 12px; border-radius: 3px; background: rgba(47, 109, 240, 0.07);
+    border: 1.5px dashed rgba(47, 109, 240, 0.45); }
 </style>

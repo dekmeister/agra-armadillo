@@ -30,8 +30,11 @@ MS-DMS) are all present. VI is the *other* game's deep target.
 `03` failure/degradation · `04` tech + MVP. `README.md` indexes them.
 
 ## Locked design decisions
-- **Fabric = the real DMS** (Decentralized Messaging Service) / Abstract Service Bus (ASB). The board
-  renders the DMS, not an invented abstraction.
+- **Fabric = the real DMS** (Decentralized Messaging Service). One DMS instance *per platform*; the
+  instances form a DDS/RTPS pub-sub mesh with **no central broker**. The board renders this as a shaded
+  contested-OTA **mesh field** plus a **DMS port** on each platform — *not* a discrete central node (that
+  would imply the very broker the standard says does not exist). Distinct from the on-platform **Abstract
+  Service Bus (ASB)** (MA↔local-MS). Not an invented abstraction.
 - **Cargo = interactions** (a request + its required status reply — a round trip), the unit A-GRA
   compliance is assessed at. Not one-way packets.
 - **Failure vocabulary = real DMS lifecycle:** `PENDING → EXECUTING → SENT / FAIL_UNSENT / FAIL_MISSING_ACK`
@@ -60,9 +63,10 @@ MS-DMS) are all present. VI is the *other* game's deep target.
 
 ## MVP scope
 **One phase (OV-1 Phase 6, Threat Engagement at CAP), two interfaces (C2 + P2P), one contingency.**
-3 ACPs (one leader) + QB + DMS relay; P2P COP fan-out kept under a freshness threshold; one-shot strike
-approval round trip gated to the QB role with a WEZ deadline; scripted QB→leader return-link drop →
-`FAIL_MISSING_ACK`. Ship **Raft + Static** election only. Out of MVP: other 4 interfaces, other phases,
+3 ACPs (one leader) + QB, each running its own DMS instance over the DDS mesh (reroute = a second path
+through a relay platform's DMS, QB→ACP-2→ACP-1); P2P COP fan-out kept under a freshness threshold;
+one-shot strike approval round trip gated to the QB role with a WEZ deadline; scripted QB→leader
+return-link drop → `FAIL_MISSING_ACK`. Ship **Raft + Static** election only. Out of MVP: other 4 interfaces, other phases,
 team-split/re-election, dynamic ACP geometry, ROE/WEZ detail beyond one gate flag.
 Build order: deterministic sim + DMS lifecycle + headless harness **first**, then RBAC gate, then COP
 fan-out, then view, then param-sweep CSV.

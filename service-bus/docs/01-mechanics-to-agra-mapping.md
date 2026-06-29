@@ -11,7 +11,7 @@ whom, over which interface, gated by what*.
 | **ACP** node | Autonomous Collaborative Platform running **Mission Autonomy (MA)** | Faithful. The MA software is the thing with the six L1 interfaces. |
 | **C2 node** | A C2 application + C2 node (HMI) that **declares an RBAC role** via the Authorize sequence | Faithful. Start Here Guide OV-1 shows ~four distinct C2 nodes (LRE + primary/alternate QBs). |
 | **Flight Autonomy (FA)** sub-node *inside* each ACP | FA, the safety-critical platform controller MA talks to over **VI** | Faithful, and load-bearing: FA is **on-platform**, so VI never crosses the air. |
-| **DMS** relay | **Decentralized Messaging Service** over DDS middleware | Faithful — this *is* the bus. The board literally renders the DMS. |
+| **DMS mesh** field + per-platform **DMS port** | **Decentralized Messaging Service** over DDS/RTPS middleware — one instance *per platform*, forming a pub-sub mesh with **no central broker** | Faithful — this *is* the bus. The board renders it as a shaded OTA field (the mesh) with a DMS port on each platform, **not** a discrete central node. `[S]` mesh collapsed to one field; each DMS to one port. |
 | **Sensors / PNT** sub-nodes inside each ACP | MS sensor capabilities (AMTI/ESM/PO) and PNT Service | `[S]` Local sensor reads modelled as on-platform & cheap; real MS has rich tasking handshakes. |
 
 ## 2. Cargo (the things you route)
@@ -81,9 +81,12 @@ These `[S]` choices were introduced while building the playable MVP; each is ref
    ahead of the approval reply on the QB→ACP-1 link — **kept C2-only on purpose**. The Direction-B mock
    shows a `P2P·3` backlog on that link; rendering P2P on a QB→ACP (C2) edge would mis-state topology, so
    the sim diverges from the mock to honour the guard rail. (`[S]`.)
-9. **Relay reroute** of the stalled reply is modelled as a fixed two-hop path QB→DMS→ACP-1 over the MS
-   relay backbone (reliable, higher latency) — one of three genuinely-simulated recovery strategies
-   (re-prioritise queue / reroute via relay / re-request). (`[S]`.)
+9. **Relay reroute** of the stalled reply is modelled as a fixed two-hop path **QB→ACP-2→ACP-1** —
+   i.e. routing through a *relay platform's* DMS instance rather than over the BAD direct hop (the
+   DDS mesh routes around the failure; reliable, higher latency). Forwarding at the messaging layer is
+   independent of RBAC (ACP-2 is an Observer; it forwards the already-QB-signed reply, it does not act on
+   it). One of three genuinely-simulated recovery strategies (re-prioritise queue / reroute via a relay
+   platform / re-request). (`[S]`.)
 10. **Leader election reduced to Raft + Static stubs**, wired but not exercised in Phase 6 (no team-split
     in the MVP). The strategy seam is in place for later phases. (`[S]`; narrows master list item under §4.)
 11. **WEZ = one absolute deadline tick + one authority gate**; "armed on first interaction" lives in the

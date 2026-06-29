@@ -19,7 +19,9 @@ regime).
 whom, over which interface, gated by what. Every simplification is flagged `[S]` in doc 01.
 
 **Key grounding wins (real, not invented):**
-- The "fabric" is the real **DMS (Decentralized Messaging Service)** / Abstract Service Bus (ASB).
+- The OTA "fabric" is the real **DMS (Decentralized Messaging Service)** — one instance *per platform*
+  forming a DDS/RTPS pub-sub mesh with no central broker (rendered as a shaded field + per-platform DMS
+  ports, not a discrete node). Distinct from the on-platform **Abstract Service Bus (ASB)**.
 - Cargo = **interactions** (request+required-status round trips), the unit A-GRA compliance is assessed at.
 - Failure vocabulary is the real DMS lifecycle: `PENDING→EXECUTING→SENT/FAIL_UNSENT/FAIL_MISSING_ACK`.
 - **Not all six interfaces cross the contested air** — VI (MA↔FA) is on-platform; corrects a topology error
@@ -48,6 +50,7 @@ npm run dev                                 # the playable console (http://local
 ```
 
 The emergent lesson (from the sweep): doing nothing (FIFO) wins ~28%; re-prioritising the BAD link
-(EDF/Class) ~90%; rerouting via the DMS relay ~95%; **re-requesting onto the same BAD link ~22%** — i.e.
+(EDF/Class) ~90%; rerouting via a relay platform's DMS (QB→ACP-2→ACP-1) ~95%; **re-requesting onto the
+same BAD link ~22%** — i.e.
 *delivery ≠ approval*, *authority is checked at the destination*, and routing/queue discipline — not
 retrying — is what gets the deadline-critical reply through.
