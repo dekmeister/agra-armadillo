@@ -41,9 +41,6 @@ export const DEFAULT_CONFIG: ScenarioConfig = {
   copThreshold: 25,
   copSyncPeriod: 6,
   bgC2Period: 4,
-  scoreStart: 7420,
-  scoreWin: 850,
-  scoreMiss: 300,
 };
 
 /** Routine C2 messages pre-seeded ahead of the reply on the BAD link. */
@@ -124,7 +121,6 @@ export function buildPhase6(seed: number, opts: ScenarioOpts = {}): GameState {
     objective: "stalled",
     outcome: "pending",
     failReason: null,
-    score: config.scoreStart,
     pendingBeat: null,
     seenBeats: [],
     log: [{ tick: 0, text: "Phase 6 — Threat Engagement at CAP. COP flowing.", severity: "info" }],

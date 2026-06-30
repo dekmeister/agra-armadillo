@@ -98,7 +98,7 @@ export const PHASES: Phase[] = [
     id: 8,
     name: "Land",
     interfaces: "★C2 (LRE) · VI",
-    teaches: "Back to a clean short link; the mission is scored.",
+    teaches: "Back to a clean short link; the mission resolves.",
     blurb: "Land at the designated airfield under LRE authority; VI flies the final approach.",
     playable: false,
     hotspot: [245, 378, 150, 55],

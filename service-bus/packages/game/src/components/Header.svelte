@@ -33,11 +33,6 @@ const wezState = $derived(
   <div class="spacer"></div>
 
   <div class="hud">
-    <div class="score">
-      <div class="caps">Score</div>
-      <div class="val">{gs.score.toLocaleString()}</div>
-    </div>
-
     <div class="card ring">
       <svg width="38" height="38" viewBox="0 0 38 38">
         <circle cx="19" cy="19" r="15" fill="none" stroke="var(--hair)" stroke-width="5" />
@@ -85,8 +80,6 @@ const wezState = $derived(
   .clock { font-size: 12px; font-weight: 600; color: var(--sub); }
   .spacer { flex: 1; }
   .hud { display: flex; align-items: center; gap: 14px; }
-  .score { text-align: right; }
-  .score .val { font-size: 21px; font-weight: 800; letter-spacing: -0.6px; }
   .ring { display: flex; align-items: center; gap: 10px; padding: 8px 14px 8px 8px; }
   .ringval { font-size: 15px; font-weight: 800; }
   .wez { padding: 8px 16px; min-width: 116px; text-align: left; }

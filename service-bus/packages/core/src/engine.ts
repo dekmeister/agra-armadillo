@@ -239,14 +239,12 @@ function evaluateOutcome(s: GameState): void {
     s.outcome = "win";
     s.objective = "complete";
     ixn.status = "delivered";
-    s.score += s.config.scoreWin;
     log(s, "reply ACK received · QB authority verified", "success");
     log(s, "MA_ApprovalRequestStatusMT SENT — strike approval complete.", "success");
     return;
   }
 
   if (s.armed && s.wezDeadlineTick !== null && s.tick > s.wezDeadlineTick) {
-    s.score -= s.config.scoreMiss;
     fail(s, "WEZ window closed before reply was confirmed");
   }
 }

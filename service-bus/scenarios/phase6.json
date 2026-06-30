@@ -10,9 +10,6 @@
     "copStart": 62,
     "copThreshold": 25,
     "copSyncPeriod": 6,
-    "bgC2Period": 4,
-    "scoreStart": 7420,
-    "scoreWin": 850,
-    "scoreMiss": 300
+    "bgC2Period": 4
   }
 }

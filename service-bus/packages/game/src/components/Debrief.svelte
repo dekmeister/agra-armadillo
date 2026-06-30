@@ -51,7 +51,6 @@ const counterfactual = $derived(
 <div class="modal card" class:won role="dialog" aria-modal="true" aria-label="Debrief">
   <div class="head">
     <span class="verdict" class:won>{won ? "✓ MISSION COMPLETE" : "✕ MISSION FAILED"}</span>
-    <span class="score">Score {gs.score.toLocaleString()}</span>
   </div>
   <p class="cause">{cause}</p>
 
@@ -89,7 +88,6 @@ const counterfactual = $derived(
   .head { display: flex; align-items: baseline; justify-content: space-between; }
   .verdict { font-size: 18px; font-weight: 800; letter-spacing: -0.3px; color: var(--red); }
   .verdict.won { color: var(--green); }
-  .score { font-size: 13px; font-weight: 700; color: var(--sub); }
   .cause { font-size: 14px; line-height: 1.5; color: #34383e; margin: 10px 0 16px; }
   .caps {
     text-transform: uppercase; letter-spacing: 1.2px; font-size: 10px; font-weight: 700;

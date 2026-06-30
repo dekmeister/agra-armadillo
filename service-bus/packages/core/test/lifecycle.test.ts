@@ -30,13 +30,12 @@ describe("DMS lifecycle + round trip", () => {
     expect(adjudicateApproval("Admin")).toBe("REJECTED");
   });
 
-  it("a clean run with no contingency completes the strike (win, +score)", () => {
+  it("a clean run with no contingency completes the strike (win)", () => {
     const s = run({
       seed: 5,
       scenario: { config: { contingencyTick: 99 } },
       actions: { 0: [{ type: "arm" }] },
     });
     expect(s.outcome).toBe("win");
-    expect(s.score).toBe(s.config.scoreStart + s.config.scoreWin);
   });
 });

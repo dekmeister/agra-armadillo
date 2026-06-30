@@ -188,7 +188,6 @@ export interface GameState {
   objective: Objective;
   outcome: Outcome;
   failReason: string | null;
-  score: number;
   /** The decision point awaiting the player, or null. Set by the core, paused on by the view. */
   pendingBeat: Beat | null;
   /** Beat ids already raised this run, so each fires at most once. */
@@ -220,7 +219,4 @@ export interface ScenarioConfig {
   copSyncPeriod: number;
   /** Background C2 traffic injected on the QB->ACP-1 link per cycle. */
   bgC2Period: number;
-  scoreStart: number;
-  scoreWin: number;
-  scoreMiss: number;
 }
