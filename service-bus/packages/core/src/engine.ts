@@ -20,6 +20,8 @@ import { Rng } from "./rng.ts";
 import { buildPhase6, ROUTINE_BACKLOG, type ScenarioOpts } from "./scenario.ts";
 import type {
   Action,
+  Beat,
+  BeatId,
   GameState,
   Interaction,
   LogEntry,
@@ -29,6 +31,8 @@ import type {
 } from "./types.ts";
 
 const COP_REFRESH = 96;
+/** COP must be within this band of the breach threshold to raise the COP-watch beat. */
+const COP_WARN_BAND = 12;
 
 /** Build the initial Phase-6 state and seed the opening demand. */
 export function createInitialState(seed: number, opts: ScenarioOpts = {}): GameState {
@@ -82,6 +86,11 @@ export function apply(state: GameState, action: Action): GameState {
       s.cop = COP_REFRESH;
       log(s, "COP refreshed via P2P picture sync · age 0s", "success");
       break;
+    case "acknowledgeBeat":
+      // Dismiss the current decision point; the view resumes the clock. Pure —
+      // touches no RNG, so the run stays byte-identical to a headless replay.
+      s.pendingBeat = null;
+      break;
   }
   return s;
 }
@@ -98,7 +107,11 @@ export function tick(state: GameState): GameState {
   generateDemand(s);
   dispatchQueues(s, rng);
   decayCop(s);
+  checkStandingBeats(s);
   evaluateOutcome(s);
+  // A decided run has no decision left to make — clear any beat so it never
+  // lingers over the debrief.
+  if (s.outcome !== "pending") s.pendingBeat = null;
 
   s.rngState = rng.state;
   return s;
@@ -119,6 +132,7 @@ function fireContingency(s: GameState): void {
     bad.pBadToGood = 0.12;
     bad.ackLoss = 0.15;
     log(s, "QB→ACP-1 return link degraded — bursty/lossy (BAD).", "degrade");
+    raiseBeat(s, "link-degraded");
   }
 }
 
@@ -267,6 +281,7 @@ function onLegFailed(s: GameState, msg: Message): void {
     const linkId = msg.route[msg.hop];
     if (linkId) s.links[linkId]?.queue.push(msg.id);
     log(s, "reply MISSING_ACK — sent, unconfirmed. Re-attempting.", "degrade");
+    raiseBeat(s, "missing-ack", { kind: "token", id: msg.id });
   }
 }
 
@@ -384,6 +399,95 @@ function rerequestStrike(s: GameState): void {
   spawnStrikeRequest(s);
   if (s.armed) s.wezDeadlineTick = s.tick + s.config.wezWindow;
   log(s, "Strike approval re-requested (fresh interaction).", "info");
+}
+
+// ---------------------------------------------------------------------------
+// Decision beats — one self-contained A-GRA lesson each, surfaced when its
+// triggering transition first fires. The view auto-pauses on `pendingBeat`; the
+// core only flags it (pure, no RNG, so headless replays stay byte-identical).
+// ---------------------------------------------------------------------------
+
+const BEAT_DEFS: Record<BeatId, Omit<Beat, "tick">> = {
+  "link-degraded": {
+    id: "link-degraded",
+    title: "QB→ACP-1 return link degraded (BAD)",
+    summary:
+      "QB→ACP-1 reply link dropped to a BAD burst — the C2 reply now risks loss over the air.",
+    concept:
+      "The approval reply (MA_ApprovalRequestStatusMT) rides C2 over the contested air. " +
+      "A Gilbert–Elliott burst just dropped this OTA link into a BAD state — short GOOD " +
+      "windows amid long lossy bursts. On-platform interfaces (VI, local sensors) are " +
+      "unaffected; only C2 / P2P / MS cross the air.",
+    focus: { kind: "link", id: "bad" },
+    actions: [],
+  },
+  "queue-starved": {
+    id: "queue-starved",
+    title: "Approval reply starved behind routine C2",
+    summary:
+      "Under FIFO the approval reply is stuck behind routine C2 — re-order so it goes first.",
+    concept:
+      "Under FIFO the deadline-critical reply sits behind routine MA_RulesOfEngagementCommandMT " +
+      "traffic, so it squanders the link's scarce GOOD windows. Change the queue discipline so " +
+      "the reply floats to the front: Deadline (EDF) or Class (priority).",
+    focus: { kind: "link", id: "bad" },
+    actions: ["setPolicy"],
+  },
+  "missing-ack": {
+    id: "missing-ack",
+    title: "Reply FAIL_MISSING_ACK — sent, unconfirmed",
+    summary: "Reply sent but never confirmed. Reroute around the BAD hop, or re-request (risky).",
+    concept:
+      "The reply left the queue but no delivery confirmation came back — the insidious " +
+      "return-leg failure. Arrival ≠ approval: you cannot assume it landed. Reroute it around " +
+      "the BAD hop via ACP-2's DMS, or re-request (which re-routes onto the same BAD link — " +
+      "usually not enough on its own).",
+    focus: { kind: "link", id: "bad" },
+    actions: ["reroute", "rerequest"],
+  },
+  "cop-warning": {
+    id: "cop-warning",
+    title: "COP freshness approaching breach",
+    summary: "The P2P COP picture is going stale — refresh it before it breaches.",
+    concept:
+      "While you fight the C2 reply, the P2P COP fan-out is going stale. A-GRA assesses the " +
+      "shared picture too — don't starve it to save the strike. Push a COP refresh over P2P.",
+    focus: { kind: "link", id: "p2p" },
+    actions: ["refreshCop"],
+  },
+};
+
+/** Raise a decision point the first time its condition fires (one pending at a time). */
+function raiseBeat(s: GameState, id: BeatId, focus?: Beat["focus"]): void {
+  if (s.pendingBeat || s.seenBeats.includes(id)) return;
+  const def = BEAT_DEFS[id];
+  s.pendingBeat = { ...def, tick: s.tick, focus: focus ?? def.focus };
+  s.seenBeats.push(id);
+}
+
+/** Standing-condition beats (re-checked each tick, unlike the event-driven A/C beats). */
+function checkStandingBeats(s: GameState): void {
+  if (s.pendingBeat || s.outcome !== "pending") return;
+
+  // B — the deadline-critical reply is stuck behind routine C2 under FIFO on the BAD link.
+  const reply = openReply(s);
+  if (reply && reply.state === "PENDING") {
+    const link = s.links[reply.route[reply.hop] ?? ""];
+    const routineAhead =
+      link?.id === "bad" &&
+      link.policy === "fifo" &&
+      link.queue.some((id) => id !== reply.id && s.messages[id]?.cls === "C2");
+    if (routineAhead) {
+      raiseBeat(s, "queue-starved");
+      return;
+    }
+  }
+
+  // D — COP freshness sliding toward breach while the engagement drags on. (In a quick
+  // win COP never enters the band, so this only fires in longer/struggling runs.)
+  if (s.cop <= s.copThreshold + COP_WARN_BAND && !s.copBreached) {
+    raiseBeat(s, "cop-warning");
+  }
 }
 
 // ---------------------------------------------------------------------------

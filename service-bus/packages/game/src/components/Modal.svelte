@@ -91,7 +91,12 @@
         actually arrive, on time, with verified QB authority.</p>
       <h3>Your goal</h3>
       <p>Get the reply delivered before the <b>WEZ window</b> counts down to zero, without letting COP
-        freshness collapse. Your first click anywhere starts the clock.</p>
+        freshness collapse.</p>
+      <h3>How it flows</h3>
+      <p>The mission runs on a 1-second clock, but <b>auto-pauses at each decision point</b> and
+        explains what just happened. Read it, pick an action (or <b>Hold</b> to do nothing), and the
+        clock resumes. The WEZ countdown only ticks while the mission is running — reading is free.
+        You can also act any time from the <b>Inspector</b> on the right.</p>
       <h3>What to try</h3>
       <ol>
         <li><b>Re-prioritise the link.</b> Click the amber dashed <b>QB→ACP-1</b> link, then set its

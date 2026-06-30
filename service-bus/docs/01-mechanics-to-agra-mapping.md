@@ -89,8 +89,32 @@ These `[S]` choices were introduced while building the playable MVP; each is ref
    platform / re-request). (`[S]`.)
 10. **Leader election reduced to Raft + Static stubs**, wired but not exercised in Phase 6 (no team-split
     in the MVP). The strategy seam is in place for later phases. (`[S]`; narrows master list item under §4.)
-11. **WEZ = one absolute deadline tick + one authority gate**; "armed on first interaction" lives in the
-    view layer only — the core deadline is a pure `wezDeadlineTick`. (`[S]`; refinement of item 2.)
+11. **WEZ = one absolute deadline tick + one authority gate**; the core deadline is a pure
+    `wezDeadlineTick`. The view **arms it at mission start** (not on first click): with auto-pause
+    (item 12) the clock already halts at each decision point and while a menu is open, so reading is
+    free, and a "just resume through everything" run still faces a real deadline. (`[S]`; refinement of item 2.)
+12. **Decision-point pacing (auto-pause "beats").** The crisis runs at 1 Hz but the view auto-pauses
+    the instant the core raises a `pendingBeat` — one self-contained A-GRA lesson surfaced when its
+    triggering transition first fires (`link-degraded` at the contingency, `queue-starved` under FIFO,
+    `missing-ack` on the return-leg ack loss, `cop-warning` near a COP breach). The beat flag is **pure**
+    (set in `engine.ts`, no RNG, no wall-clock), so headless replays and the sweep harness are
+    byte-identical (they simply never `acknowledgeBeat`). This is a *legibility* layer over the existing
+    transitions — it does not change message outcomes. (`[S]`; pacing/clarity only.)
+13. **Clamped tutorial seed** (`scenario.TUTORIAL_SEED`, locked by `test/tutorial-seed.test.ts`). The
+    view runs one curated seed on which the paused-decision flow is deterministic: do-nothing raises all
+    three beats and **loses**, while EDF / Class / reroute each **win** and the re-request trap loses —
+    so the lesson always lands for a first-time player. This is seed *curation*, not param-fudging: full
+    Gilbert–Elliott fidelity is preserved. Honest stochastic outcomes are reserved for a `mode:
+    "challenge"` (seam in place, not wired in the MVP). (`[S]`; teaching aid, no fidelity cost.)
+14. **Contested-link rendering damped.** Once the contingency degrades the QB→ACP-1 link, the board
+    renders it as **stably CONTESTED** rather than flickering amber/grey with every Gilbert–Elliott
+    transition (the per-tick flip was unreadable). The live GOOD/BAD channel remains exact in the sim and
+    in the Inspector. (`[S]`; view-only — the underlying channel is unchanged.)
+15. **The COP-watch beat (`cop-warning`) is dormant under current MVP balance.** COP decays slowly and
+    the leader's P2P fan-out auto-refreshes it over healthy P2P links, so it only enters the warning band
+    in a long/struggling run — a quick win never sees it. Making it bite reliably needs genuine OTA P2P
+    degradation (faithful, but new scenario state) and is a deliberate follow-on. (`[S]`; noted, not yet a
+    live decision.)
 
 **Nothing in this list alters topology, endpoints, interface assignment, or authority gating** — the
 four things the guard rail protects.

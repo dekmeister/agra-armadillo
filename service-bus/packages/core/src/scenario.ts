@@ -33,6 +33,7 @@ export interface ScenarioOpts {
 
 export const DEFAULT_CONFIG: ScenarioConfig = {
   seed: 1,
+  mode: "tutorial",
   wezWindow: 18,
   contingencyTick: 2,
   copDecay: 0.4,
@@ -47,6 +48,14 @@ export const DEFAULT_CONFIG: ScenarioConfig = {
 
 /** Routine C2 messages pre-seeded ahead of the reply on the BAD link. */
 export const ROUTINE_BACKLOG = 6;
+
+/**
+ * The clamped tutorial seed. On this seed the paused-decision flow is
+ * deterministic: do-nothing raises all three beats and LOSES, while EDF / Class /
+ * reroute each WIN and the re-request trap loses — so the lesson always lands.
+ * Locked by test/tutorial-seed.test.ts; changing scenario balance must re-find it.
+ */
+export const TUTORIAL_SEED = 1412;
 
 function node(
   id: string,
@@ -116,6 +125,8 @@ export function buildPhase6(seed: number, opts: ScenarioOpts = {}): GameState {
     outcome: "pending",
     failReason: null,
     score: config.scoreStart,
+    pendingBeat: null,
+    seenBeats: [],
     log: [{ tick: 0, text: "Phase 6 — Threat Engagement at CAP. COP flowing.", severity: "info" }],
     nextSeq: 0,
     config,

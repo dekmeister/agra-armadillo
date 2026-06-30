@@ -11,5 +11,5 @@ export { apply, createInitialState, tick } from "./engine.ts";
 export { blockProb, dispatchOrder, stepChannel } from "./link.ts";
 export { adjudicateApproval, isTargetAuthority } from "./rbac.ts";
 export { Rng } from "./rng.ts";
-export { buildPhase6, DEFAULT_CONFIG, type ScenarioOpts } from "./scenario.ts";
+export { buildPhase6, DEFAULT_CONFIG, type ScenarioOpts, TUTORIAL_SEED } from "./scenario.ts";
 export type * from "./types.ts";

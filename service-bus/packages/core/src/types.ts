@@ -131,6 +131,30 @@ export interface Interaction {
 export type Objective = "stalled" | "in_progress" | "complete" | "missed";
 export type Outcome = "pending" | "win" | "loss";
 
+/**
+ * A decision point — one self-contained A-GRA lesson surfaced when its triggering
+ * state transition first fires. The view auto-pauses the clock on a `pendingBeat`
+ * so the player can read the board and act; the pure core merely flags it (no DOM,
+ * no wall-clock). Each beat id raises at most once per run (`seenBeats`).
+ */
+export type BeatId = "link-degraded" | "queue-starved" | "missing-ack" | "cop-warning";
+
+export interface Beat {
+  id: BeatId;
+  /** Tick at which the beat was raised. */
+  tick: number;
+  /** Real A-GRA framing of what just happened. */
+  title: string;
+  /** One short sentence for the panel (the "More info" modal shows the full `concept`). */
+  summary: string;
+  /** The single concept this beat teaches. */
+  concept: string;
+  /** What to highlight on the board so the player's eye lands on the right thing. */
+  focus: { kind: "node" | "link" | "token"; id: string };
+  /** Player affordances to surface as buttons (subset of Action types). */
+  actions: Action["type"][];
+}
+
 export interface LogEntry {
   tick: number;
   text: string;
@@ -143,7 +167,8 @@ export type Action =
   | { type: "setPolicy"; linkId: LinkId; policy: QueuePolicy }
   | { type: "reroute" } // reroute the stalled approval reply QB -> ACP-2 -> ACP-1 via ACP-2's DMS
   | { type: "rerequest" } // re-issue the approval request (fresh interaction)
-  | { type: "refreshCop" }; // push a COP refresh over P2P
+  | { type: "refreshCop" } // push a COP refresh over P2P
+  | { type: "acknowledgeBeat" }; // dismiss the current decision point (view resumes the clock)
 
 export interface GameState {
   tick: number;
@@ -164,6 +189,10 @@ export interface GameState {
   outcome: Outcome;
   failReason: string | null;
   score: number;
+  /** The decision point awaiting the player, or null. Set by the core, paused on by the view. */
+  pendingBeat: Beat | null;
+  /** Beat ids already raised this run, so each fires at most once. */
+  seenBeats: BeatId[];
   log: LogEntry[];
   /** Monotonic counter for message ids/seq. */
   nextSeq: number;
@@ -173,6 +202,12 @@ export interface GameState {
 /** Static, scenario-level tunables (kept in state for reference + replay). */
 export interface ScenarioConfig {
   seed: number;
+  /**
+   * tutorial = a curated seed where correct play deterministically wins (the
+   * lesson always lands); challenge = honest Gilbert-Elliott luck. Recorded for
+   * reference/replay; the view selects the seed by mode. v1 wires tutorial only.
+   */
+  mode: "tutorial" | "challenge";
   /** WEZ window length in ticks (seconds) once armed. */
   wezWindow: number;
   /** Tick at which the QB->ACP-1 return link is scripted BAD. */

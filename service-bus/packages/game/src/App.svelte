@@ -1,5 +1,7 @@
 <script lang="ts">
 import { onDestroy } from "svelte";
+import Debrief from "./components/Debrief.svelte";
+import DecisionCard from "./components/DecisionCard.svelte";
 import EventLog from "./components/Dock/EventLog.svelte";
 import Inspector from "./components/Dock/Inspector.svelte";
 import Objective from "./components/Dock/Objective.svelte";
@@ -9,6 +11,8 @@ import Legend from "./components/Legend.svelte";
 import Modal from "./components/Modal.svelte";
 import { game } from "./lib/store.svelte.ts";
 import type { ModalKind } from "./lib/ui.ts";
+
+const outcome = $derived(game.gs.outcome);
 
 // Open with "how to play" so the level is discoverable; closing it starts the mission.
 let modal = $state<ModalKind | null>("help");
@@ -26,8 +30,13 @@ onDestroy(() => game.stop());
   <div class="legendbar"><Legend /></div>
 
   <div class="body">
+    <!-- Permanent left column: objective on top, the decision window below. Always
+         mounted so the graph width never shifts when a beat fires/resumes. -->
+    <aside class="left">
+      <Objective />
+      <DecisionCard />
+    </aside>
     <section class="stage">
-      <div class="obj-overlay"><Objective /></div>
       <Graph />
     </section>
     <aside class="side">
@@ -41,11 +50,15 @@ onDestroy(() => game.stop());
   <Modal kind={modal} onClose={() => (modal = null)} />
 {/if}
 
+{#if outcome !== "pending"}
+  <Debrief />
+{/if}
+
 <style>
   main { width: 100vw; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
   .legendbar { display: flex; justify-content: center; padding: 2px 0 6px; }
   .body { flex: 1; display: flex; gap: 18px; padding: 0 22px 18px; min-height: 0; }
-  .stage { flex: 1; position: relative; min-width: 0; min-height: 0; }
-  .obj-overlay { position: absolute; top: 8px; left: 8px; width: 320px; z-index: 5; }
+  .left { width: 320px; flex: none; display: flex; flex-direction: column; gap: 18px; min-height: 0; }
+  .stage { flex: 1; min-width: 0; min-height: 0; }
   .side { width: 400px; flex: none; display: flex; flex-direction: column; gap: 18px; min-height: 0; }
 </style>

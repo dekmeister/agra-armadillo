@@ -9,14 +9,17 @@
  */
 
 import type { Action, GameState, QueuePolicy } from "@service-bus/core";
-import { apply, createInitialState, tick } from "@service-bus/core";
+import { apply, createInitialState, TUTORIAL_SEED, tick } from "@service-bus/core";
 import type { Selection } from "./sim-adapter.ts";
 
-/** Demo seed: under FIFO this stalls and misses the WEZ; EDF/Class/reroute recover. */
-const SEED = 3;
-
 function freshState(): GameState {
-  return createInitialState(SEED);
+  // Arm the WEZ at mission start: with auto-pause the clock already halts at each
+  // decision point (and while a menu is open), so the player gets reading time
+  // without arm-on-first-click — and a "just resume through everything" run still
+  // faces a real deadline. The countdown only advances on running ticks.
+  return apply(createInitialState(TUTORIAL_SEED, { config: { mode: "tutorial" } }), {
+    type: "arm",
+  });
 }
 
 class GameStore {
@@ -29,13 +32,20 @@ class GameStore {
     return $state.snapshot(this.gs) as GameState;
   }
 
-  /** Start the 1 Hz tick loop. The crisis unfolds on screen before the player acts. */
+  /**
+   * Start the 1 Hz tick loop. The crisis unfolds on screen before the player acts.
+   * The loop auto-pauses the instant the core raises a decision beat, so the player
+   * reads the board and acts without the clock running them over. Won't start while
+   * a beat is pending (guards against a menu close racing an open decision point).
+   */
   start(): void {
-    if (this.#timer) return;
+    if (this.#timer || this.gs.pendingBeat) return;
     this.#timer = setInterval(() => {
       try {
         const s = this.#plain();
-        if (s.outcome === "pending") this.gs = tick(s);
+        if (s.outcome !== "pending") return;
+        this.gs = tick(s);
+        if (this.gs.pendingBeat) this.stop(); // halt on the decision point
       } catch (err) {
         console.error("tick failed", err);
         this.stop();
@@ -46,6 +56,12 @@ class GameStore {
   stop(): void {
     if (this.#timer) clearInterval(this.#timer);
     this.#timer = null;
+  }
+
+  /** Dismiss the current decision point and resume the clock. */
+  resume(): void {
+    this.#act({ type: "acknowledgeBeat" });
+    this.start();
   }
 
   #act(a: Action): void {

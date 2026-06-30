@@ -29,7 +29,11 @@ function key(e: KeyboardEvent, fn: () => void): void {
 }
 </script>
 
-<svg viewBox="0 0 1120 470" preserveAspectRatio="xMidYMid meet" class="graph">
+<!-- viewBox is cropped to the actual content bounds (mesh hull + nodes + their
+     selection halos), not the full 1120x470 authoring space — the old box left
+     ~480px of dead horizontal margin that shrank the graph between the side
+     columns. Node coordinates in layout.ts are unchanged. -->
+<svg viewBox="240 0 660 424" preserveAspectRatio="xMidYMid meet" class="graph">
   <defs>
     <marker id="aGood" markerUnits="userSpaceOnUse" markerWidth="15" markerHeight="15"
       refX="11" refY="6" orient="auto">

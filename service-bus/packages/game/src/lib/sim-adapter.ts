@@ -33,11 +33,17 @@ export function linkView(gs: GameState, linkId: string): LinkVM | null {
   if (!l) return null;
   if (!NODES[l.from] || !NODES[l.to]) return null;
   const d = straightPath(l.from, l.to, LANE[linkId] ?? 0);
+  // Once the scripted contingency degrades the reply link, render it as stably
+  // CONTESTED rather than flickering amber/grey with every Gilbert-Elliott
+  // transition — the per-tick flip was unreadable. [S] The board shows "this link
+  // is bursty/unreliable"; the live GOOD/BAD channel is still in the Inspector.
+  const contested =
+    l.channel === "BAD" || (linkId === "bad" && gs.tick >= gs.config.contingencyTick);
   return {
     id: linkId,
     d,
     cls: l.cls,
-    bad: l.channel === "BAD",
+    bad: contested,
     width: l.cls === "MS" ? 3 : 7,
   };
 }
