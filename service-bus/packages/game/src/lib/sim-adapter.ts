@@ -114,16 +114,18 @@ const SHAPE: Record<InterfaceClass, "square" | "circle"> = {
  * the source with a count badge, so the queue reads as a single source the
  * individual tokens stream out of (rather than an unreadable blob).
  */
-export function tokens(gs: GameState, heroId: string | null): TokenVM[] {
+export function tokens(gs: GameState, heroId: string | null, frac = 0): TokenVM[] {
   const out: TokenVM[] = [];
 
-  // In-flight: one moving token each.
+  // In-flight: one moving token each. `frac` is the view's wall-clock fraction into the
+  // current tick, so `gs.tick + frac` glides the message continuously along its link
+  // (constant speed, faithful to the link's fixed latency) instead of snapping per tick.
   for (const f of gs.inFlight) {
     if (f.msg === heroId) continue;
     const m = gs.messages[f.msg];
     const link = gs.links[f.link];
     if (!m || !link) continue;
-    const t = clamp01(1 - (f.arrivalTick - gs.tick) / Math.max(1, link.latency));
+    const t = clamp01(1 - (f.arrivalTick - (gs.tick + frac)) / Math.max(1, link.latency));
     const p = place(gs, link.id, t);
     out.push({
       id: m.id,

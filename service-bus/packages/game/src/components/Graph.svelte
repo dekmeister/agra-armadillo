@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { InterfaceClass } from "@service-bus/core";
+import { fade } from "svelte/transition";
 import { dmsPort, layoutFor } from "../lib/layout.ts";
 import { heroReply, highlightFor, linkView, type TokenVM, tokens } from "../lib/sim-adapter.ts";
 import { game } from "../lib/store.svelte.ts";
@@ -7,7 +8,9 @@ import { game } from "../lib/store.svelte.ts";
 const gs = $derived(game.gs);
 const layout = $derived(layoutFor(gs.scenarioId));
 const hero = $derived(heroReply(gs));
-const toks = $derived(tokens(gs, hero?.id ?? null));
+// Reading game.renderFrac (updated ~60 fps by the store's rAF loop) here is what re-derives
+// token positions every frame, gliding in-flight messages continuously between ticks.
+const toks = $derived(tokens(gs, hero?.id ?? null, game.renderFrac));
 // Degraded links drawn last so their marching dashes sit on top of clean rails.
 const linkIds = $derived(
   Object.values(gs.links)
@@ -114,13 +117,13 @@ function key(e: KeyboardEvent, fn: () => void): void {
   <!-- Message tokens (in-flight = moving; queues = one stack + count) -->
   {#each toks as t (t.id)}
     {@const bx = t.x < 560 ? t.x - 14 : t.x + 14}
-    <g class="tok" onclick={() => tokClick(t)}
+    <g class="tok" transition:fade={{ duration: 160 }} onclick={() => tokClick(t)}
       onkeydown={(e) => key(e, () => tokClick(t))} role="button" tabindex="0">
       <circle cx={t.x} cy={t.y} r="15" fill="transparent" />
       {#if t.shape === "square"}
-        <rect class="glide" x={t.x - 8} y={t.y - 8} width="16" height="16" rx="3" fill={CLASS_FILL[t.cls]} />
+        <rect class:settle={!!t.count} x={t.x - 8} y={t.y - 8} width="16" height="16" rx="3" fill={CLASS_FILL[t.cls]} />
       {:else}
-        <circle class="glide" cx={t.x} cy={t.y} r="9" fill={CLASS_FILL[t.cls]} />
+        <circle class:settle={!!t.count} cx={t.x} cy={t.y} r="9" fill={CLASS_FILL[t.cls]} />
       {/if}
       {#if t.count}
         <circle cx={bx} cy={t.y - 12} r="8.5"
@@ -136,7 +139,7 @@ function key(e: KeyboardEvent, fn: () => void): void {
   {#if hero}
     {@const sgn = hero.labelSide === "left" ? -1 : 1}
     {@const anc = hero.labelSide === "left" ? "end" : "start"}
-    <g transform="translate({hero.x},{hero.y})" class="tok"
+    <g transform="translate({hero.x},{hero.y})" class="tok heroslide"
       onclick={() => game.select("token", hero.id)}
       onkeydown={(e) => key(e, () => game.select("token", hero.id))} role="button" tabindex="0">
       {#if hero.ack === "missing"}
@@ -211,5 +214,9 @@ function key(e: KeyboardEvent, fn: () => void): void {
   .ringspin { animation: ringspin 2s linear infinite; transform-box: fill-box; transform-origin: center; }
   .glow { animation: glow 1.4s ease-out infinite; transform-box: fill-box; transform-origin: center; }
   .ghost { animation: ghost 1.3s ease-in-out infinite; }
-  .glide { transition: cx 0.4s linear, cy 0.4s linear, x 0.4s linear, y 0.4s linear; }
+  /* In-flight tokens are positioned per-frame by the rAF clock (renderFrac) — no CSS
+     transition, which would only lag the smooth glide. The queue-stack badge moves
+     discretely, so it gets a short settle; the hero glyph slides on reroute. */
+  .settle { transition: cx 0.25s ease, cy 0.25s ease, x 0.25s ease, y 0.25s ease; }
+  .heroslide { transition: transform 0.45s ease; }
 </style>

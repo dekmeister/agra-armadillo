@@ -12,6 +12,10 @@ import type { Action, ElectionMethod, GameState, QueuePolicy } from "@service-bu
 import { apply, createInitialState, getScenario, tick } from "@service-bus/core";
 import { defaultLinkId, type Selection } from "./sim-adapter.ts";
 
+/** Wall-clock length of one sim tick (ms). The core advances by integer ticks; the view
+ * interpolates message positions across this window (see `renderFrac`). Single source of truth. */
+const TICK_MS = 1000;
+
 /** Only Phase 6 runs a WEZ deadline; others use `wezWindow` merely as a level length. */
 function usesWez(scenarioId: string): boolean {
   return scenarioId === "phase6";
@@ -34,7 +38,12 @@ class GameStore {
   scenarioId = $state("phase6");
   gs = $state<GameState>(build("phase6"));
   sel = $state<Selection>({ type: "link", id: "bad" });
+  /** Fraction (0..1) of wall time from the last tick toward the next. The view reads
+   * `gs.tick + renderFrac` to glide in-flight messages smoothly between integer ticks. */
+  renderFrac = $state(0);
   #timer: ReturnType<typeof setInterval> | null = null;
+  #raf: number | null = null;
+  #lastTickAt = 0;
 
   /** Load a level (fresh) and focus a sensible default element. */
   load(scenarioId: string, seed?: number): void {
@@ -56,22 +65,44 @@ class GameStore {
    */
   start(): void {
     if (this.#timer || this.gs.pendingBeat) return;
+    this.#markTick();
     this.#timer = setInterval(() => {
       try {
         const s = this.#plain();
         if (s.outcome !== "pending") return;
         this.gs = tick(s);
+        this.#markTick(); // reset the interpolation window so gs.tick + renderFrac stays continuous
         if (this.gs.pendingBeat) this.stop(); // halt on the decision point
       } catch (err) {
         console.error("tick failed", err);
         this.stop();
       }
-    }, 1000);
+    }, TICK_MS);
+    this.#startRaf();
   }
 
   stop(): void {
     if (this.#timer) clearInterval(this.#timer);
     this.#timer = null;
+    // Freeze tokens mid-glide (paused on a beat / menu / outcome) and stop burning frames.
+    if (this.#raf !== null) cancelAnimationFrame(this.#raf);
+    this.#raf = null;
+  }
+
+  /** Reset the wall-clock interpolation window at a tick boundary. */
+  #markTick(): void {
+    this.#lastTickAt = performance.now();
+    this.renderFrac = 0;
+  }
+
+  /** Per-frame loop that advances `renderFrac` toward 1 across one tick's wall time. */
+  #startRaf(): void {
+    if (this.#raf !== null) return;
+    const loop = (): void => {
+      this.renderFrac = Math.min(1, (performance.now() - this.#lastTickAt) / TICK_MS);
+      this.#raf = requestAnimationFrame(loop);
+    };
+    this.#raf = requestAnimationFrame(loop);
   }
 
   /** Dismiss the current decision point and resume the clock. */
