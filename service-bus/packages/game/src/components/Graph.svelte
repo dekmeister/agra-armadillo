@@ -1,21 +1,44 @@
 <script lang="ts">
-import { dmsPort, HIGHLIGHT, MESH_HULL, NODES } from "../lib/layout.ts";
-import { heroReply, linkView, type TokenVM, tokens } from "../lib/sim-adapter.ts";
+import type { InterfaceClass } from "@service-bus/core";
+import { dmsPort, layoutFor } from "../lib/layout.ts";
+import { heroReply, highlightFor, linkView, type TokenVM, tokens } from "../lib/sim-adapter.ts";
 import { game } from "../lib/store.svelte.ts";
 
 const gs = $derived(game.gs);
+const layout = $derived(layoutFor(gs.scenarioId));
 const hero = $derived(heroReply(gs));
 const toks = $derived(tokens(gs, hero?.id ?? null));
-const linkIds = ["relayQbAcp2", "relayAcp2Acp1", "req", "p2p", "p2p3", "bad"];
+// Degraded links drawn last so their marching dashes sit on top of clean rails.
+const linkIds = $derived(
+  Object.values(gs.links)
+    .slice()
+    .sort((a, b) => Number(a.channel === "BAD") - Number(b.channel === "BAD"))
+    .map((l) => l.id),
+);
 
 const sel = $derived(game.sel);
-const hl = $derived(sel ? HIGHLIGHT[`${sel.type}:${sel.id}`] : undefined);
+const hl = $derived(highlightFor(gs, sel));
+
+/** Token fill by interface class (shape already distinguishes C2 as a square). */
+const CLASS_FILL: Record<InterfaceClass, string> = {
+  C2: "var(--c2)",
+  P2P: "var(--p2p)",
+  VI: "var(--good)",
+  MS: "var(--sub)",
+  MD: "var(--amber)",
+  MP: "var(--gold)",
+};
 
 function nodeCat(id: string): { ring: string; sub: string; subColor: string } {
   const n = gs.nodes[id];
-  if (n?.kind === "QB") return { ring: "var(--gold)", sub: "AUTHORITY", subColor: "var(--gold)" };
+  if (n?.kind === "QB" || n?.kind === "LRE")
+    return { ring: "var(--gold)", sub: "AUTHORITY", subColor: "var(--gold)" };
   if (n?.isLeader) return { ring: "var(--ink)", sub: "★ LEADER", subColor: "var(--c2)" };
   return { ring: "var(--ink)", sub: "", subColor: "var(--sub)" };
+}
+function isAuthority(id: string): boolean {
+  const k = gs.nodes[id]?.kind;
+  return k === "QB" || k === "LRE";
 }
 function tokClick(t: TokenVM): void {
   // A token — including a queue stack — inspects the message; the rail inspects the link.
@@ -29,11 +52,8 @@ function key(e: KeyboardEvent, fn: () => void): void {
 }
 </script>
 
-<!-- viewBox is cropped to the actual content bounds (mesh hull + nodes + their
-     selection halos), not the full 1120x470 authoring space — the old box left
-     ~480px of dead horizontal margin that shrank the graph between the side
-     columns. Node coordinates in layout.ts are unchanged. -->
-<svg viewBox="240 0 660 424" preserveAspectRatio="xMidYMid meet" class="graph">
+<!-- viewBox comes from the active scenario's layout (cropped to its content bounds). -->
+<svg viewBox={layout.viewBox} preserveAspectRatio="xMidYMid meet" class="graph">
   <defs>
     <marker id="aGood" markerUnits="userSpaceOnUse" markerWidth="15" markerHeight="15"
       refX="11" refY="6" orient="auto">
@@ -46,14 +66,17 @@ function key(e: KeyboardEvent, fn: () => void): void {
   </defs>
 
   <!-- The contested OTA region: the DMS / DDS-RTPS pub-sub mesh (no central broker;
-       each platform runs its own DMS instance). Painted first so links sit on top. -->
-  <g class="mesh" pointer-events="none">
-    <rect x={MESH_HULL.x} y={MESH_HULL.y} width={MESH_HULL.w} height={MESH_HULL.h}
-      rx={MESH_HULL.rx} />
-    <text x={MESH_HULL.x + 16} y={MESH_HULL.y + MESH_HULL.h - 14} class="meshlabel">
-      DMS / DDS-RTPS mesh — contested OTA [S]
-    </text>
-  </g>
+       each platform runs its own DMS instance). Painted first so links sit on top.
+       Only shown for scenarios whose topology is genuinely an OTA mesh. -->
+  {#if layout.mesh}
+    <g class="mesh" pointer-events="none">
+      <rect x={layout.mesh.x} y={layout.mesh.y} width={layout.mesh.w} height={layout.mesh.h}
+        rx={layout.mesh.rx} />
+      <text x={layout.mesh.x + 16} y={layout.mesh.y + layout.mesh.h - 14} class="meshlabel">
+        DMS / DDS-RTPS mesh — contested OTA [S]
+      </text>
+    </g>
+  {/if}
 
   <!-- Links -->
   {#each linkIds as id (id)}
@@ -76,10 +99,11 @@ function key(e: KeyboardEvent, fn: () => void): void {
     {/if}
   {/each}
 
-  <!-- C2 lane labels: the QB↔ACP-1 round trip reads as two pipes. Sit in the clear
-       gap between the two rails (tokens ride outboard, the relay shadows the right). -->
-  <text x="560" y="124" class="railLabel" text-anchor="middle">request ▴</text>
-  <text x="560" y="198" class="railLabel" text-anchor="middle">reply ▾</text>
+  <!-- C2 lane labels for Phase 6's QB↔ACP-1 round trip (its two pipes). -->
+  {#if gs.scenarioId === "phase6"}
+    <text x="560" y="124" class="railLabel" text-anchor="middle">request ▴</text>
+    <text x="560" y="198" class="railLabel" text-anchor="middle">reply ▾</text>
+  {/if}
 
   <!-- Selection highlight -->
   {#if hl}
@@ -94,9 +118,9 @@ function key(e: KeyboardEvent, fn: () => void): void {
       onkeydown={(e) => key(e, () => tokClick(t))} role="button" tabindex="0">
       <circle cx={t.x} cy={t.y} r="15" fill="transparent" />
       {#if t.shape === "square"}
-        <rect class="glide" x={t.x - 8} y={t.y - 8} width="16" height="16" rx="3" fill="var(--c2)" />
+        <rect class="glide" x={t.x - 8} y={t.y - 8} width="16" height="16" rx="3" fill={CLASS_FILL[t.cls]} />
       {:else}
-        <circle class="glide" cx={t.x} cy={t.y} r="9" fill="var(--p2p)" />
+        <circle class="glide" cx={t.x} cy={t.y} r="9" fill={CLASS_FILL[t.cls]} />
       {/if}
       {#if t.count}
         <circle cx={bx} cy={t.y - 12} r="8.5"
@@ -142,15 +166,15 @@ function key(e: KeyboardEvent, fn: () => void): void {
   {/if}
 
   <!-- Nodes -->
-  {#each Object.keys(NODES) as id (id)}
-    {@const g = NODES[id]}
-    {@const cat = nodeCat(id)}
-    {@const port = dmsPort(id)}
-    {#if g}
+  {#each Object.keys(layout.nodes) as id (id)}
+    {@const g = layout.nodes[id]}
+    {#if g && gs.nodes[id]}
+      {@const cat = nodeCat(id)}
+      {@const port = dmsPort(g, layout.meshCenter)}
       <g class="node" onclick={() => game.select("node", id)}
         onkeydown={(e) => key(e, () => game.select("node", id))} role="button" tabindex="0">
         <circle cx={g.x} cy={g.y} r={g.r} fill="#fff" stroke={cat.ring}
-          stroke-width={id === "qb" ? 5 : 4} />
+          stroke-width={isAuthority(id) ? 5 : 4} />
         <text x={g.x} y={g.y - 2} class="nlabel" font-size="15">
           {gs.nodes[id]?.label}
         </text>

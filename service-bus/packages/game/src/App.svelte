@@ -1,5 +1,5 @@
 <script lang="ts">
-import { onDestroy } from "svelte";
+import { onDestroy, onMount } from "svelte";
 import Debrief from "./components/Debrief.svelte";
 import DecisionCard from "./components/DecisionCard.svelte";
 import EventLog from "./components/Dock/EventLog.svelte";
@@ -14,8 +14,18 @@ import type { ModalKind } from "./lib/ui.ts";
 
 const outcome = $derived(game.gs.outcome);
 
-// Open with "how to play" so the level is discoverable; closing it starts the mission.
-let modal = $state<ModalKind | null>("help");
+// Open on the mission picker so the player chooses a level; Play loads it and starts.
+let modal = $state<ModalKind | null>("levels");
+
+// Deep-link: `?level=phaseN` loads that level directly and skips the picker (handy for
+// sharing a mission and for headless screenshots).
+onMount(() => {
+  const p = new URLSearchParams(window.location.search).get("level");
+  if (p && /^phase[1-8]$/.test(p)) {
+    game.load(p);
+    modal = null;
+  }
+});
 
 // The 1 Hz loop runs while no menu is open; opening a menu pauses the mission.
 $effect(() => {

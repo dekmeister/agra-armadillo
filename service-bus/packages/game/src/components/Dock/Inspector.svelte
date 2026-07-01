@@ -12,6 +12,7 @@ const policyLabel: Record<QueuePolicy, string> = { class: "Class", fifo: "FIFO",
 
 const isP2P = $derived(link?.cls === "P2P");
 const stalled = $derived(gs.objective === "stalled");
+const isPhase6 = $derived(gs.scenarioId === "phase6");
 </script>
 
 <div class="card pad insp">
@@ -43,15 +44,19 @@ const stalled = $derived(gs.objective === "stalled");
   {/if}
 
   <div class="actions">
-    {#if link?.id === "bad" && stalled}
-      <button class="primary" onclick={() => game.setPolicy("bad", "edf")}>▸ Prioritise C2 reply (push through)</button>
-    {/if}
-    {#if sel?.type === "token" && stalled}
-      <button class="primary" onclick={() => game.reroute()}>▸ Reroute via ACP-2's DMS (QB→ACP-2→ACP-1)</button>
-      <button class="ghost" onclick={() => game.rerequest()}>↻ Re-request approval</button>
-    {/if}
-    {#if isP2P}
-      <button class="ghost" onclick={() => game.refreshCop()}>⟳ Push COP refresh via this link</button>
+    <!-- Phase 6's bespoke recovery affordances (the other levels drive their actions
+         from the decision card). -->
+    {#if isPhase6}
+      {#if link?.id === "bad" && stalled}
+        <button class="primary" onclick={() => game.setPolicy("bad", "edf")}>▸ Prioritise C2 reply (push through)</button>
+      {/if}
+      {#if sel?.type === "token" && stalled}
+        <button class="primary" onclick={() => game.reroute()}>▸ Reroute via ACP-2's DMS (QB→ACP-2→ACP-1)</button>
+        <button class="ghost" onclick={() => game.rerequest()}>↻ Re-request approval</button>
+      {/if}
+      {#if isP2P}
+        <button class="ghost" onclick={() => game.refreshCop()}>⟳ Push COP refresh via this link</button>
+      {/if}
     {/if}
     {#if gs.outcome !== "pending"}
       <button class="ghost" onclick={() => game.replay()}>↻ Replay scenario</button>

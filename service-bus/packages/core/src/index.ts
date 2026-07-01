@@ -6,10 +6,19 @@
  * same in Node (parameter sweeps) and in the browser (the Svelte console).
  */
 
-export { type ElectionMethod, type ElectionStrategy, STRATEGIES } from "./election.ts";
+export { type ElectionStrategy, quorumOf, STRATEGIES } from "./election.ts";
 export { apply, createInitialState, tick } from "./engine.ts";
 export { blockProb, dispatchOrder, stepChannel } from "./link.ts";
-export { adjudicateApproval, isTargetAuthority } from "./rbac.ts";
+export { adjudicate, adjudicateApproval, isTargetAuthority } from "./rbac.ts";
 export { Rng } from "./rng.ts";
-export { buildPhase6, DEFAULT_CONFIG, type ScenarioOpts, TUTORIAL_SEED } from "./scenario.ts";
+export {
+  buildPhase6,
+  CAMPAIGN,
+  DEFAULT_CONFIG,
+  getScenario,
+  SCENARIOS,
+  type ScenarioDef,
+  type ScenarioOpts,
+  TUTORIAL_SEED,
+} from "./scenario.ts";
 export type * from "./types.ts";

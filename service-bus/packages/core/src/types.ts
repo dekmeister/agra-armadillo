@@ -26,13 +26,50 @@ export type Lifecycle = "PENDING" | "EXECUTING" | "SENT" | "FAIL_UNSENT" | "FAIL
 /** Five A-GRA RBAC roles. Authority is checked at the destination (arrival != effect). */
 export type Role = "Admin" | "QB" | "AVC" | "LRE" | "Observer";
 
-/** Real A-GRA message types used in the MVP slice. */
+/**
+ * Leader-election methods. A-GRA names five (Bully / Maximum Consensus / Raft /
+ * Static Fitness Score / Off-Nominal); the campaign ships Raft + Static (per MVP
+ * scope), each with a distinct message-cost profile.
+ */
+export type ElectionMethod = "raft" | "static";
+
+/**
+ * Message-driven leader-election state (L3, reused by L7's orphan re-election).
+ * The election emits real P2P messages (request-vote / declarations) that can be
+ * lost/queued; the level tallies them as they deliver. Raft resolves only on a
+ * quorum and STALLS without one; Static declares the fittest immediately.
+ */
+export interface ElectionState {
+  method: ElectionMethod;
+  /** Raft term (monotonic); Static leaves this at 0. */
+  term: number;
+  /** The node soliciting votes this term (Raft candidate), or null. */
+  candidateId: NodeId | null;
+  /** Voters who have replied this term (Raft), or declarers seen (Static). */
+  votes: NodeId[];
+  /** Resolved leader, or null while the election is pending/stalled. */
+  leader: NodeId | null;
+  /** Election messages emitted so far (drives the election-cost beat). */
+  msgCount: number;
+  /** Majority threshold = floor(n/2)+1 for the participating set. */
+  quorum: number;
+  /** Tick the election was started (to detect a Raft quorum stall). */
+  startTick: number;
+}
+
+/** Real A-GRA message types used across the campaign. */
 export type MessageType =
   | "MA_ApprovalRequestMT" // strike approval request (C2)
   | "MA_ApprovalRequestStatusMT" // approval status reply (C2): APPROVED / REJECTED
   | "MA_RulesOfEngagementCommandMT" // routine C2 background traffic
-  | "MA_CommTeamReportMT" // link-health report (C2)
-  | "MA_SynchronizeGlobalCopToPeer"; // [S] COP fan-out unit (P2P)
+  | "MA_CommTeamReportMT" // link-health / status report (C2/P2P)
+  | "MA_SynchronizeGlobalCopToPeer" // [S] COP fan-out unit (P2P)
+  | "MA_TaskCommandMT" // command leg of a task round trip (takeoff/landing/RTB) (C2)
+  | "MA_TaskStatusMT" // status reply of a task round trip (C2)
+  | "MA_TaskMT" // formation/teaming task, e.g. FollowFormation heartbeat (P2P)
+  | "MA_VehicleCommandMT" // [S] on-platform VI command (HSA/Waypoint) — never crosses the air
+  | "MA_LeaderUpdateRequestMT" // leader-election payload (P2P)
+  | "MA_CommAvailableEndpointsMT"; // peer-join / endpoint advertisement (P2P)
 
 /** Approval status carried by MA_ApprovalRequestStatusMT. CannotComply == REJECTED. */
 export type ApprovalStatus = "APPROVED" | "REJECTED";
@@ -50,7 +87,7 @@ export type IxnId = string;
 
 export interface SimNode {
   id: NodeId;
-  kind: "QB" | "ACP";
+  kind: "QB" | "ACP" | "LRE";
   /** RBAC role this node declares via the Authorize sequence. */
   role: Role;
   isLeader: boolean;
@@ -120,9 +157,19 @@ export interface InFlight {
  * An interaction = a request + its required status reply (a round trip), the unit
  * A-GRA compliance is assessed at. The strike approval is the headline interaction.
  */
+/** The kind of round trip an interaction represents (the headline lesson varies by level). */
+export type InteractionKind =
+  | "strike-approval" // L6: weapon-employment approval gated to the QB
+  | "takeoff" // L1: LRE-authorised takeoff
+  | "landing" // L8: LRE-authorised landing
+  | "rtb" // L7: return-to-base, authority hands back to LRE
+  | "status" // L2: periodic status report (low stakes)
+  | "election" // L3: leader-election round
+  | "command"; // generic command round trip
+
 export interface Interaction {
   id: IxnId;
-  kind: "strike-approval";
+  kind: InteractionKind;
   request: MsgId;
   reply: MsgId | null;
   status: "open" | "approved" | "rejected" | "delivered" | "failed";
@@ -137,7 +184,32 @@ export type Outcome = "pending" | "win" | "loss";
  * so the player can read the board and act; the pure core merely flags it (no DOM,
  * no wall-clock). Each beat id raises at most once per run (`seenBeats`).
  */
-export type BeatId = "link-degraded" | "queue-starved" | "missing-ack" | "cop-warning";
+export type BeatId =
+  // L6 — Threat Engagement (the built composite peak)
+  | "link-degraded"
+  | "queue-starved"
+  | "missing-ack"
+  | "cop-warning"
+  // L1 — Launch
+  | "lifecycle"
+  | "on-platform-free"
+  // L2 — Hold
+  | "burst-loss"
+  | "missing-ack-intro"
+  // L3 — Team Formation
+  | "election-cost"
+  | "quorum"
+  // L4 — Transit
+  | "bandwidth-cap"
+  | "queue-discipline"
+  // L5 — CAP
+  | "cop-fanout"
+  | "cop-starvation"
+  // L7 — RTB
+  | "authority-handback"
+  | "split-brain"
+  // L8 — Land
+  | "campaign-debrief";
 
 export interface Beat {
   id: BeatId;
@@ -168,9 +240,16 @@ export type Action =
   | { type: "reroute" } // reroute the stalled approval reply QB -> ACP-2 -> ACP-1 via ACP-2's DMS
   | { type: "rerequest" } // re-issue the approval request (fresh interaction)
   | { type: "refreshCop" } // push a COP refresh over P2P
+  | { type: "retry" } // L2: re-attempt a failed status report onto its link
+  | { type: "pickElection"; method: ElectionMethod } // L3: choose the election strategy
+  | { type: "shedTraffic" } // L5: drop low-priority bulk traffic to protect COP
+  | { type: "handBack" } // L7: hand authority back QB -> LRE for RTB
+  | { type: "mergeTeam" } // L7: command-merge a split package (never automatic)
   | { type: "acknowledgeBeat" }; // dismiss the current decision point (view resumes the clock)
 
 export interface GameState {
+  /** Which scenario/level this state belongs to — the engine resolves its ScenarioDef from this. */
+  scenarioId: string;
   tick: number;
   rngState: number;
   nodes: Record<NodeId, SimNode>;
@@ -182,6 +261,27 @@ export interface GameState {
   cop: number;
   copThreshold: number;
   copBreached: boolean;
+  /**
+   * L5: per-follower COP freshness (nodeId -> 0..100). Optional — levels that use the
+   * single scalar `cop` leave this undefined and the engine's scalar path is untouched.
+   * A breach is *any* follower below `copThreshold`.
+   */
+  copFollowers?: Record<NodeId, number>;
+  /**
+   * L3/L7: message-driven leader election state. Optional — levels without election
+   * leave it undefined. [S] Only Raft + Static are modelled (per MVP scope).
+   */
+  election?: ElectionState;
+  /**
+   * L7: the split package's halves (each a list of node ids). Optional — set only when
+   * the package partitions. [S] Membership simplified to two halves that merge on command.
+   */
+  partition?: NodeId[][];
+  /**
+   * L5: a standing "shed low-priority bulk to protect COP" decision. Optional — once
+   * set, the level stops generating bulk MD/MP traffic so the COP fan-out gets the air.
+   */
+  sheddingBulk?: boolean;
   /** Absolute tick the WEZ window closes; null until armed. */
   wezDeadlineTick: number | null;
   armed: boolean;

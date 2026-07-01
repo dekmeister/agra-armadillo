@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { PHASES } from "../lib/phases.ts";
+  import { type Phase, PHASES } from "../lib/phases.ts";
+  import { game } from "../lib/store.svelte.ts";
   import type { ModalKind } from "../lib/ui.ts";
   import OV1Map from "./OV1Map.svelte";
   let { kind, onClose }: { kind: ModalKind; onClose: () => void } = $props();
@@ -10,9 +11,20 @@
     help: "How to play",
   };
 
-  // Levels picker: which OV-1 phase is highlighted. Default to the one playable phase.
-  let selected = $state(6);
-  const phase = $derived(PHASES.find((p) => p.id === selected) ?? PHASES[5]);
+  // The phase whose scenarioId matches the loaded level (fallback to Phase 6).
+  const currentPhaseId = PHASES.find((p) => p.scenarioId === game.scenarioId)?.id ?? 6;
+
+  // Levels picker: which OV-1 phase is highlighted. Default to the loaded one.
+  let selected = $state(currentPhaseId);
+  const phase = $derived(
+    (PHASES.find((p) => p.id === selected) ?? PHASES[PHASES.length - 1]) as Phase,
+  );
+
+  /** Load the selected level and close the picker (starting the mission). */
+  function play(): void {
+    game.load(phase.scenarioId);
+    onClose();
+  }
 </script>
 
 <svelte:window onkeydown={(e) => e.key === "Escape" && onClose()} />
@@ -34,8 +46,8 @@
 
   <div class="body">
     {#if kind === "levels"}
-      <p class="lead">Select a phase on the OV-1 operational view to read its briefing. One mission is
-        playable in this prototype; the other phases unlock here later.</p>
+      <p class="lead">Select a phase on the OV-1 operational view to read its briefing, then Play to
+        load that mission. All eight OV-1 phases are playable.</p>
 
       <OV1Map {selected} onSelect={(id) => (selected = id)} />
 
@@ -48,7 +60,9 @@
           <span class="teaches"><b>Teaches:</b> {phase.teaches}</span>
         </span>
         {#if phase.playable}
-          <button class="play" onclick={onClose}>Resume ▸</button>
+          <button class="play" onclick={play}>
+            {phase.scenarioId === game.scenarioId ? "Resume ▸" : "Play ▸"}
+          </button>
         {:else}
           <span class="lockedtag">Locked — coming soon</span>
         {/if}

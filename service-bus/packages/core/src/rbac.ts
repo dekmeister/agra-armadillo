@@ -12,6 +12,16 @@
  */
 import type { ApprovalStatus, Role } from "./types.ts";
 
+/**
+ * The generic destination gate: authority is contextual. A request that requires
+ * role `required` succeeds only if it arrived at a node declaring that role — arrival
+ * != effect. Different interaction kinds require different roles (QB for strike
+ * approval, LRE for takeoff/landing/RTB), so callers pass the role the *kind* demands.
+ */
+export function adjudicate(role: Role, required: Role): ApprovalStatus {
+  return role === required ? "APPROVED" : "REJECTED";
+}
+
 /** Can this role act as Target Authority for weapon-employment approval? */
 export function isTargetAuthority(role: Role): boolean {
   return role === "QB";
@@ -20,7 +30,8 @@ export function isTargetAuthority(role: Role): boolean {
 /**
  * Adjudicate a strike-approval request that has arrived at a node with `role`.
  * Returns the status the destination would emit in MA_ApprovalRequestStatusMT.
+ * QB-specialised wrapper over `adjudicate` (keeps Phase 6 + its tests byte-identical).
  */
 export function adjudicateApproval(role: Role): ApprovalStatus {
-  return isTargetAuthority(role) ? "APPROVED" : "REJECTED";
+  return adjudicate(role, "QB");
 }

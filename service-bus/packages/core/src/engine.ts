@@ -4,67 +4,45 @@
  * is the seeded Rng reconstructed from `state.rngState` each tick. Given the same
  * (scenario, seed) and the same action schedule, the run is byte-identical.
  *
+ * The engine is scenario-agnostic: it owns the generic mechanics and delegates every
+ * level-specific decision to the active ScenarioDef (resolved from `state.scenarioId`).
+ *
  * Tick pipeline:
- *   1. fire the scripted contingency (QB->ACP-1 goes BAD)
+ *   1. fire the scenario's scripted contingency
  *   2. step every link's Gilbert-Elliott channel
  *   3. resolve arrivals (EXECUTING -> SENT / FAIL_MISSING_ACK; advance relay hops)
- *   4. generate scheduled demand (COP fan-out, background C2)
+ *   4. generate the scenario's scheduled demand
  *   5. dispatch from queues under each link's policy (PENDING -> EXECUTING / FAIL_UNSENT)
  *   6. decay COP + breach check
- *   7. evaluate objective / outcome (win / loss)
+ *   7. evaluate the scenario's objective / outcome (win / loss)
  */
 import { blockProb, dispatchOrder, stepChannel } from "./link.ts";
-import { dequeue, enqueue, makeMsgId } from "./message.ts";
-import { adjudicateApproval, isTargetAuthority } from "./rbac.ts";
+import { dequeue } from "./message.ts";
 import { Rng } from "./rng.ts";
-import { buildPhase6, ROUTINE_BACKLOG, type ScenarioOpts } from "./scenario.ts";
-import type {
-  Action,
-  Beat,
-  BeatId,
-  GameState,
-  Interaction,
-  LogEntry,
-  Message,
-  MessageType,
-  SimNode,
-} from "./types.ts";
+import { clone, log } from "./runtime.ts";
+import { getScenario, type ScenarioOpts } from "./scenario.ts";
+import type { ScenarioDef } from "./scenario-def.ts";
+import type { Action, GameState } from "./types.ts";
 
-const COP_REFRESH = 96;
-/** COP must be within this band of the breach threshold to raise the COP-watch beat. */
-const COP_WARN_BAND = 12;
-
-/** Build the initial Phase-6 state and seed the opening demand. */
+/** Build the initial state for a level (default Phase 6) and seed its opening demand. */
 export function createInitialState(seed: number, opts: ScenarioOpts = {}): GameState {
-  const s = buildPhase6(seed, opts);
-
-  // Pre-seed routine C2 backlog on the (about-to-go-BAD) reply link so that FIFO
-  // spends its scarce GOOD windows on routine traffic and starves the deadline-
-  // critical reply, while EDF/Class float the reply to the front. [S] routine = C2.
-  for (let i = 0; i < ROUTINE_BACKLOG; i++) {
-    spawn(s, {
-      type: "MA_RulesOfEngagementCommandMT",
-      cls: "C2",
-      route: ["bad"],
-      leg: "oneway",
-      priority: 0,
-    });
-  }
-
-  // The headline interaction: strike approval request ACP-1 -> QB.
-  spawnStrikeRequest(s);
+  const def = getScenario(opts.scenarioId ?? "phase6");
+  const s = def.build(seed, opts);
+  s.scenarioId = def.id;
+  def.seedDemand(s);
   return s;
 }
 
 /** Apply a player action purely. UI selection state is NOT modeled here. */
 export function apply(state: GameState, action: Action): GameState {
   const s = clone(state);
+  const def = getScenario(s.scenarioId);
   switch (action.type) {
     case "arm": {
       if (!s.armed) {
         s.armed = true;
         s.wezDeadlineTick = s.tick + s.config.wezWindow;
-        stampReplyDeadline(s);
+        def.onArm?.(s);
       }
       break;
     }
@@ -76,20 +54,14 @@ export function apply(state: GameState, action: Action): GameState {
       }
       break;
     }
-    case "reroute":
-      rerouteReply(s);
-      break;
-    case "rerequest":
-      rerequestStrike(s);
-      break;
-    case "refreshCop":
-      s.cop = COP_REFRESH;
-      log(s, "COP refreshed via P2P picture sync · age 0s", "success");
-      break;
     case "acknowledgeBeat":
       // Dismiss the current decision point; the view resumes the clock. Pure —
       // touches no RNG, so the run stays byte-identical to a headless replay.
       s.pendingBeat = null;
+      break;
+    default:
+      // Scenario-specific affordances (reroute, refreshCop, retry, …).
+      def.applyAction?.(s, action);
       break;
   }
   return s;
@@ -100,15 +72,16 @@ export function tick(state: GameState): GameState {
   const s = clone(state);
   const rng = new Rng(s.rngState);
   s.tick += 1;
+  const def = getScenario(s.scenarioId);
 
-  fireContingency(s);
+  def.fireContingency?.(s);
   for (const link of Object.values(s.links)) stepChannel(link, rng);
-  resolveArrivals(s, rng);
-  generateDemand(s);
+  resolveArrivals(s, rng, def);
+  def.generateDemand?.(s);
   dispatchQueues(s, rng);
   decayCop(s);
-  checkStandingBeats(s);
-  evaluateOutcome(s);
+  def.checkStandingBeats?.(s);
+  def.evaluateOutcome(s);
   // A decided run has no decision left to make — clear any beat so it never
   // lingers over the debrief.
   if (s.outcome !== "pending") s.pendingBeat = null;
@@ -118,25 +91,10 @@ export function tick(state: GameState): GameState {
 }
 
 // ---------------------------------------------------------------------------
-// Tick stages
+// Generic tick stages (scenario-independent)
 // ---------------------------------------------------------------------------
 
-function fireContingency(s: GameState): void {
-  const bad = s.links.bad;
-  if (!bad) return;
-  if (s.tick === s.config.contingencyTick) {
-    // Degrade the reply link: drop into a BAD burst and make it genuinely bursty
-    // (short GOOD windows, long BAD bursts) with elevated unconfirmed-delivery.
-    bad.channel = "BAD";
-    bad.pGoodToBad = 0.45;
-    bad.pBadToGood = 0.12;
-    bad.ackLoss = 0.15;
-    log(s, "QB→ACP-1 return link degraded — bursty/lossy (BAD).", "degrade");
-    raiseBeat(s, "link-degraded");
-  }
-}
-
-function resolveArrivals(s: GameState, rng: Rng): void {
+function resolveArrivals(s: GameState, rng: Rng, def: ScenarioDef): void {
   const arriving = s.inFlight.filter((f) => f.arrivalTick === s.tick);
   s.inFlight = s.inFlight.filter((f) => f.arrivalTick !== s.tick);
 
@@ -149,7 +107,7 @@ function resolveArrivals(s: GameState, rng: Rng): void {
     // lost — "sent, unconfirmed" — independent of the burst that gates throughput.
     if (rng.chance(link.ackLoss)) {
       msg.state = "FAIL_MISSING_ACK";
-      onLegFailed(s, msg);
+      def.onLegFailed?.(s, msg);
       continue;
     }
 
@@ -161,7 +119,7 @@ function resolveArrivals(s: GameState, rng: Rng): void {
       if (next) s.links[next]?.queue.push(msg.id);
     } else {
       msg.state = "SENT";
-      onDelivered(s, msg);
+      def.onDelivered?.(s, msg);
     }
   }
 }
@@ -193,344 +151,8 @@ function dispatchQueues(s: GameState, rng: Rng): void {
   }
 }
 
-function generateDemand(s: GameState): void {
-  // P2P COP fan-out from the leader to peers (one-to-many) — keeps the picture fresh.
-  if (s.tick % s.config.copSyncPeriod === 0) {
-    spawn(s, { type: "MA_SynchronizeGlobalCopToPeer", cls: "P2P", route: ["p2p"], leg: "oneway" });
-    spawn(s, { type: "MA_SynchronizeGlobalCopToPeer", cls: "P2P", route: ["p2p3"], leg: "oneway" });
-  }
-  // Light routine C2 regen so the reply link stays congested/visible (newer seq,
-  // so it never jumps ahead of the reply — purely keeps the queue populated).
-  const bad = s.links.bad;
-  if (bad && s.tick % s.config.bgC2Period === 0 && bad.queue.length < 7) {
-    spawn(s, {
-      type: "MA_RulesOfEngagementCommandMT",
-      cls: "C2",
-      route: ["bad"],
-      leg: "oneway",
-      priority: 0,
-    });
-  }
-}
-
+/** COP freshness decay. No-op for levels that don't use COP (copThreshold <= 0). */
 function decayCop(s: GameState): void {
   s.cop = Math.max(8, Math.round((s.cop - s.config.copDecay) * 10) / 10);
-  if (s.cop < s.copThreshold) s.copBreached = true;
+  if (s.copThreshold > 0 && s.cop < s.copThreshold) s.copBreached = true;
 }
-
-function evaluateOutcome(s: GameState): void {
-  if (s.outcome !== "pending") return;
-  const ixn = activeStrike(s);
-  if (!ixn) return;
-  const reply = ixn.reply ? s.messages[ixn.reply] : null;
-
-  // Running objective for the UI: a created-but-undelivered reply reads as stalled.
-  s.objective = reply && reply.state !== "SENT" ? "stalled" : "in_progress";
-
-  if (reply && reply.state === "SENT") {
-    if (reply.approval === "REJECTED" || !reply.authorityVerified) {
-      fail(s, "approval REJECTED — request reached a non-authority (arrival ≠ authority)");
-      return;
-    }
-    if (s.copBreached) {
-      fail(s, "COP freshness breached during engagement");
-      return;
-    }
-    s.outcome = "win";
-    s.objective = "complete";
-    ixn.status = "delivered";
-    log(s, "reply ACK received · QB authority verified", "success");
-    log(s, "MA_ApprovalRequestStatusMT SENT — strike approval complete.", "success");
-    return;
-  }
-
-  if (s.armed && s.wezDeadlineTick !== null && s.tick > s.wezDeadlineTick) {
-    fail(s, "WEZ window closed before reply was confirmed");
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Interaction / message lifecycle effects
-// ---------------------------------------------------------------------------
-
-function onDelivered(s: GameState, msg: Message): void {
-  if (msg.type === "MA_SynchronizeGlobalCopToPeer") {
-    s.cop = Math.max(s.cop, COP_REFRESH);
-    return;
-  }
-  if (msg.type === "MA_ApprovalRequestMT" && msg.ixn) {
-    // RBAC adjudication happens at the destination — arrival ≠ effect.
-    const ixn = s.interactions[msg.ixn];
-    const destRole = destNode(s, msg)?.role ?? "Observer";
-    const status = adjudicateApproval(destRole);
-    if (ixn) {
-      ixn.status = status === "APPROVED" ? "approved" : "rejected";
-      spawnReply(s, ixn, status, isTargetAuthority(destRole));
-    }
-    return;
-  }
-}
-
-function onLegFailed(s: GameState, msg: Message): void {
-  // The mission-critical approval reply auto-retries (the system keeps trying);
-  // routine fire-and-forget traffic just drops.
-  if (msg.leg === "reply" && activeStrike(s)) {
-    msg.state = "PENDING";
-    const linkId = msg.route[msg.hop];
-    if (linkId) s.links[linkId]?.queue.push(msg.id);
-    log(s, "reply MISSING_ACK — sent, unconfirmed. Re-attempting.", "degrade");
-    raiseBeat(s, "missing-ack", { kind: "token", id: msg.id });
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Spawning
-// ---------------------------------------------------------------------------
-
-interface SpawnSpec {
-  type: MessageType;
-  cls: Message["cls"];
-  route: string[];
-  leg: Message["leg"];
-  ixn?: string | null;
-  priority?: number;
-  deadlineTick?: number | null;
-  approval?: Message["approval"];
-  authorityVerified?: boolean;
-}
-
-function spawn(s: GameState, spec: SpawnSpec): Message {
-  const seq = s.nextSeq++;
-  const msg: Message = {
-    id: makeMsgId(
-      spec.type === "MA_ApprovalRequestStatusMT" ? "reply" : spec.cls.toLowerCase(),
-      seq,
-    ),
-    type: spec.type,
-    cls: spec.cls,
-    ixn: spec.ixn ?? null,
-    leg: spec.leg,
-    state: "PENDING",
-    route: spec.route,
-    hop: 0,
-    seq,
-    priority: spec.priority ?? 1,
-    deadlineTick: spec.deadlineTick ?? null,
-    approval: spec.approval ?? null,
-    authorityVerified: spec.authorityVerified ?? false,
-  };
-  enqueue(s, msg);
-  return msg;
-}
-
-function spawnStrikeRequest(s: GameState): Interaction {
-  const id = `ixn-${s.nextSeq}`;
-  const req = spawn(s, {
-    type: "MA_ApprovalRequestMT",
-    cls: "C2",
-    route: ["req"],
-    leg: "request",
-    ixn: id,
-    priority: 2,
-  });
-  const ixn: Interaction = {
-    id,
-    kind: "strike-approval",
-    request: req.id,
-    reply: null,
-    status: "open",
-  };
-  s.interactions[id] = ixn;
-  log(s, "MA_ApprovalRequestMT issued — ACP-1 → QB (strike approval).", "info");
-  return ixn;
-}
-
-function spawnReply(
-  s: GameState,
-  ixn: Interaction,
-  status: "APPROVED" | "REJECTED",
-  authorityVerified: boolean,
-): void {
-  const reply = spawn(s, {
-    type: "MA_ApprovalRequestStatusMT",
-    cls: "C2",
-    route: ["bad"],
-    leg: "reply",
-    ixn: ixn.id,
-    priority: 3, // outranks routine C2 under the `class` policy
-    deadlineTick: s.wezDeadlineTick,
-    approval: status,
-    authorityVerified,
-  });
-  ixn.reply = reply.id;
-  log(
-    s,
-    status === "APPROVED"
-      ? "QB authorised — MA_ApprovalRequestStatusMT(APPROVED) en route → ACP-1."
-      : "QB role check FAILED at destination — MA_ApprovalRequestStatusMT(REJECTED).",
-    status === "APPROVED" ? "info" : "fail",
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Recovery actions
-// ---------------------------------------------------------------------------
-
-function rerouteReply(s: GameState): void {
-  const reply = openReply(s);
-  if (!reply) return;
-  // Pull it off whatever it's on (queue or in flight) and send it via the relay.
-  for (const link of Object.values(s.links)) dequeue(s, reply.id, link.id);
-  s.inFlight = s.inFlight.filter((f) => f.msg !== reply.id);
-  reply.route = ["relayQbAcp2", "relayAcp2Acp1"];
-  reply.hop = 0;
-  reply.state = "PENDING";
-  s.links.relayQbAcp2?.queue.push(reply.id);
-  log(s, "Reply rerouted QB → ACP-2 → ACP-1 via ACP-2's DMS.", "info");
-}
-
-function rerequestStrike(s: GameState): void {
-  const ixn = activeStrike(s);
-  if (ixn) ixn.status = "failed";
-  // A fresh round trip — note this re-routes onto the same BAD link unless also
-  // rerouted/reprioritised (the lesson: re-request alone doesn't fix routing).
-  spawnStrikeRequest(s);
-  if (s.armed) s.wezDeadlineTick = s.tick + s.config.wezWindow;
-  log(s, "Strike approval re-requested (fresh interaction).", "info");
-}
-
-// ---------------------------------------------------------------------------
-// Decision beats — one self-contained A-GRA lesson each, surfaced when its
-// triggering transition first fires. The view auto-pauses on `pendingBeat`; the
-// core only flags it (pure, no RNG, so headless replays stay byte-identical).
-// ---------------------------------------------------------------------------
-
-const BEAT_DEFS: Record<BeatId, Omit<Beat, "tick">> = {
-  "link-degraded": {
-    id: "link-degraded",
-    title: "QB→ACP-1 return link degraded (BAD)",
-    summary:
-      "QB→ACP-1 reply link dropped to a BAD burst — the C2 reply now risks loss over the air.",
-    concept:
-      "The approval reply (MA_ApprovalRequestStatusMT) rides C2 over the contested air. " +
-      "A Gilbert–Elliott burst just dropped this OTA link into a BAD state — short GOOD " +
-      "windows amid long lossy bursts. On-platform interfaces (VI, local sensors) are " +
-      "unaffected; only C2 / P2P / MS cross the air.",
-    focus: { kind: "link", id: "bad" },
-    actions: [],
-  },
-  "queue-starved": {
-    id: "queue-starved",
-    title: "Approval reply starved behind routine C2",
-    summary:
-      "Under FIFO the approval reply is stuck behind routine C2 — re-order so it goes first.",
-    concept:
-      "Under FIFO the deadline-critical reply sits behind routine MA_RulesOfEngagementCommandMT " +
-      "traffic, so it squanders the link's scarce GOOD windows. Change the queue discipline so " +
-      "the reply floats to the front: Deadline (EDF) or Class (priority).",
-    focus: { kind: "link", id: "bad" },
-    actions: ["setPolicy"],
-  },
-  "missing-ack": {
-    id: "missing-ack",
-    title: "Reply FAIL_MISSING_ACK — sent, unconfirmed",
-    summary: "Reply sent but never confirmed. Reroute around the BAD hop, or re-request (risky).",
-    concept:
-      "The reply left the queue but no delivery confirmation came back — the insidious " +
-      "return-leg failure. Arrival ≠ approval: you cannot assume it landed. Reroute it around " +
-      "the BAD hop via ACP-2's DMS, or re-request (which re-routes onto the same BAD link — " +
-      "usually not enough on its own).",
-    focus: { kind: "link", id: "bad" },
-    actions: ["reroute", "rerequest"],
-  },
-  "cop-warning": {
-    id: "cop-warning",
-    title: "COP freshness approaching breach",
-    summary: "The P2P COP picture is going stale — refresh it before it breaches.",
-    concept:
-      "While you fight the C2 reply, the P2P COP fan-out is going stale. A-GRA assesses the " +
-      "shared picture too — don't starve it to save the strike. Push a COP refresh over P2P.",
-    focus: { kind: "link", id: "p2p" },
-    actions: ["refreshCop"],
-  },
-};
-
-/** Raise a decision point the first time its condition fires (one pending at a time). */
-function raiseBeat(s: GameState, id: BeatId, focus?: Beat["focus"]): void {
-  if (s.pendingBeat || s.seenBeats.includes(id)) return;
-  const def = BEAT_DEFS[id];
-  s.pendingBeat = { ...def, tick: s.tick, focus: focus ?? def.focus };
-  s.seenBeats.push(id);
-}
-
-/** Standing-condition beats (re-checked each tick, unlike the event-driven A/C beats). */
-function checkStandingBeats(s: GameState): void {
-  if (s.pendingBeat || s.outcome !== "pending") return;
-
-  // B — the deadline-critical reply is stuck behind routine C2 under FIFO on the BAD link.
-  const reply = openReply(s);
-  if (reply && reply.state === "PENDING") {
-    const link = s.links[reply.route[reply.hop] ?? ""];
-    const routineAhead =
-      link?.id === "bad" &&
-      link.policy === "fifo" &&
-      link.queue.some((id) => id !== reply.id && s.messages[id]?.cls === "C2");
-    if (routineAhead) {
-      raiseBeat(s, "queue-starved");
-      return;
-    }
-  }
-
-  // D — COP freshness sliding toward breach while the engagement drags on. (In a quick
-  // win COP never enters the band, so this only fires in longer/struggling runs.)
-  if (s.cop <= s.copThreshold + COP_WARN_BAND && !s.copBreached) {
-    raiseBeat(s, "cop-warning");
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function activeStrike(s: GameState): Interaction | null {
-  const ixns = Object.values(s.interactions).filter((i) => i.status !== "failed");
-  return ixns[ixns.length - 1] ?? null;
-}
-
-function openReply(s: GameState): Message | null {
-  const ixn = activeStrike(s);
-  if (!ixn?.reply) return null;
-  const reply = s.messages[ixn.reply];
-  return reply && reply.state !== "SENT" ? reply : null;
-}
-
-function stampReplyDeadline(s: GameState): void {
-  const reply = openReply(s);
-  if (reply) reply.deadlineTick = s.wezDeadlineTick;
-}
-
-function destNode(s: GameState, msg: Message): SimNode | undefined {
-  const lastLink = s.links[msg.route[msg.route.length - 1] ?? ""];
-  return lastLink ? s.nodes[lastLink.to] : undefined;
-}
-
-function fail(s: GameState, reason: string): void {
-  s.outcome = "loss";
-  s.objective = "missed";
-  s.failReason = reason;
-  const ixn = activeStrike(s);
-  if (ixn) ixn.status = "failed";
-  log(s, `reply FAILED — ${reason}.`, "fail");
-}
-
-function log(s: GameState, text: string, severity: LogEntry["severity"]): void {
-  s.log.push({ tick: s.tick, text, severity });
-}
-
-function clone(s: GameState): GameState {
-  return structuredClone(s);
-}
-
-// structuredClone is a host global (Node 17+ / browsers); declared here so the
-// core stays free of @types/node and DOM libs (tsconfig `types: []`).
-declare function structuredClone<T>(value: T): T;

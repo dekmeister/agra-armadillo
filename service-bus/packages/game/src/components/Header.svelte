@@ -1,4 +1,5 @@
 <script lang="ts">
+import { getScenario } from "@service-bus/core";
 import { copColor, mmss, wezRemaining } from "../lib/sim-adapter.ts";
 import type { ModalKind } from "../lib/ui.ts";
 import { game } from "../lib/store.svelte.ts";
@@ -6,8 +7,13 @@ import { game } from "../lib/store.svelte.ts";
 const { onOpen }: { onOpen: (kind: ModalKind) => void } = $props();
 
 const gs = $derived(game.gs);
+const title = $derived(getScenario(gs.scenarioId).title);
 const cop = $derived(Math.round(gs.cop));
 const wez = $derived(wezRemaining(gs));
+// The scalar COP ring is Phase 6's mechanic; the WEZ card shows only when a deadline
+// is armed. Other levels leave the HUD-right clean (their state reads on the board).
+const showCop = $derived(gs.scenarioId === "phase6");
+const showWez = $derived(gs.wezDeadlineTick !== null);
 
 // COP ring arc (r15, circumference ~94.2), -90deg start.
 const C = 94.2;
@@ -26,13 +32,14 @@ const wezState = $derived(
       <button onclick={() => onOpen("background")}>Background</button>
       <button onclick={() => onOpen("help")}>Help</button>
     </nav>
-    <span class="phase"><span class="dot"></span>Threat Engagement</span>
+    <span class="phase"><span class="dot"></span>{title}</span>
     <span class="clock">T+{gs.tick}</span>
   </div>
 
   <div class="spacer"></div>
 
   <div class="hud">
+    {#if showCop}
     <div class="card ring">
       <svg width="38" height="38" viewBox="0 0 38 38">
         <circle cx="19" cy="19" r="15" fill="none" stroke="var(--hair)" stroke-width="5" />
@@ -45,7 +52,9 @@ const wezState = $derived(
         <div class="ringval" style:color={copColor(cop)}>{cop}%</div>
       </div>
     </div>
+    {/if}
 
+    {#if showWez}
     <div class="card wez" class:win={wezState === "win"} class:loss={wezState === "loss"}>
       <div class="caps">WEZ window</div>
       {#if wezState === "win"}
@@ -59,6 +68,7 @@ const wezState = $derived(
         <div class="sub">{gs.armed ? "to deadline" : "standby · click to start"}</div>
       {/if}
     </div>
+    {/if}
   </div>
 </header>
 

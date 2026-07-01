@@ -1,24 +1,34 @@
 <script lang="ts">
+  import { getScenario } from "@service-bus/core";
   import { game } from "../../lib/store.svelte.ts";
 
   const gs = $derived(game.gs);
+  const def = $derived(getScenario(gs.scenarioId));
   const status = $derived(gs.objective);
+  // Status pill + note derive from the generic objective/outcome; the failReason (when
+  // set by the level) carries the specific "why".
   const meta = $derived(
     status === "complete"
-      ? { pill: "RESOLVED", tone: "good", note: "Reply delivered with verified QB authority." }
+      ? { pill: "RESOLVED", tone: "good", note: "Objective complete." }
       : status === "missed"
-        ? { pill: "FAILED", tone: "bad", note: "WEZ window closed before the reply was confirmed." }
-        : { pill: "STALLED", tone: "amber", note: "Reply stalled on QB→ACP-1 (BAD) · MISSING_ACK." },
+        ? { pill: "FAILED", tone: "bad", note: gs.failReason ?? "Objective failed." }
+        : gs.outcome === "win"
+          ? { pill: "RESOLVED", tone: "good", note: "Objective complete." }
+          : {
+              pill: status === "stalled" ? "STALLED" : "IN PROGRESS",
+              tone: "amber",
+              note: gs.failReason ?? "Mission running — act at each decision point.",
+            },
   );
 </script>
 
 <div class="card obj">
   <div class="row">
-    <span class="caps">Objective</span>
+    <span class="caps">Objective · OV-1 Phase {def.phase}</span>
     <span class="pill {meta.tone}">{meta.pill}</span>
   </div>
-  <div class="title">Strike approval</div>
-  <div class="auth"><span class="key">⚿</span> needs <b>QB authority</b> · delivery ≠ authority</div>
+  <div class="title">{def.title}</div>
+  <div class="auth">authority is checked at the destination · arrival ≠ effect</div>
   <div class="note {meta.tone}">{meta.note}</div>
 </div>
 

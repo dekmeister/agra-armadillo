@@ -116,5 +116,31 @@ These `[S]` choices were introduced while building the playable MVP; each is ref
     degradation (faithful, but new scenario state) and is a deliberate follow-on. (`[S]`; noted, not yet a
     live decision.)
 
+## Campaign-level implementation notes (L1–L8 — `packages/core/scenarios`)
+The precursor/capstone levels reuse the Phase-6 seam (`ScenarioDef`); these `[S]` choices are theirs and
+are reflected in each level's code comments. Item 10 above is now **partly superseded**: leader election
+is genuinely message-driven and exercised in L3 and L7 (Raft term/quorum/vote + Static declaration over
+real P2P links) — still limited to Raft + Static.
+16. **Per-follower COP = one freshness scalar per follower node** (L5), generalizing master item 3 from a
+    single scalar to a `Record<NodeId, number>`; a breach is any follower below threshold. Still not a
+    real track picture. (`[S]`; extends item 3.)
+17. **Shared-air bandwidth contention modelled as one bandwidth-capped link carrying multiple interface
+    classes** (L4: P2P heartbeat vs routine C2; L5: P2P COP vs bulk MD/MP). The real DMS RF resource is
+    physically shared across interfaces even though the interfaces are logically distinct; each message
+    keeps its true `cls`. Non-headline OTA levels (L4/L5, and the L3/L7 election meshes) use **loss-free**
+    links so the bandwidth / authority / split lessons aren't muddied by the loss lesson (L2's job).
+    (`[S]`; isolates one lesson per level — the underlying link model is unchanged.)
+18. **takeoff / landing / RTB collapsed to one `MA_TaskCommandMT` / `MA_TaskStatusMT` round trip** gated by
+    role at the destination (LRE for takeoff/landing/RTB, QB for weapon employment) via the generalized
+    `adjudicate(role, required)`. The distinct real command semantics are abstracted; the **authority
+    topology is exact** (arrival ≠ authority; RTB to the QB is REJECTED). (`[S]`; content only.)
+19. **Split-brain membership simplified to two halves that merge only on command** (L7). The partition is a
+    scripted two-way split; the orphan half re-elects via the L3 flow (two leaders coexist until healed),
+    and `mergeTeam` collapses back to a single leader — never auto-merged. Faithful to the "never
+    auto-merge" rule; the membership model is the simplification. (`[S]`.)
+20. **Static Fitness Score is a pre-loaded score, not derived from live comms health** (L3/L7). The dynamic
+    "fitness = link GOOD-fraction" variant is a noted follow-on; the pre-loaded map keeps convergence
+    deterministic. (`[S]`; narrows item 10.)
+
 **Nothing in this list alters topology, endpoints, interface assignment, or authority gating** — the
 four things the guard rail protects.

@@ -66,6 +66,34 @@ function act(fn: () => void): void {
           ⟳ Push COP refresh over P2P
         </button>
       {/if}
+      {#if beat.actions.includes("retry")}
+        <button class="primary" onclick={() => act(() => game.retry())}>
+          ↻ Re-attempt the unconfirmed report(s)
+        </button>
+      {/if}
+      {#if beat.actions.includes("pickElection")}
+        <button class="primary" onclick={() => act(() => game.pickElection("static"))}>
+          ▸ Static Fitness — cheap, the fittest declares (no quorum)
+        </button>
+        <button class="primary" onclick={() => act(() => game.pickElection("raft"))}>
+          ▸ Raft — robust, gather a majority of votes (~2n msgs)
+        </button>
+      {/if}
+      {#if beat.actions.includes("shedTraffic")}
+        <button class="primary" onclick={() => act(() => game.shedTraffic())}>
+          ▸ Shed low-priority bulk (protect the COP fan-out)
+        </button>
+      {/if}
+      {#if beat.actions.includes("handBack")}
+        <button class="primary" onclick={() => act(() => game.handBack())}>
+          ▸ Hand authority back QB → LRE (re-issue RTB)
+        </button>
+      {/if}
+      {#if beat.actions.includes("mergeTeam")}
+        <button class="warn" onclick={() => act(() => game.mergeTeam())}>
+          ⇔ Merge the package on command (heal the split)
+        </button>
+      {/if}
       <button class="info" onclick={() => (showInfo = true)}>ⓘ More info</button>
       <button class="hold" onclick={() => game.resume()}>
         {beat.actions.length ? "Hold — resume without acting ▶" : "Acknowledged — resume ▶"}

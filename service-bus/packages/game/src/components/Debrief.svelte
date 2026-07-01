@@ -12,36 +12,64 @@ const gs = $derived(game.gs);
 const won = $derived(gs.outcome === "win");
 
 /** One-line takeaway per decision point (the beat's lesson, distilled). */
-const LESSONS: Record<BeatId, string> = {
+const LESSONS: Partial<Record<BeatId, string>> = {
   "link-degraded": "C2 crosses the contested air, so it suffers Gilbert–Elliott burst loss.",
   "queue-starved": "Queue discipline decides which message gets the link's scarce GOOD windows.",
   "missing-ack": "Arrival ≠ approval — rerouting around a BAD hop beats blindly re-requesting.",
   "cop-warning": "Don't starve the P2P COP picture while you fight the C2 reply.",
+  lifecycle: "An interaction is a round trip: request + its required status reply.",
+  "on-platform-free": "VI is on-platform — free, never crosses the contested air.",
+  "burst-loss": "Tactical links fail in BURSTS (Gilbert–Elliott), not independent coin flips.",
+  "missing-ack-intro": "FAIL_MISSING_ACK — sent but unconfirmed; retry it (delivery ≠ confirmation).",
+  "election-cost": "Election method trades cost vs robustness (Static ~n, Raft ~2n + quorum).",
+  quorum: "Raft needs a majority and STALLS without one; Static declares locally.",
+  "bandwidth-cap": "Bandwidth is finite — excess demand queues and waits.",
+  "queue-discipline": "Class/EDF float the critical flow ahead of routine traffic; FIFO starves it.",
+  "cop-fanout": "COP is one-to-many; freshness is a per-follower budget.",
+  "cop-starvation": "Shed low-priority bulk to protect the COP fan-out.",
+  "authority-handback": "Authority is contextual — RTB is the LRE's, not the QB's.",
+  "split-brain": "Orphan re-elects locally; halves merge ONLY on command (never auto).",
+  "campaign-debrief": "Authority is contextual across the whole campaign; landing is the LRE's.",
 };
-const beatTitle: Record<BeatId, string> = {
+const beatTitle: Partial<Record<BeatId, string>> = {
   "link-degraded": "Return link degraded",
   "queue-starved": "Reply starved under FIFO",
   "missing-ack": "FAIL_MISSING_ACK",
   "cop-warning": "COP nearing breach",
+  lifecycle: "Round-trip lifecycle",
+  "on-platform-free": "VI is free",
+  "burst-loss": "Burst loss",
+  "missing-ack-intro": "FAIL_MISSING_ACK",
+  "election-cost": "Election cost",
+  quorum: "Quorum stall",
+  "bandwidth-cap": "Bandwidth cap",
+  "queue-discipline": "Queue discipline",
+  "cop-fanout": "COP fan-out",
+  "cop-starvation": "COP starvation",
+  "authority-handback": "Authority hand-back",
+  "split-brain": "Split-brain",
+  "campaign-debrief": "Campaign debrief",
 };
 
 const cause = $derived(
-  won
-    ? `Approval reply delivered + QB authority verified at T+${gs.tick}, inside the WEZ window.`
-    : (gs.failReason ?? "Mission failed."),
+  won ? `Objective complete at T+${gs.tick}.` : (gs.failReason ?? "Mission failed."),
 );
 
 // Reconstruct the player's moves from the event log (the core doesn't track them per-beat).
 const moves = $derived(
   gs.log
-    .filter((l) => /queue policy ->|rerouted|re-requested|COP refreshed/.test(l.text))
+    .filter((l) =>
+      /queue policy ->|rerouted|re-requested|COP refreshed|Re-attempting|declared leader|requesting votes|Shed |handed back|merged on command/.test(
+        l.text,
+      ),
+    )
     .map((l) => `T+${l.tick} · ${l.text}`),
 );
 
-// Deterministic counterfactual on the clamped tutorial seed.
+// Deterministic counterfactual on Phase 6's clamped tutorial seed only.
 const tookReroute = $derived(gs.log.some((l) => /rerouted/.test(l.text)));
 const counterfactual = $derived(
-  !won && !tookReroute
+  gs.scenarioId === "phase6" && !won && !tookReroute
     ? "On this seed, rerouting at the MISSING_ACK point (QB→ACP-2→ACP-1) delivers the reply in time."
     : null,
 );
