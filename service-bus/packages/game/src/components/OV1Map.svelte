@@ -1,6 +1,6 @@
 <script lang="ts">
-import ov1 from "../assets/ov1.jpg";
 import { PHASES } from "../lib/phases.ts";
+import OV1Scene from "./OV1Scene.svelte";
 
 let { selected, onSelect }: { selected: number; onSelect: (id: number) => void } = $props();
 
@@ -14,7 +14,7 @@ function key(e: KeyboardEvent, id: number): void {
 </script>
 
 <div class="ov1">
-  <img src={ov1} alt="OV-1 operational view — the DCA mission vignette" />
+  <OV1Scene />
 
   <!-- Hotspot overlay. Shares the image's exact 1052×591 aspect, so regions register. -->
   <svg viewBox="0 0 1052 591" preserveAspectRatio="xMidYMid meet" class="overlay">
@@ -56,13 +56,12 @@ function key(e: KeyboardEvent, id: number): void {
     border-radius: 12px;
     overflow: hidden;
     border: 1px solid var(--hair);
-    background: #0b1622;
+    background: #eef3f5;
   }
-  .ov1 img {
+  .ov1 :global(.scene) {
     display: block;
     width: 100%;
     height: 100%;
-    object-fit: cover;
   }
   .overlay {
     position: absolute;

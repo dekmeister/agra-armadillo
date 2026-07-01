@@ -7,9 +7,10 @@
  * exactly — the picker must never teach a false phase/interface mix. All eight phases are
  * now implemented (core sim), so each is `playable` and maps to a `scenarioId`.
  *
- * `hotspot`/`marker` are in OV-1 image coordinates (viewBox `0 0 1052 591`), keyed to
- * where each phase is labeled in `assets/ov1.jpg`. Phases 1 (Launch) and 8 (Land) share
- * the launch/recovery area of the image — faithful, both happen there.
+ * `hotspot`/`marker` are in OV-1 view coordinates (viewBox `0 0 1052 591`), keyed to
+ * where each phase sits in `OV1Scene.svelte` (spaced so each region is distinctly
+ * clickable). Phases 1 (Launch) and 8 (Land) share the launch/recovery area — faithful,
+ * both happen there.
  */
 export interface Phase {
   id: number; // 1..8, OV-1 phase number
@@ -32,8 +33,8 @@ export const PHASES: Phase[] = [
     blurb: "ACPs take off under LRE oversight; VI flies Waypoint/HSA and PNT initialises.",
     playable: true,
     scenarioId: "phase1",
-    hotspot: [60, 355, 175, 105],
-    marker: [105, 393],
+    hotspot: [72, 398, 180, 80],
+    marker: [150, 432],
   },
   {
     id: 2,
@@ -43,8 +44,8 @@ export const PHASES: Phase[] = [
     blurb: "Fly a hold pattern and await QB arrival, sending periodic status to LRE.",
     playable: true,
     scenarioId: "phase2",
-    hotspot: [175, 262, 150, 58],
-    marker: [212, 290],
+    hotspot: [150, 258, 168, 60],
+    marker: [232, 288],
   },
   {
     id: 3,
@@ -54,8 +55,8 @@ export const PHASES: Phase[] = [
     blurb: "Join a package and elect a leader (MA_PackageManagementCommandMT).",
     playable: true,
     scenarioId: "phase3",
-    hotspot: [615, 250, 250, 85],
-    marker: [660, 288],
+    hotspot: [618, 270, 230, 78],
+    marker: [735, 305],
   },
   {
     id: 4,
@@ -65,8 +66,8 @@ export const PHASES: Phase[] = [
     blurb: "Transit in formation; provide/receive formation status and seed the COP.",
     playable: true,
     scenarioId: "phase4",
-    hotspot: [575, 193, 150, 52],
-    marker: [610, 219],
+    hotspot: [460, 222, 175, 66],
+    marker: [545, 250],
   },
   {
     id: 5,
@@ -76,8 +77,8 @@ export const PHASES: Phase[] = [
     blurb: "Allocate zone coverage and fly Combat Air Patrol; sync the global COP to peers.",
     playable: true,
     scenarioId: "phase5",
-    hotspot: [585, 145, 300, 42],
-    marker: [625, 166],
+    hotspot: [648, 120, 240, 58],
+    marker: [762, 150],
   },
   {
     id: 6,
@@ -88,8 +89,8 @@ export const PHASES: Phase[] = [
       "Push a deadline-critical strike-approval reply through a degraded return link before the WEZ window closes.",
     playable: true,
     scenarioId: "phase6",
-    hotspot: [560, 25, 470, 95],
-    marker: [600, 58],
+    hotspot: [560, 26, 430, 80],
+    marker: [700, 60],
   },
   {
     id: 7,
@@ -99,8 +100,8 @@ export const PHASES: Phase[] = [
     blurb: "At Bingo Fuel, request RTB to the primary/alternate site with sense-and-avoid.",
     playable: true,
     scenarioId: "phase7",
-    hotspot: [430, 235, 225, 85],
-    marker: [470, 272],
+    hotspot: [300, 302, 220, 78],
+    marker: [405, 335],
   },
   {
     id: 8,
@@ -110,7 +111,7 @@ export const PHASES: Phase[] = [
     blurb: "Land at the designated airfield under LRE authority; VI flies the final approach.",
     playable: true,
     scenarioId: "phase8",
-    hotspot: [245, 378, 150, 55],
-    marker: [285, 405],
+    hotspot: [252, 418, 168, 74],
+    marker: [325, 455],
   },
 ];
