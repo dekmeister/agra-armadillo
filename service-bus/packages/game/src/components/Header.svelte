@@ -3,6 +3,7 @@ import { getScenario } from "@service-bus/core";
 import { copColor, mmss, wezRemaining } from "../lib/sim-adapter.ts";
 import type { ModalKind } from "../lib/ui.ts";
 import { game } from "../lib/store.svelte.ts";
+import Legend from "./Legend.svelte";
 
 const { onOpen }: { onOpen: (kind: ModalKind) => void } = $props();
 
@@ -10,6 +11,10 @@ const gs = $derived(game.gs);
 const title = $derived(getScenario(gs.scenarioId).title);
 const cop = $derived(Math.round(gs.cop));
 const wez = $derived(wezRemaining(gs));
+
+// The glossary/legend popout — anchored under its trigger chip, closed on outside
+// click or Escape (same convention as Modal.svelte's backdrop + keydown).
+let showLegend = $state(false);
 // The scalar COP ring is Phase 6's mechanic; the WEZ card shows only when a deadline
 // is armed. Other levels leave the HUD-right clean (their state reads on the board).
 const showCop = $derived(gs.scenarioId === "phase6");
@@ -23,6 +28,8 @@ const wezState = $derived(
   gs.outcome === "win" ? "win" : gs.outcome === "loss" ? "loss" : "stalled",
 );
 </script>
+
+<svelte:window onkeydown={(e) => e.key === "Escape" && (showLegend = false)} />
 
 <header>
   <div class="left">
@@ -39,6 +46,25 @@ const wezState = $derived(
   <div class="spacer"></div>
 
   <div class="hud">
+    <div class="legendwrap">
+      <button class="card chip" class:active={showLegend} onclick={() => (showLegend = !showLegend)}>
+        Legend
+      </button>
+      {#if showLegend}
+        <div
+          class="catcher"
+          onclick={() => (showLegend = false)}
+          onkeydown={(e) => (e.key === "Enter" || e.key === " ") && (showLegend = false)}
+          role="button"
+          tabindex="-1"
+          aria-label="Close legend"
+        ></div>
+        <div class="popout">
+          <Legend />
+        </div>
+      {/if}
+    </div>
+
     {#if showCop}
     <div class="card ring">
       <svg width="38" height="38" viewBox="0 0 38 38">
@@ -90,6 +116,14 @@ const wezState = $derived(
   .clock { font-size: 12px; font-weight: 600; color: var(--sub); }
   .spacer { flex: 1; }
   .hud { display: flex; align-items: center; gap: 14px; }
+  .legendwrap { position: relative; }
+  .chip {
+    border: none; background: #fff; border-radius: 999px; padding: 9px 16px;
+    font-size: 13px; font-weight: 700; color: var(--sub); box-shadow: var(--shadow-chip);
+  }
+  .chip.active { background: var(--ink); color: #fff; }
+  .catcher { position: fixed; inset: 0; z-index: 42; background: transparent; border: none; }
+  .popout { position: absolute; top: calc(100% + 8px); right: 0; z-index: 43; width: 280px; }
   .ring { display: flex; align-items: center; gap: 10px; padding: 8px 14px 8px 8px; }
   .ringval { font-size: 15px; font-weight: 800; }
   .wez { padding: 8px 16px; min-width: 116px; text-align: left; }

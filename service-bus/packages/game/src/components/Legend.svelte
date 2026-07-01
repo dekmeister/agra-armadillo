@@ -27,12 +27,14 @@
 
 <style>
   .legend {
-    display: inline-flex; align-items: center; gap: 16px; padding: 9px 18px;
-    font-size: 12px; font-weight: 600; box-shadow: var(--shadow-chip);
+    display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 10px 14px;
+    font-size: 11.5px; font-weight: 600; box-shadow: var(--shadow-chip);
   }
-  .grp { display: inline-flex; align-items: center; gap: 12px; }
-  .item { display: inline-flex; align-items: center; gap: 6px; }
-  .div { width: 1px; height: 18px; background: var(--hair); }
+  .legend { width: 100%; }
+  .grp { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+  .grp .caps { flex-basis: 100%; }
+  .item { display: inline-flex; align-items: center; gap: 5px; }
+  .div { display: none; }
   .sq { width: 12px; height: 12px; border-radius: 3px; }
   .ci, .d { width: 12px; height: 12px; border-radius: 50%; }
   .ln { width: 20px; height: 4px; border-radius: 2px; }

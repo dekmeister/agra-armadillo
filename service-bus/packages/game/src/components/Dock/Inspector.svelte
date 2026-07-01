@@ -65,7 +65,7 @@ const isPhase6 = $derived(gs.scenarioId === "phase6");
 </div>
 
 <style>
-  .insp { flex: 1.4; overflow: hidden; display: flex; flex-direction: column; }
+  .insp { flex: 2.2; overflow: hidden; display: flex; flex-direction: column; }
   .pad { padding: 16px 20px; }
   .top { margin-bottom: 10px; }
   .head { display: flex; align-items: center; gap: 8px; }

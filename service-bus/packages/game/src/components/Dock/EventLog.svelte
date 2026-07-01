@@ -26,7 +26,7 @@ $effect(() => {
 </div>
 
 <style>
-  .logcard { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+  .logcard { flex: 0.8; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
   .pad { padding: 16px 18px; }
   .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
   .live { font-size: 10px; font-weight: 700; color: var(--green); }

@@ -7,7 +7,6 @@ import Inspector from "./components/Dock/Inspector.svelte";
 import Objective from "./components/Dock/Objective.svelte";
 import Graph from "./components/Graph.svelte";
 import Header from "./components/Header.svelte";
-import Legend from "./components/Legend.svelte";
 import Modal from "./components/Modal.svelte";
 import { game } from "./lib/store.svelte.ts";
 import type { ModalKind } from "./lib/ui.ts";
@@ -37,7 +36,6 @@ onDestroy(() => game.stop());
 
 <main>
   <Header onOpen={(k) => (modal = k)} />
-  <div class="legendbar"><Legend /></div>
 
   <div class="body">
     <!-- Permanent left column: objective on top, the decision window below. Always
@@ -66,8 +64,7 @@ onDestroy(() => game.stop());
 
 <style>
   main { width: 100vw; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-  .legendbar { display: flex; justify-content: center; padding: 2px 0 6px; }
-  .body { flex: 1; display: flex; gap: 18px; padding: 0 22px 18px; min-height: 0; }
+  .body { flex: 1; display: flex; gap: 18px; padding: 8px 22px 18px; min-height: 0; }
   .left { width: 320px; flex: none; display: flex; flex-direction: column; gap: 18px; min-height: 0; }
   .stage { flex: 1; min-width: 0; min-height: 0; }
   .side { width: 400px; flex: none; display: flex; flex-direction: column; gap: 18px; min-height: 0; }
