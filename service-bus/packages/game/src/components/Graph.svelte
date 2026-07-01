@@ -2,7 +2,14 @@
 import type { InterfaceClass } from "@service-bus/core";
 import { fade } from "svelte/transition";
 import { dmsPort, layoutFor } from "../lib/layout.ts";
-import { heroReply, highlightFor, linkView, type TokenVM, tokens } from "../lib/sim-adapter.ts";
+import {
+  heroReply,
+  type Highlight,
+  highlightFor,
+  linkView,
+  type TokenVM,
+  tokens,
+} from "../lib/sim-adapter.ts";
 import { game } from "../lib/store.svelte.ts";
 
 const gs = $derived(game.gs);
@@ -20,7 +27,16 @@ const linkIds = $derived(
 );
 
 const sel = $derived(game.sel);
-const hl = $derived(highlightFor(gs, sel));
+// A token's ring rides its live (glided) position from `toks`/`hero`; nodes and links defer
+// to highlightFor. Matching `headId ?? id` mirrors tokClick, so queue stacks ring correctly.
+const hl = $derived.by((): Highlight | null => {
+  if (sel?.type === "token") {
+    if (hero && hero.id === sel.id) return { kind: "circle", cx: hero.x, cy: hero.y, r: 28 };
+    const t = toks.find((tk) => (tk.headId ?? tk.id) === sel.id);
+    return t ? { kind: "circle", cx: t.x, cy: t.y, r: 16 } : null;
+  }
+  return highlightFor(gs, sel);
+});
 
 /** Token fill by interface class (shape already distinguishes C2 as a square). */
 const CLASS_FILL: Record<InterfaceClass, string> = {
@@ -108,10 +124,16 @@ function key(e: KeyboardEvent, fn: () => void): void {
     <text x="560" y="198" class="railLabel" text-anchor="middle">reply ▾</text>
   {/if}
 
-  <!-- Selection highlight -->
+  <!-- Selection highlight: an oval hugs a link's rail; a circle rings a node or a token. -->
   {#if hl}
-    <circle cx={hl[0]} cy={hl[1]} r={hl[2]} fill="none" stroke="var(--ink)"
-      stroke-width="2.5" stroke-dasharray="4 5" class="selring" />
+    {#if hl.kind === "ellipse"}
+      <ellipse cx={hl.cx} cy={hl.cy} rx={hl.rx} ry={hl.ry}
+        transform="rotate({hl.angle} {hl.cx} {hl.cy})" fill="none" stroke="var(--ink)"
+        stroke-width="2.5" stroke-dasharray="4 5" class="selring" />
+    {:else}
+      <circle cx={hl.cx} cy={hl.cy} r={hl.r} fill="none" stroke="var(--ink)"
+        stroke-width="2.5" stroke-dasharray="4 5" class="selring" />
+    {/if}
   {/if}
 
   <!-- Message tokens (in-flight = moving; queues = one stack + count) -->

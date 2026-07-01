@@ -17,6 +17,11 @@ import {
 
 export type Selection = { type: "node" | "link" | "token"; id: string } | null;
 
+/** Selection highlight shape: a circle (nodes, tokens) or an oriented oval (a link's rail). */
+export type Highlight =
+  | { kind: "circle"; cx: number; cy: number; r: number }
+  | { kind: "ellipse"; cx: number; cy: number; rx: number; ry: number; angle: number };
+
 /** Links as the lane helper wants them (id/from/to/cls). */
 function linkList(gs: GameState): { id: string; from: string; to: string; cls: InterfaceClass }[] {
   return Object.values(gs.links).map((l) => ({ id: l.id, from: l.from, to: l.to, cls: l.cls }));
@@ -251,25 +256,45 @@ export function defaultLinkId(gs: GameState): string {
   return (bad ?? links[0])?.id ?? "";
 }
 
-/** Selection ring [cx, cy, r] for the current selection, derived from the layout. */
-export function highlightFor(gs: GameState, sel: Selection): [number, number, number] | null {
+/**
+ * Selection highlight for a node or link (token highlights are computed in the view, where
+ * the token's live glided position is available — see Graph.svelte). Derived from the layout.
+ */
+export function highlightFor(gs: GameState, sel: Selection): Highlight | null {
   if (!sel) return null;
   const nodes = layoutFor(gs.scenarioId).nodes;
   if (sel.type === "node") {
     const n = nodes[sel.id];
-    return n ? [n.x, n.y, n.r + 14] : null;
+    return n ? { kind: "circle", cx: n.x, cy: n.y, r: n.r + 14 } : null;
   }
   if (sel.type === "link") {
     const l = gs.links[sel.id];
     if (!l) return null;
-    const p = place(gs, sel.id, 0.5);
-    return [p.x, p.y, 26];
+    // A self-loop has no straight rail; ring its lobe instead.
+    if (l.from === l.to) {
+      const n = nodes[l.from];
+      if (!n) return null;
+      const p = selfLoopPoint(n);
+      return { kind: "circle", cx: p.x, cy: p.y, r: n.r * 0.62 + 12 };
+    }
+    // An oval hugging the rail itself — lane offset only, NO token sidecar, so it sits
+    // centred on the drawn line (which straightPath also draws at the bare lane offset).
+    const lane = laneFor(linkList(gs), sel.id);
+    const a = alongLink(nodes, l.from, l.to, 0, lane);
+    const b = alongLink(nodes, l.from, l.to, 1, lane);
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const width = l.cls === "MS" ? 3 : 7; // mirrors linkView's stroke width
+    return {
+      kind: "ellipse",
+      cx: (a.x + b.x) / 2,
+      cy: (a.y + b.y) / 2,
+      rx: Math.hypot(dx, dy) / 2 + 8,
+      ry: width / 2 + 11,
+      angle: (Math.atan2(dy, dx) * 180) / Math.PI,
+    };
   }
-  const m = gs.messages[sel.id];
-  const linkId = m?.route[m.hop];
-  if (!linkId) return null;
-  const p = place(gs, linkId, 0.5);
-  return [p.x, p.y, 24];
+  return null; // token: handled in the view against the live token position
 }
 
 function inspectLink(gs: GameState, id: string): InspectorVM {
