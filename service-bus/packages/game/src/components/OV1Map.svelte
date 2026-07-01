@@ -30,7 +30,6 @@ function key(e: KeyboardEvent, id: number): void {
         aria-label={`Phase ${p.id} — ${p.name}`}
         aria-pressed={p.id === selected}
         onclick={() => onSelect(p.id)}
-        onmouseenter={() => onSelect(p.id)}
         onfocus={() => onSelect(p.id)}
         onkeydown={(e) => key(e, p.id)}
       >
