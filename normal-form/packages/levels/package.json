@@ -1,0 +1,12 @@
+{
+  "name": "@normal-form/levels",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Normal Form level data: UCI message catalog source, sheets, reference machines.",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "@normal-form/core": "*"
+  }
+}

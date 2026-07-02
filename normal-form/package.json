@@ -1,0 +1,34 @@
+{
+  "name": "normal-form",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "description": "Normal Form — Zachtronics-style UCI protocol-certification puzzle (headless-first core).",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "check:types": "tsc -p tsconfig.json --noEmit",
+    "check:types:game": "tsc -p packages/game/tsconfig.json --noEmit",
+    "check:fidelity": "tsx tools/check-fidelity.ts",
+    "gen:catalog": "tsx tools/gen-catalog.ts",
+    "test": "vitest run",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "dev": "npm run dev -w @normal-form/game",
+    "build:game": "npm run build -w @normal-form/game",
+    "knip": "knip"
+  },
+  "overrides": {
+    "esbuild": "^0.28.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.0",
+    "@types/node": "^20.11.0",
+    "knip": "^6.17.1",
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.0",
+    "vitest": "^3.2.6",
+    "yaml": "^2.4.0"
+  }
+}

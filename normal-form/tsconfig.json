@@ -1,0 +1,20 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "types": ["node"],
+    "paths": {
+      "@normal-form/core": ["packages/core/src/index.ts"],
+      "@normal-form/core/*": ["packages/core/src/*"],
+      "@normal-form/levels": ["packages/levels/src/index.ts"],
+      "@normal-form/levels/*": ["packages/levels/src/*"]
+    }
+  },
+  "include": [
+    "packages/*/src/**/*.ts",
+    "packages/*/test/**/*.ts",
+    "tools/**/*.ts",
+    "vitest.config.ts"
+  ],
+  "exclude": ["packages/game"]
+}

@@ -1,0 +1,82 @@
+# Normal Form — UCI 2.5 message catalog (MVP subset: the Command-2 pattern).
+#
+# Fidelity rule (docs/02-fidelity.md): the game may OMIT, never RENAME or INVENT.
+# Every `name:` below and every enum `values:` literal is grep-able as a
+# name="…" / value="…" identifier in the UCI XSD; every CERT/RQMT number inside a
+# `cite:` is grep-able in the UCI .txt specifications. tools/check-fidelity.ts
+# enforces both from the first commit — the catalog is born policed.
+#
+# Verified against docs/UCI References/ (byte-identical vendored copy of the
+# git-ignored docs/References/ sources):
+#   UCI_MessageDefinitions_v2_5_0.xsd                          — schema names
+#   02_OAC-STD-001_RevI_UCI_StandardDocument_v2_5.txt          — RQMT USTD-xxxxxx
+#   04_OAC-SPC-001_RevE_UCI_SchemaStyleAndDesignSpecification…  — CERT SCH-xxxxxx
+#   06_OAC-SPC-002_RevA_UCI_NormalizedInterfaceSpecification…   — CERT UNIS-xxxxxx
+
+version: 1
+xsd: UCI_MessageDefinitions_v2_5_0.xsd
+sources:
+  - 02_OAC-STD-001_RevI_UCI_StandardDocument_v2_5.txt
+  - 04_OAC-SPC-001_RevE_UCI_SchemaStyleAndDesignSpecification_v2_5.txt
+  - 06_OAC-SPC-002_RevA_UCI_NormalizedInterfaceSpecification_v2_5.txt
+
+# --- Enumerations ----------------------------------------------------------
+enums:
+  - name: CommandStateEnum
+    cite: "SPC-001 §5.1.1 (CommandBaseType); XSD CommandStateEnum"
+    values: [NEW, UPDATE, CANCEL]
+
+  - name: CommandProcessingStateEnum
+    cite: "SPC-001 §5.1.1 Fig 5.1-3, Table 5.1-2; RECEIVED may not be reported; ACCEPTED/REJECTED/CANCELED terminal"
+    values: [RECEIVED, ACCEPTED, REJECTED, CANCELED]
+
+  - name: MessageModeEnum
+    cite: "XSD MessageModeEnum"
+    values: [LIVE, EXERCISE, SIMULATION, NONEXERCISE_SIMULATION]
+
+# --- Envelope (wraps every placed message) ---------------------------------
+# uci:MessageType = SecurityInformation + MessageHeader (uci:HeaderType).
+envelope:
+  - name: MessageType
+    cite: "XSD MessageType — abstract envelope"
+    fields:
+      - { name: SecurityInformation, required: true, cite: "read-only marking chip; type in UCI_SecurityMarkings (not vendored)" }
+      - { name: MessageHeader, ref: HeaderType, required: true }
+
+  - name: HeaderType
+    cite: "XSD HeaderType"
+    fields:
+      - { name: SystemID, required: true, cite: "player-filled (beat 1); missing SystemID => ENV HeaderType finding" }
+      - { name: Timestamp, required: true, cite: "XSD HeaderType (DateTimeType)" }
+      - { name: SchemaVersion, required: true, cite: "XSD HeaderType (UCI_SchemaVersionStringType)" }
+      - { name: Mode, enum: MessageModeEnum, required: false }
+      - { name: ServiceID, required: false, cite: "optional; omitted from the 4-field inspector" }
+      - { name: MissionID, required: false, cite: "optional; omitted from the 4-field inspector" }
+
+# --- Command-2 pattern: request + response ---------------------------------
+# Commander (you) -> Commandee (SystemB). UNIS §4.6 CERT UNIS-000105;
+# structure SPC-001 §5.1.1 CERT SCH-002461 (*Command / *CommandStatus suffixes).
+messages:
+  - name: TaskCommand
+    mt: TaskCommandMT
+    role: request
+    cite: "UNIS §4.6 CERT UNIS-000105; SPC-001 §5.1.1 CERT SCH-002461; XSD TaskCommand / TaskCommandMT"
+    fields:
+      - { name: CommandID, ref: ID_Type, required: true, cite: "ID_Type.UUID; RQMT USTD-000436 (Leach-Salz/nil), RQMT USTD-000673 (canonical string)" }
+      - { name: CommandState, enum: CommandStateEnum, required: true }
+
+  - name: TaskCommandStatus
+    mt: TaskCommandStatusMT
+    role: response
+    cite: "UNIS §4.6 CERT UNIS-000105; SPC-001 §5.1.1 CERT SCH-002461; XSD TaskCommandStatus / TaskCommandStatusMT"
+    fields:
+      - { name: CommandID, ref: ID_Type, required: true, cite: "correlation key back to the TaskCommand" }
+      - { name: CommandProcessingState, enum: CommandProcessingStateEnum, required: true }
+
+# --- Shared base types referenced above ------------------------------------
+types:
+  - name: ID_Type
+    cite: "XSD ID_Type = UUID + optional DescriptiveLabel"
+    fields:
+      - { name: UUID, required: true }
+      - { name: DescriptiveLabel, required: false }
