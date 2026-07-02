@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Build output
+packages/*/dist/
+
+# TypeScript incremental build info
+*.tsbuildinfo
+
+# Vitest coverage
+coverage/
+
+# Vite local env overrides
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
