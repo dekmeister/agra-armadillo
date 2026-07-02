@@ -1,0 +1,10 @@
+{
+  "id": "neg-hardseq",
+  "initial": "s0",
+  "states": ["s0", "s1"],
+  "rules": [
+    { "from": "s0", "on": "RECEIVED", "action": "wait", "target": "s1" },
+    { "from": "s1", "on": "ACCEPTED", "action": "terminal" },
+    { "from": "s0", "on": "REJECTED", "action": "retry", "budget": 1 }
+  ]
+}

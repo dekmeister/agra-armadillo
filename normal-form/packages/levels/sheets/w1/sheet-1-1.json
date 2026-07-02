@@ -1,0 +1,74 @@
+{
+  "id": "1-1",
+  "world": "w1",
+  "title": "First Acknowledgement",
+  "goal": {
+    "text": "SystemB performs the tasked activity; you hold proof.",
+    "win": {
+      "all": [
+        { "worldState": "activityExecuted", "party": "systemB" },
+        { "machineState": "terminal", "party": "commander" }
+      ]
+    }
+  },
+  "palette": [
+    {
+      "pattern": "Command-2",
+      "unlocked": true,
+      "binding": { "request": "TaskCommand", "response": "TaskCommandStatus" },
+      "cite": "UNIS §4.6, CERT UNIS-000105"
+    },
+    { "pattern": "Status-1", "unlocked": false },
+    { "pattern": "Data-1", "unlocked": false },
+    { "pattern": "DataRecord-1", "unlocked": false },
+    { "pattern": "DataRequest-2", "unlocked": false },
+    { "pattern": "ActionRequest-2", "unlocked": false }
+  ],
+  "lifelines": [
+    { "id": "commander", "label": "Commander (you)", "player": true },
+    { "id": "systemB", "label": "Commandee (SystemB)" }
+  ],
+  "compose": {
+    "initialFields": {
+      "SystemID": null,
+      "Timestamp": "2026-07-02T09:14:03Z",
+      "SchemaVersion": "002.5",
+      "Mode": "LIVE",
+      "CommandID": "f81d4fae-7dec-11d0-a765-00a0zzz",
+      "CommandState": "NEW"
+    },
+    "editable": ["SystemID", "CommandID"]
+  },
+  "opening": {
+    "commandId": "f81d4fae-7dec-11d0-a765-00a0c91e6bf6",
+    "commandState": "NEW"
+  },
+  "requestee": {
+    "onCommand": [
+      { "report": "RECEIVED", "at": 2 },
+      { "report": "ACCEPTED", "at": 4, "thenExecuteActivity": true }
+    ],
+    "rejects": []
+  },
+  "seeds": [
+    { "id": 1, "label": "in-order", "schedule": [] },
+    {
+      "id": 2,
+      "label": "ACCEPTED before RECEIVED",
+      "schedule": [{ "op": "reorder", "before": "RECEIVED", "after": "ACCEPTED" }]
+    },
+    {
+      "id": 3,
+      "label": "duplicate after terminal",
+      "schedule": [{ "op": "dup", "msg": "ACCEPTED", "delay": 2 }]
+    }
+  ],
+  "pars": { "messages": 2, "machineSize": 3, "ticks": 6 },
+  "fidelityNotes": [
+    "lie-1-bounded-seeds",
+    "lie-2-visible-bus",
+    "lie-5-retry-budget",
+    "lie-9-placeholder-stamp"
+  ],
+  "cites": ["CERT UNIS-000105", "UNIS §4", "UNIS §4.6.2", "RQMT USTD-000436", "RQMT USTD-000673"]
+}

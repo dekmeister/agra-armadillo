@@ -1,0 +1,10 @@
+{
+  "id": "ref-1-1",
+  "initial": "s0",
+  "states": ["s0"],
+  "rules": [
+    { "from": "s0", "on": "RECEIVED", "action": "wait" },
+    { "from": "s0", "on": "ACCEPTED", "action": "terminal" },
+    { "from": "s0", "on": "REJECTED", "action": "retry", "budget": 1 }
+  ]
+}
