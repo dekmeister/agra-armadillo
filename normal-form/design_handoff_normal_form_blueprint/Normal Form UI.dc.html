@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=JetBrains+Mono:wght@400;500;700;800&family=Spectral:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#e7e3da;}
+  *{box-sizing:border-box;}
+  button{font-family:inherit;}
+  @keyframes nfBlink{0%,55%{opacity:1}56%,100%{opacity:.12}}
+  @keyframes nfSweep{0%{transform:translateY(0)}100%{transform:translateY(6px)}}
+</style>
+</helmet>
+
+<section id="t1" style="padding:40px 46px 64px;">
+  <div style="display:flex;align-items:baseline;gap:11px;margin:0 0 6px;">
+    <a href="#t1" style="font:700 11px 'JetBrains Mono',monospace;padding:3px 8px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none;">1</a>
+    <span style="font:400 17px 'Architects Daughter',cursive;color:#1a1a1a;">Normal Form — main puzzle screen · four wireframe directions</span>
+  </div>
+  <p style="margin:0 0 26px;font:400 13px/1.5 'Architects Daughter',cursive;color:rgba(0,0,0,.5);max-width:760px;">Low-fi structural explorations. Each hero has working phase tabs (COMPOSE · HANDLERS · RUN) and an animated RUN tick — press play. Failure moments are split: <a href="#1a" style="color:#b23a2e;text-decoration:none;">1a</a> &amp; <a href="#1c" style="color:#b23a2e;text-decoration:none;">1c</a> show a validator error in compose; <a href="#1b" style="color:#b23a2e;text-decoration:none;">1b</a> &amp; <a href="#1d" style="color:#b23a2e;text-decoration:none;">1d</a> show a seed failing mid-run.</p>
+
+  <div style="display:flex;flex-wrap:wrap;gap:48px;align-items:flex-start;">
+
+    <!-- ============================================ 1a BLUEPRINT ============================================ -->
+    <div id="1a" style="display:flex;flex-direction:column;gap:11px;scroll-margin-top:16px;">
+      <div style="display:flex;align-items:baseline;gap:9px;">
+        <a href="#1a" style="font:700 11px 'JetBrains Mono',monospace;padding:3px 8px;background:rgba(0,0,0,.09);color:#1a1a1a;border-radius:5px;text-decoration:none;">1a</a>
+        <span style="font:400 13px 'Architects Daughter',cursive;color:rgba(0,0,0,.6);">Blueprint — the diagram as an engineering print. Title block, dimension ticks, red drafting stamps.</span>
+      </div>
+      <div style="width:1400px;height:900px;background:#f3efe4;border:2px solid #24435f;color:#24435f;position:relative;overflow:hidden;box-shadow:6px 6px 0 rgba(36,67,95,.12);">
+        <!-- inner drafting frame -->
+        <div style="position:absolute;inset:9px;border:1px solid rgba(36,67,95,.45);pointer-events:none;"></div>
+        <span style="position:absolute;top:4px;left:5px;font:400 12px 'JetBrains Mono',monospace;color:rgba(36,67,95,.5);">+</span>
+        <span style="position:absolute;top:4px;right:6px;font:400 12px 'JetBrains Mono',monospace;color:rgba(36,67,95,.5);">+</span>
+        <span style="position:absolute;bottom:2px;left:5px;font:400 12px 'JetBrains Mono',monospace;color:rgba(36,67,95,.5);">+</span>
+        <span style="position:absolute;bottom:2px;right:6px;font:400 12px 'JetBrains Mono',monospace;color:rgba(36,67,95,.5);">+</span>
+
+        <div style="position:absolute;inset:9px;display:flex;flex-direction:column;">
+          <!-- header -->
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1.5px solid #24435f;background:#e9e2d1;">
+            <div style="font:700 14px 'JetBrains Mono',monospace;letter-spacing:.05em;">NORMAL FORM &nbsp;·&nbsp; SEQUENCE CERTIFICATION &nbsp;·&nbsp; SHEET 1-1</div>
+            <div style="display:flex;gap:6px;">
+              <button onClick="{{ A.tab.compose }}" style="position:relative;background:none;border:1px solid #24435f;color:#24435f;padding:5px 12px;cursor:pointer;font:600 11px 'JetBrains Mono',monospace;">COMPOSE<sc-if value="{{ A.isCompose }}" hint-placeholder-val="{{ true }}"><span style="position:absolute;left:-1px;right:-1px;bottom:-4px;height:3px;background:#b23a2e;"></span></sc-if></button>
+              <button onClick="{{ A.tab.handlers }}" style="position:relative;background:none;border:1px solid #24435f;color:#24435f;padding:5px 12px;cursor:pointer;font:600 11px 'JetBrains Mono',monospace;">HANDLERS<sc-if value="{{ A.isHandlers }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;left:-1px;right:-1px;bottom:-4px;height:3px;background:#b23a2e;"></span></sc-if></button>
+              <button onClick="{{ A.tab.run }}" style="position:relative;background:none;border:1px solid #24435f;color:#24435f;padding:5px 12px;cursor:pointer;font:600 11px 'JetBrains Mono',monospace;">RUN<sc-if value="{{ A.isRun }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;left:-1px;right:-1px;bottom:-4px;height:3px;background:#b23a2e;"></span></sc-if></button>
+            </div>
+          </div>
+
+          <div style="display:flex;flex:1;min-height:0;">
+            <!-- palette / parts list -->
+            <div style="width:212px;border-right:1.5px dashed #24435f;padding:12px 12px;display:flex;flex-direction:column;gap:7px;">
+              <div style="font:700 12px 'JetBrains Mono',monospace;letter-spacing:.06em;border-bottom:1px solid #24435f;padding-bottom:5px;">PARTS LIST</div>
+              <div style="border:1px dashed rgba(36,67,95,.4);padding:5px 8px;display:flex;justify-content:space-between;opacity:.5;"><span style="font:500 12px 'JetBrains Mono',monospace;">① Status-1</span><span style="font:700 9px 'JetBrains Mono',monospace;">LOCK</span></div>
+              <div style="border:1px dashed rgba(36,67,95,.4);padding:5px 8px;display:flex;justify-content:space-between;opacity:.5;"><span style="font:500 12px 'JetBrains Mono',monospace;">② Data-1</span><span style="font:700 9px 'JetBrains Mono',monospace;">LOCK</span></div>
+              <div style="border:1px dashed rgba(36,67,95,.4);padding:5px 8px;display:flex;justify-content:space-between;opacity:.5;"><span style="font:500 12px 'JetBrains Mono',monospace;">③ DataRecord-1</span><span style="font:700 9px 'JetBrains Mono',monospace;">LOCK</span></div>
+              <div style="border:1px dashed rgba(36,67,95,.4);padding:5px 8px;display:flex;justify-content:space-between;opacity:.5;"><span style="font:500 12px 'JetBrains Mono',monospace;">④ DataRequest-2</span><span style="font:700 9px 'JetBrains Mono',monospace;">LOCK</span></div>
+              <div style="border:1px dashed rgba(36,67,95,.4);padding:5px 8px;display:flex;justify-content:space-between;opacity:.5;"><span style="font:500 12px 'JetBrains Mono',monospace;">⑤ ActionRequest-2</span><span style="font:700 9px 'JetBrains Mono',monospace;">LOCK</span></div>
+              <div style="border:2px solid #24435f;background:#dcd2ba;padding:7px 8px;display:flex;justify-content:space-between;align-items:center;box-shadow:2px 2px 0 rgba(36,67,95,.2);"><span style="font:700 13px 'JetBrains Mono',monospace;">⑥ Command-2</span><span style="font:700 9px 'JetBrains Mono',monospace;">send·resp</span></div>
+              <div style="margin-top:auto;font:400 11px/1.5 'Architects Daughter',cursive;color:rgba(36,67,95,.6);border-top:1px dashed #24435f;padding-top:8px;">drag a primitive onto a lifeline to place an arrow.</div>
+            </div>
+
+            <!-- BOARD (hero) -->
+            <div style="flex:1;position:relative;min-width:0;background:repeating-linear-gradient(0deg,transparent,transparent 47px,rgba(36,67,95,.06) 47px,rgba(36,67,95,.06) 48px);">
+              <!-- ruler -->
+              <div style="position:absolute;left:6px;top:74px;bottom:16px;width:24px;display:flex;flex-direction:column;justify-content:space-between;font:700 10px 'JetBrains Mono',monospace;color:rgba(36,67,95,.55);">
+                <span>t0</span><span>t1</span><span>t2</span><span>t3</span><span>t4</span><span>t5</span><span>t6</span>
+              </div>
+              <!-- lifelines + headers (always) -->
+              <div style="position:absolute;top:22px;left:34%;transform:translateX(-50%);border:1.5px solid #24435f;background:#e9e2d1;padding:6px 16px;font:700 12px 'JetBrains Mono',monospace;">Commander (you)</div>
+              <div style="position:absolute;top:22px;left:74%;transform:translateX(-50%);border:1.5px solid #24435f;background:#e9e2d1;padding:6px 16px;font:700 12px 'JetBrains Mono',monospace;">Commandee (SystemB)</div>
+              <div style="position:absolute;top:60px;bottom:16px;left:34%;border-left:2px dashed #24435f;"></div>
+              <div style="position:absolute;top:60px;bottom:16px;left:74%;border-left:2px dashed #24435f;"></div>
+
+              <!-- BUILD board -->
+              <sc-if value="{{ A.isBuild }}" hint-placeholder-val="{{ true }}">
+                <div style="position:absolute;inset:0;">
+                  <!-- TaskCommand -> (selected) -->
+                  <div style="position:absolute;top:150px;left:34%;width:40%;">
+                    <div style="position:absolute;top:-19px;left:2px;font:700 12px 'JetBrains Mono',monospace;">TaskCommand →</div>
+                    <div style="border-top:2px solid #24435f;"></div>
+                    <span style="position:absolute;right:-3px;top:-10px;font:400 14px 'JetBrains Mono',monospace;">▶</span>
+                    <div style="position:absolute;top:-26px;left:-10px;right:-12px;bottom:-12px;border:1.5px dashed #b23a2e;"></div>
+                    <span style="position:absolute;top:-26px;right:-64px;font:700 9px 'JetBrains Mono',monospace;color:#b23a2e;">◄ SEL</span>
+                  </div>
+                  <!-- <- return (ghost / unset) -->
+                  <div style="position:absolute;top:250px;left:34%;width:40%;">
+                    <div style="position:absolute;top:-19px;left:2px;font:600 12px 'JetBrains Mono',monospace;color:rgba(36,67,95,.5);">← TaskCommandStatus ⟨unset⟩</div>
+                    <div style="border-top:2px dashed rgba(36,67,95,.5);"></div>
+                    <span style="position:absolute;left:-3px;top:-10px;font:400 14px 'JetBrains Mono',monospace;color:rgba(36,67,95,.5);">◀</span>
+                  </div>
+                  <!-- handler widget only in handlers -->
+                  <sc-if value="{{ A.isHandlers }}" hint-placeholder-val="{{ false }}">
+                    <div style="position:absolute;top:330px;left:34%;transform:translateX(-50%);border:1.5px solid #24435f;background:#efe8d7;padding:8px 11px;width:272px;font:600 11px/1.75 'JetBrains Mono',monospace;box-shadow:3px 3px 0 rgba(36,67,95,.18);">
+                      <div style="border-bottom:1px solid #24435f;margin-bottom:5px;font-weight:800;">Δ HANDLER · on TaskCommandStatus</div>
+                      RECEIVED → wait<br>ACCEPTED → terminal ✔<br>REJECTED → resend (max 1)<br>CANCELED → abort
+                    </div>
+                  </sc-if>
+                  <!-- red drafting stamp (compose only = failure moment) -->
+                  <sc-if value="{{ A.isCompose }}" hint-placeholder-val="{{ true }}">
+                    <div style="position:absolute;top:96px;right:34px;transform:rotate(-10deg);border:2.5px solid #b23a2e;color:#b23a2e;padding:5px 11px;font:800 15px 'JetBrains Mono',monospace;letter-spacing:.06em;opacity:.9;">✖ SCH-000164</div>
+                  </sc-if>
+                </div>
+              </sc-if>
+
+              <!-- RUN board -->
+              <sc-if value="{{ A.isRun }}" hint-placeholder-val="{{ false }}">
+                <div style="position:absolute;inset:0;">
+                  <div style="position:absolute;top:12px;left:38px;display:flex;gap:6px;">
+                    <button onClick="{{ A.play }}" style="background:#24435f;color:#f3efe4;border:none;padding:4px 11px;cursor:pointer;font:700 11px 'JetBrains Mono',monospace;">▶ PLAY</button>
+                    <button onClick="{{ A.step }}" style="background:none;color:#24435f;border:1px solid #24435f;padding:4px 10px;cursor:pointer;font:700 11px 'JetBrains Mono',monospace;">STEP</button>
+                    <button onClick="{{ A.reset }}" style="background:none;color:#24435f;border:1px solid #24435f;padding:4px 10px;cursor:pointer;font:700 11px 'JetBrains Mono',monospace;">RESET</button>
+                  </div>
+                  <div style="position:absolute;top:8px;right:16px;font:800 24px 'JetBrains Mono',monospace;">t{{ A.tick }}<span style="font-size:13px;opacity:.55;">/6</span></div>
+                  <sc-if value="{{ A.run.showCmd }}" hint-placeholder-val="{{ false }}">
+                    <div style="position:absolute;top:150px;left:34%;width:40%;"><div style="position:absolute;top:-19px;left:2px;font:700 12px 'JetBrains Mono',monospace;">TaskCommand →</div><div style="border-top:2px solid #24435f;"></div><span style="position:absolute;right:-3px;top:-10px;">▶</span></div>
+                  </sc-if>
+                  <sc-if value="{{ A.run.showRecv }}" hint-placeholder-val="{{ false }}">
+                    <div style="position:absolute;top:250px;left:34%;width:40%;"><div style="position:absolute;top:-19px;left:2px;font:700 12px 'JetBrains Mono',monospace;color:#24435f;">← RECEIVED</div><div style="border-top:2px solid #24435f;"></div><span style="position:absolute;left:-3px;top:-10px;">◀</span></div>
+                  </sc-if>
+                  <sc-if value="{{ A.run.showAcc }}" hint-placeholder-val="{{ false }}">
+                    <div style="position:absolute;top:350px;left:34%;width:40%;"><div style="position:absolute;top:-19px;left:2px;font:700 12px 'JetBrains Mono',monospace;color:#2f6f4e;">← ACCEPTED ✔</div><div style="border-top:2.5px solid #2f6f4e;"></div><span style="position:absolute;left:-3px;top:-10px;color:#2f6f4e;">◀</span></div>
+                  </sc-if>
+                  <sc-if value="{{ A.run.done }}" hint-placeholder-val="{{ false }}">
+                    <div style="position:absolute;bottom:20px;left:50%;transform:translateX(-50%) rotate(-4deg);border:3px solid #2f6f4e;color:#2f6f4e;padding:6px 16px;font:800 15px 'JetBrains Mono',monospace;">✔ GOAL REACHED · seed ① pass</div>
+                  </sc-if>
+                </div>
+              </sc-if>
+            </div>
+
+            <!-- inspector / detail A -->
+            <div style="width:326px;border-left:1.5px dashed #24435f;padding:12px 13px;display:flex;flex-direction:column;gap:9px;">
+              <sc-if value="{{ A.isCompose }}" hint-placeholder-val="{{ true }}">
+                <div>
+                  <div style="font:700 12px 'JetBrains Mono',monospace;letter-spacing:.05em;border-bottom:1px solid #24435f;padding-bottom:5px;">DETAIL A · ENVELOPE — TaskCommand</div>
+                  <div style="margin-top:9px;display:flex;flex-direction:column;gap:6px;font:500 12px 'JetBrains Mono',monospace;">
+                    <div style="display:flex;justify-content:space-between;gap:8px;background:#f7dcd7;border:1.5px solid #b23a2e;padding:4px 7px;"><span>SystemID</span><span style="color:#b23a2e;font-weight:700;">⟨required⟩</span></div>
+                    <div style="display:flex;justify-content:space-between;gap:8px;border-bottom:1px dotted rgba(36,67,95,.4);padding:4px 7px;"><span>Timestamp</span><span>2026-07-02T09:14:03Z</span></div>
+                    <div style="display:flex;justify-content:space-between;gap:8px;border-bottom:1px dotted rgba(36,67,95,.4);padding:4px 7px;"><span>SchemaVersion</span><span>002.5</span></div>
+                    <div style="display:flex;justify-content:space-between;gap:8px;border-bottom:1px dotted rgba(36,67,95,.4);padding:4px 7px;"><span>Mode</span><span>LIVE</span></div>
+                    <div style="background:#f7dcd7;border:1.5px solid #b23a2e;padding:4px 7px;"><div style="display:flex;justify-content:space-between;"><span>CommandID</span><span style="color:#b23a2e;font-weight:700;">invalid ✖</span></div><div style="font-size:10px;word-break:break-all;color:#b23a2e;margin-top:2px;">f81d4fae-7dec-11d0-a765-00a0zzz</div></div>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ A.isHandlers }}" hint-placeholder-val="{{ false }}">
+                <div>
+                  <div style="font:700 12px 'JetBrains Mono',monospace;letter-spacing:.05em;border-bottom:1px solid #24435f;padding-bottom:5px;">HANDLER EDITOR</div>
+                  <div style="margin-top:9px;font:600 11px/1.9 'JetBrains Mono',monospace;">
+                    <div style="display:flex;justify-content:space-between;border-bottom:1px dotted rgba(36,67,95,.4);"><span>on RECEIVED</span><span>→ wait</span></div>
+                    <div style="display:flex;justify-content:space-between;border-bottom:1px dotted rgba(36,67,95,.4);"><span>on ACCEPTED</span><span style="color:#2f6f4e;">→ terminal ✔</span></div>
+                    <div style="display:flex;justify-content:space-between;border-bottom:1px dotted rgba(36,67,95,.4);"><span>on REJECTED</span><span style="color:#b23a2e;">→ resend ×1</span></div>
+                    <div style="display:flex;justify-content:space-between;"><span>on CANCELED</span><span>→ abort</span></div>
+                  </div>
+                  <div style="margin-top:12px;border:1px solid #24435f;padding:6px 8px;font:400 11px/1.5 'Architects Daughter',cursive;">machine size 3 states · par 3 handlers</div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ A.isRun }}" hint-placeholder-val="{{ false }}">
+                <div>
+                  <div style="font:700 12px 'JetBrains Mono',monospace;letter-spacing:.05em;border-bottom:1px solid #24435f;padding-bottom:5px;">SEED SCHEDULE</div>
+                  <div style="margin-top:9px;display:flex;flex-direction:column;gap:6px;">
+                    <sc-for list="{{ A.run.seeds }}" as="seed" hint-placeholder-count="3">
+                      <div style="display:flex;gap:8px;align-items:baseline;border:1px solid rgba(36,67,95,.4);padding:5px 7px;font:600 11px 'JetBrains Mono',monospace;">
+                        <span style="font-size:14px;color:{{ seed.color }};">{{ seed.sym }}</span><span>{{ seed.n }}</span><span style="color:rgba(36,67,95,.75);font-weight:500;">{{ seed.t }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+
+          <!-- console + title block -->
+          <div style="display:flex;border-top:1.5px solid #24435f;height:150px;">
+            <div style="flex:1;padding:9px 14px;overflow:hidden;">
+              <div style="font:700 11px 'JetBrains Mono',monospace;letter-spacing:.05em;margin-bottom:6px;">VALIDATOR</div>
+              <sc-if value="{{ A.isCompose }}" hint-placeholder-val="{{ true }}">
+                <div style="font:600 13px/1.9 'JetBrains Mono',monospace;color:#b23a2e;">
+                  ✖ CERT SCH-000164 — MessageHeader missing required SystemID<br>
+                  ✖ RQMT USTD-000436 — CommandID is not a valid RFC-4122 UUID<br>
+                  <span style="color:#24435f;opacity:.7;">2 blocking errors · RUN disabled until cleared</span>
+                </div>
+              </sc-if>
+              <sc-if value="{{ A.isHandlers }}" hint-placeholder-val="{{ false }}">
+                <div style="font:600 13px/1.9 'JetBrains Mono',monospace;color:#2f6f4e;">✔ 0 blocking errors · 4 handler rules wired<br><span style="color:#24435f;opacity:.7;">ready — switch to RUN to certify against all seeds</span></div>
+              </sc-if>
+              <sc-if value="{{ A.isRun }}" hint-placeholder-val="{{ false }}">
+                <div style="font:600 13px/1.9 'JetBrains Mono',monospace;color:#24435f;">▸ tick {{ A.tick }} · seed ① in-order<br><span style="opacity:.7;">TaskCommand sent · awaiting terminal state…</span></div>
+              </sc-if>
+            </div>
+            <!-- title block -->
+            <div style="width:326px;border-left:1.5px solid #24435f;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:min-content;font:600 10px 'JetBrains Mono',monospace;">
+              <div style="grid-column:1/3;padding:6px 9px;border-bottom:1px solid #24435f;font:400 12px/1.35 'Architects Daughter',cursive;color:#24435f;">GOAL — SystemB performs the tasked activity; you hold proof.</div>
+              <div style="padding:5px 9px;border-bottom:1px solid #24435f;border-right:1px solid #24435f;">SHEET<br><span style="font-weight:800;font-size:12px;">1-1</span></div>
+              <div style="padding:5px 9px;border-bottom:1px solid #24435f;">TITLE<br><span style="font-weight:800;font-size:11px;">First Ack.</span></div>
+              <div style="padding:5px 9px;border-right:1px solid #24435f;">PAR<br><span style="font-weight:800;font-size:11px;">2 msg · 3 hnd · ≤6 t</span></div>
+              <div style="padding:5px 9px;">DRAWN<br><span style="font-weight:800;font-size:11px;">sys-alpha-01</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================ 1b IDE / DEBUGGER ============================================ -->
+    <div id="1b" style="display:flex;flex-direction:column;gap:11px;scroll-margin-top:16px;">
+      <div style="display:flex;align-items:baseline;gap:9px;">
+        <a href="#1b" style="font:700 11px 'JetBrains Mono',monospace;padding:3px 8px;background:rgba(0,0,0,.09);color:#1a1a1a;border-radius:5px;text-decoration:none;">1b</a>
+        <span style="font:400 13px 'Architects Daughter',cursive;color:rgba(0,0,0,.6);">IDE / protocol debugger — dark, dockable panels, console as compiler output. Shown mid-RUN, seed ② failing.</span>
+      </div>
+      <div style="width:1400px;height:900px;background:#12151b;color:#c7cdd6;position:relative;overflow:hidden;border:1px solid #2b323d;font-family:'JetBrains Mono',monospace;display:flex;flex-direction:column;">
+        <!-- menubar -->
+        <div style="display:flex;align-items:center;gap:16px;padding:6px 14px;background:#1a1e26;border-bottom:1px solid #2b323d;font-size:12px;color:#8b95a3;">
+          <span style="color:#c7cdd6;font-weight:700;">normal-form</span><span>File</span><span>Edit</span><span>View</span><span>Run</span>
+          <div style="margin-left:auto;display:flex;gap:6px;align-items:center;">
+            <button onClick="{{ B.play }}" style="background:#2b6f4e;color:#dfeee7;border:none;padding:4px 12px;cursor:pointer;font:700 11px 'JetBrains Mono',monospace;border-radius:3px;">▶ run</button>
+            <button onClick="{{ B.step }}" style="background:#222833;color:#c7cdd6;border:1px solid #333c49;padding:4px 10px;cursor:pointer;font:600 11px 'JetBrains Mono',monospace;border-radius:3px;">⏭ step</button>
+            <button onClick="{{ B.reset }}" style="background:#222833;color:#c7cdd6;border:1px solid #333c49;padding:4px 10px;cursor:pointer;font:600 11px 'JetBrains Mono',monospace;border-radius:3px;">⟲</button>
+            <span style="color:#6ea8ff;font-weight:700;margin-left:6px;">tick {{ B.tickPad }}/0006</span>
+          </div>
+        </div>
+        <!-- phase tabs (editor tabs) -->
+        <div style="display:flex;background:#161a21;border-bottom:1px solid #2b323d;font-size:11px;">
+          <button onClick="{{ B.tab.compose }}" style="background:none;border:none;border-right:1px solid #2b323d;color:#8b95a3;padding:7px 16px;cursor:pointer;font:600 11px 'JetBrains Mono',monospace;border-top:2px solid transparent;{{ B.tabStyleCompose }}">compose.seq</button>
+          <button onClick="{{ B.tab.handlers }}" style="background:none;border:none;border-right:1px solid #2b323d;color:#8b95a3;padding:7px 16px;cursor:pointer;font:600 11px 'JetBrains Mono',monospace;border-top:2px solid transparent;{{ B.tabStyleHandlers }}">handlers.sm</button>
+          <button onClick="{{ B.tab.run }}" style="background:none;border:none;border-right:1px solid #2b323d;color:#8b95a3;padding:7px 16px;cursor:pointer;font:600 11px 'JetBrains Mono',monospace;border-top:2px solid transparent;{{ B.tabStyleRun }}">run.trace</button>
+          <span style="margin-left:auto;align-self:center;padding-right:14px;color:#5b6472;font-size:11px;">goal: SystemB performs the tasked activity; you hold proof.</span>
+        </div>
+
+        <div style="display:flex;flex:1;min-height:0;">
+          <!-- left dock: palette tree -->
+          <div style="width:220px;background:#161a21;border-right:1px solid #2b323d;padding:10px 0;font-size:12px;">
+            <div style="padding:0 12px 6px;color:#5b6472;font-weight:700;letter-spacing:.06em;font-size:10px;">PALETTE</div>
+            <div style="padding:4px 12px;color:#5b6472;">▸ one-way</div>
+            <div style="padding:3px 12px 3px 26px;color:#4b5460;">Status-1 <span style="font-size:9px;">🔒</span></div>
+            <div style="padding:3px 12px 3px 26px;color:#4b5460;">Data-1</div>
+            <div style="padding:3px 12px 3px 26px;color:#4b5460;">DataRecord-1</div>
+            <div style="padding:4px 12px;color:#5b6472;">▾ send·respond</div>
+            <div style="padding:3px 12px 3px 26px;color:#4b5460;">DataRequest-2</div>
+            <div style="padding:3px 12px 3px 26px;color:#4b5460;">ActionRequest-2</div>
+            <div style="margin:2px 8px;padding:5px 18px;background:#20303f;border-left:2px solid #6ea8ff;color:#cfe0ff;font-weight:700;">Command-2</div>
+            <div style="padding:12px 12px 6px;color:#5b6472;font-weight:700;letter-spacing:.06em;font-size:10px;">METRICS</div>
+            <div style="padding:2px 12px;color:#8b95a3;">messages <span style="color:#c7cdd6;float:right;">2 / 2</span></div>
+            <div style="padding:2px 12px;color:#8b95a3;">size <span style="color:#c7cdd6;float:right;">3 / 3</span></div>
+            <div style="padding:2px 12px;color:#8b95a3;">ticks <span style="color:#e0b96c;float:right;">{{ B.tick }} / 6</span></div>
+          </div>
+
+          <!-- center: board -->
+          <div style="flex:1;position:relative;min-width:0;background:#0e1116 radial-gradient(circle,rgba(255,255,255,.025) 1px,transparent 1px);background-size:22px 22px;">
+            <div style="position:absolute;top:20px;left:32%;transform:translateX(-50%);background:#222833;border:1px solid #3a4553;padding:6px 16px;border-radius:4px;font-size:12px;font-weight:700;color:#e6ebf1;">Commander (you)</div>
+            <div style="position:absolute;top:20px;left:72%;transform:translateX(-50%);background:#222833;border:1px solid #3a4553;padding:6px 16px;border-radius:4px;font-size:12px;font-weight:700;color:#e6ebf1;">Commandee (SystemB)</div>
+            <div style="position:absolute;top:56px;bottom:14px;left:32%;border-left:1px dashed #3a4553;"></div>
+            <div style="position:absolute;top:56px;bottom:14px;left:72%;border-left:1px dashed #3a4553;"></div>
+
+            <sc-if value="{{ B.isBuild }}" hint-placeholder-val="{{ false }}">
+              <div style="position:absolute;inset:0;">
+                <div style="position:absolute;top:130px;left:32%;width:40%;"><div style="position:absolute;top:-19px;left:2px;font-size:12px;font-weight:700;color:#6ea8ff;">TaskCommand →</div><div style="border-top:2px solid #6ea8ff;"></div><span style="position:absolute;right:-3px;top:-10px;color:#6ea8ff;">▶</span></div>
+                <div style="position:absolute;top:230px;left:32%;width:40%;"><div style="position:absolute;top:-19px;left:2px;font-size:12px;font-weight:600;color:#6b7280;">← TaskCommandStatus</div><div style="border-top:2px dashed #6b7280;"></div><span style="position:absolute;left:-3px;top:-10px;color:#6b7280;">◀</span></div>
+                <sc-if value="{{ B.isHandlers }}" hint-placeholder-val="{{ false }}">
+                  <div style="position:absolute;top:310px;left:32%;transform:translateX(-50%);background:#1b222c;border:1px solid #3a4553;border-radius:5px;padding:9px 11px;width:280px;font-size:11px;line-height:1.85;">
+                    <div style="color:#5b6472;font-weight:700;margin-bottom:4px;">state machine · on TaskCommandStatus</div>
+                    <div><span style="color:#8b95a3;">RECEIVED</span> → wait</div>
+                    <div><span style="color:#5bbf8a;">ACCEPTED</span> → terminal ✔</div>
+                    <div><span style="color:#e06c6c;">REJECTED</span> → resend (max 1)</div>
+                    <div><span style="color:#e0b96c;">CANCELED</span> → abort</div>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ B.isRun }}" hint-placeholder-val="{{ true }}">
+              <div style="position:absolute;inset:0;">
+                <div style="position:absolute;top:8px;right:14px;font-size:11px;color:#5b6472;">seed ② · reorder</div>
+                <sc-if value="{{ B.run.showCmd }}" hint-placeholder-val="{{ true }}">
+                  <div style="position:absolute;top:120px;left:32%;width:40%;"><div style="position:absolute;top:-19px;left:2px;font-size:12px;font-weight:700;color:#6ea8ff;">TaskCommand →</div><div style="border-top:2px solid #6ea8ff;"></div><span style="position:absolute;right:-3px;top:-10px;color:#6ea8ff;">▶</span></div>
+                </sc-if>
+                <sc-if value="{{ B.run.showAcc }}" hint-placeholder-val="{{ true }}">
+                  <div style="position:absolute;top:215px;left:32%;width:40%;"><div style="position:absolute;top:-19px;left:2px;font-size:12px;font-weight:700;color:#5bbf8a;">← ACCEPTED</div><div style="border-top:2px solid #5bbf8a;"></div><span style="position:absolute;left:-3px;top:-10px;color:#5bbf8a;">◀</span></div>
+                </sc-if>
+                <sc-if value="{{ B.run.failed }}" hint-placeholder-val="{{ true }}">
+                  <div style="position:absolute;top:250px;left:52%;transform:translateX(-50%);border:1px solid #e06c6c;background:#2a1618;color:#e06c6c;padding:4px 10px;border-radius:4px;font-size:11px;font-weight:700;">✖ ACCEPTED before RECEIVED — handler in wait, no proof held</div>
+                </sc-if>
+                <sc-if value="{{ B.run.showRecv }}" hint-placeholder-val="{{ true }}">
+                  <div style="position:absolute;top:320px;left:32%;width:40%;"><div style="position:absolute;top:-19px;left:2px;font-size:12px;font-weight:600;color:#8b95a3;">← RECEIVED (late)</div><div style="border-top:2px dashed #8b95a3;"></div><span style="position:absolute;left:-3px;top:-10px;color:#8b95a3;">◀</span></div>
+                </sc-if>
+              </div>
+            </sc-if>
+          </div>
+
+          <!-- right dock: inspector + handlers -->
+          <div style="width:300px;background:#161a21;border-left:1px solid #2b323d;display:flex;flex-direction:column;font-size:11px;">
+            <div style="padding:8px 12px;border-bottom:1px solid #2b323d;color:#5b6472;font-weight:700;letter-spacing:.06em;font-size:10px;">INSPECTOR · TaskCommand</div>
+            <div style="padding:8px 12px;line-height:2;">
+              <div style="display:flex;justify-content:space-between;"><span style="color:#8b95a3;">SystemID</span><span style="color:#c7cdd6;">sys-alpha-01</span></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:#8b95a3;">Timestamp</span><span style="color:#c7cdd6;">…09:14:03Z</span></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:#8b95a3;">SchemaVersion</span><span style="color:#c7cdd6;">002.5</span></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:#8b95a3;">Mode</span><span style="color:#5bbf8a;">LIVE</span></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:#8b95a3;">CommandID</span><span style="color:#c7cdd6;">f81d4fae…6bf6</span></div>
+            </div>
+            <div style="padding:8px 12px;border-top:1px solid #2b323d;border-bottom:1px solid #2b323d;color:#5b6472;font-weight:700;letter-spacing:.06em;font-size:10px;">SEEDS 3</div>
+            <div style="padding:6px 12px;display:flex;flex-direction:column;gap:5px;">
+              <sc-for list="{{ B.run.seeds }}" as="seed" hint-placeholder-count="3">
+                <div style="display:flex;gap:8px;align-items:baseline;"><span style="font-size:13px;color:{{ seed.color }};">{{ seed.sym }}</span><span style="color:#8b95a3;">{{ seed.n }}</span><span style="color:#c7cdd6;">{{ seed.t }}</span></div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+
+        <!-- bottom dock: console -->
+        <div style="height:176px;background:#0d1014;border-top:1px solid #2b323d;display:flex;flex-direction:column;">
+          <div style="display:flex;gap:0;border-bottom:1px solid #2b323d;font-size:11px;">
+            <span style="padding:6px 14px;background:#161a21;color:#e06c6c;font-weight:700;border-right:1px solid #2b323d;">PROBLEMS ●</span>
+            <span style="padding:6px 14px;color:#8b95a3;border-right:1px solid #2b323d;">SEEDS</span>
+            <span style="padding:6px 14px;color:#8b95a3;">OUTPUT</span>
+          </div>
+          <div style="flex:1;padding:9px 14px;font-size:13px;line-height:1.85;overflow:hidden;">
+            <sc-if value="{{ B.isRun }}" hint-placeholder-val="{{ true }}">
+              <div style="color:#8b95a3;">▸ seed 2/3 · bus policy: REORDER</div>
+              <div style="color:#6ea8ff;">→ tick {{ B.tick }}: TaskCommand dispatched</div>
+              <div style="color:#5bbf8a;">← ACCEPTED received (out of expected order)</div>
+              <div style="color:#e06c6c;font-weight:700;">✖ SEED FAIL 2/3 — ACCEPTED arrived before RECEIVED; goal state not reached</div>
+              <div style="color:#5b6472;">✔ seed 1/3 pass &nbsp;·&nbsp; ✖ seed 2/3 fail &nbsp;·&nbsp; ○ seed 3/3 pending</div>
+            </sc-if>
+            <sc-if value="{{ B.isBuild }}" hint-placeholder-val="{{ false }}">
+              <div style="color:#5bbf8a;">✔ compile ok — 0 blocking errors</div>
+              <div style="color:#8b95a3;">▸ 2 messages · machine size 3 · press ▶ run to certify against 3 seeds</div>
+            </sc-if>
+          </div>
+          <div style="padding:4px 14px;background:#161a21;border-top:1px solid #2b323d;font-size:10px;color:#5b6472;display:flex;justify-content:space-between;"><span>1-1 First Acknowledgement · LIVE</span><span>par 2·3·6 · UTF-8 · seq</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================ 1c PAPER SPEC ============================================ -->
+    <div id="1c" style="display:flex;flex-direction:column;gap:11px;scroll-margin-top:16px;">
+      <div style="display:flex;align-items:baseline;gap:9px;">
+        <a href="#1c" style="font:700 11px 'JetBrains Mono',monospace;padding:3px 8px;background:rgba(0,0,0,.09);color:#1a1a1a;border-radius:5px;text-decoration:none;">1c</a>
+        <span style="font:400 13px 'Architects Daughter',cursive;color:rgba(0,0,0,.6);">Paper spec — the level is a page of the standard. Serif, numbered figures, red CERT stamps in the margin.</span>
+      </div>
+      <div style="width:1400px;height:900px;background:#f8f5ee;color:#1c1a17;position:relative;overflow:hidden;border:1px solid #d8d0be;box-shadow:0 3px 14px rgba(0,0,0,.12);font-family:'Spectral',Georgia,serif;display:flex;flex-direction:column;">
+        <!-- running header -->
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 34px;border-bottom:1px solid #1c1a17;font:italic 400 12px 'Spectral',serif;color:#4a453d;">
+          <span>UCI STANDARD · PART 4 — INTERACTION PATTERNS</span>
+          <div style="display:flex;gap:14px;font-family:'JetBrains Mono',monospace;font-style:normal;font-size:11px;">
+            <button onClick="{{ C.tab.compose }}" style="background:none;border:none;cursor:pointer;color:#1c1a17;font:600 11px 'JetBrains Mono',monospace;border-bottom:2px solid transparent;padding-bottom:1px;{{ C.tabStyleCompose }}">§compose</button>
+            <button onClick="{{ C.tab.handlers }}" style="background:none;border:none;cursor:pointer;color:#1c1a17;font:600 11px 'JetBrains Mono',monospace;border-bottom:2px solid transparent;padding-bottom:1px;{{ C.tabStyleHandlers }}">§handlers</button>
+            <button onClick="{{ C.tab.run }}" style="background:none;border:none;cursor:pointer;color:#1c1a17;font:600 11px 'JetBrains Mono',monospace;border-bottom:2px solid transparent;padding-bottom:1px;{{ C.tabStyleRun }}">§run</button>
+          </div>
+          <span>4-17</span>
+        </div>
+
+        <div style="display:flex;flex:1;min-height:0;">
+          <!-- left margin: stamps + palette table -->
+          <div style="width:250px;border-right:1px solid #d8d0be;padding:16px 16px;display:flex;flex-direction:column;gap:16px;">
+            <div>
+              <div style="font:400 11px 'JetBrains Mono',monospace;color:#8a8069;margin-bottom:7px;">Table 3 — Primitives</div>
+              <div style="font:400 12px/1.9 'Spectral',serif;">
+                <div style="color:#a49a86;">Status-1 <span style="font-family:'JetBrains Mono',monospace;font-size:9px;">[locked]</span></div>
+                <div style="color:#a49a86;">Data-1 <span style="font-family:'JetBrains Mono',monospace;font-size:9px;">[locked]</span></div>
+                <div style="color:#a49a86;">DataRecord-1</div>
+                <div style="color:#a49a86;">DataRequest-2</div>
+                <div style="color:#a49a86;">ActionRequest-2</div>
+                <div style="font-weight:600;color:#1c1a17;border-left:3px solid #b02a1f;padding-left:7px;margin-top:3px;">Command-2 ✓</div>
+              </div>
+            </div>
+            <!-- red CERT stamps (compose = failure) -->
+            <sc-if value="{{ C.isCompose }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;flex-direction:column;gap:14px;margin-top:4px;">
+                <div style="transform:rotate(-6deg);border:2.5px solid #b02a1f;color:#b02a1f;padding:6px 9px;font:700 11px 'JetBrains Mono',monospace;line-height:1.4;">✖ CERT<br>SCH-000164<br><span style="font-weight:400;font-size:9px;">missing SystemID</span></div>
+                <div style="transform:rotate(4deg);border:2.5px solid #b02a1f;color:#b02a1f;padding:6px 9px;font:700 11px 'JetBrains Mono',monospace;line-height:1.4;">✖ RQMT<br>USTD-000436<br><span style="font-weight:400;font-size:9px;">CommandID not UUID</span></div>
+              </div>
+            </sc-if>
+            <div style="margin-top:auto;font:italic 400 12px/1.5 'Spectral',serif;color:#8a8069;border-top:1px solid #d8d0be;padding-top:9px;">“The envelope is the contract. A missing SystemID is a void message.” — margin note</div>
+          </div>
+
+          <!-- center document column -->
+          <div style="flex:1;padding:18px 34px;min-width:0;overflow:hidden;">
+            <div style="font:400 13px 'JetBrains Mono',monospace;color:#8a8069;letter-spacing:.04em;">§ 4.6</div>
+            <h2 style="margin:2px 0 8px;font:600 26px 'Spectral',serif;">First Acknowledgement</h2>
+            <p style="margin:0 0 16px;font:400 15px/1.5 'Spectral',serif;max-width:640px;">Goal — <em>SystemB performs the tasked activity; you hold proof.</em> The Commander issues a single <span style="font-family:'JetBrains Mono',monospace;font-size:13px;">Command-2</span> and must retain a terminal acknowledgement across a hostile bus.</p>
+
+            <!-- figure = board -->
+            <div style="border:1px solid #1c1a17;padding:20px 18px 14px;position:relative;background:#fdfbf5;">
+              <div style="position:relative;height:340px;">
+                <div style="position:absolute;top:0;left:30%;transform:translateX(-50%);border:1px solid #1c1a17;padding:4px 14px;font:600 13px 'Spectral',serif;background:#f8f5ee;">Commander (you)</div>
+                <div style="position:absolute;top:0;left:72%;transform:translateX(-50%);border:1px solid #1c1a17;padding:4px 14px;font:600 13px 'Spectral',serif;background:#f8f5ee;">Commandee (SystemB)</div>
+                <div style="position:absolute;top:34px;bottom:0;left:30%;border-left:1px solid #1c1a17;"></div>
+                <div style="position:absolute;top:34px;bottom:0;left:72%;border-left:1px solid #1c1a17;"></div>
+
+                <sc-if value="{{ C.isBuild }}" hint-placeholder-val="{{ true }}">
+                  <div style="position:absolute;inset:0;">
+                    <div style="position:absolute;top:90px;left:30%;width:42%;"><div style="position:absolute;top:-18px;left:4px;font:600 13px 'JetBrains Mono',monospace;">TaskCommand →</div><div style="border-top:1.5px solid #1c1a17;"></div><span style="position:absolute;right:-4px;top:-11px;font-size:15px;">▶</span></div>
+                    <div style="position:absolute;top:170px;left:30%;width:42%;"><div style="position:absolute;top:-18px;left:4px;font:600 13px 'JetBrains Mono',monospace;color:#a49a86;">← TaskCommandStatus</div><div style="border-top:1.5px dashed #a49a86;"></div><span style="position:absolute;left:-4px;top:-11px;font-size:15px;color:#a49a86;">◀</span></div>
+                    <sc-if value="{{ C.isHandlers }}" hint-placeholder-val="{{ false }}">
+                      <div style="position:absolute;top:240px;left:30%;transform:translateX(-50%);border:1px solid #1c1a17;background:#f3eee1;padding:8px 11px;width:280px;font:400 12px/1.7 'JetBrains Mono',monospace;">
+                        <div style="font-weight:700;border-bottom:1px solid #1c1a17;margin-bottom:4px;">handler · on TaskCommandStatus</div>
+                        RECEIVED→wait · ACCEPTED→terminal✔<br>REJECTED→resend(1) · CANCELED→abort
+                      </div>
+                    </sc-if>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ C.isRun }}" hint-placeholder-val="{{ false }}">
+                  <div style="position:absolute;inset:0;">
+                    <div style="position:absolute;top:-2px;right:0;display:flex;gap:6px;">
+                      <button onClick="{{ C.play }}" style="background:#1c1a17;color:#f8f5ee;border:none;padding:3px 10px;cursor:pointer;font:600 10px 'JetBrains Mono',monospace;">▶ play</button>
+                      <button onClick="{{ C.step }}" style="background:none;color:#1c1a17;border:1px solid #1c1a17;padding:3px 9px;cursor:pointer;font:600 10px 'JetBrains Mono',monospace;">step</button>
+                      <button onClick="{{ C.reset }}" style="background:none;color:#1c1a17;border:1px solid #1c1a17;padding:3px 9px;cursor:pointer;font:600 10px 'JetBrains Mono',monospace;">reset</button>
+                      <span style="font:700 13px 'JetBrains Mono',monospace;align-self:center;">t{{ C.tick }}/6</span>
+                    </div>
+                    <sc-if value="{{ C.run.showCmd }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;top:90px;left:30%;width:42%;"><div style="position:absolute;top:-18px;left:4px;font:600 13px 'JetBrains Mono',monospace;">TaskCommand →</div><div style="border-top:1.5px solid #1c1a17;"></div><span style="position:absolute;right:-4px;top:-11px;font-size:15px;">▶</span></div></sc-if>
+                    <sc-if value="{{ C.run.showRecv }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;top:170px;left:30%;width:42%;"><div style="position:absolute;top:-18px;left:4px;font:600 13px 'JetBrains Mono',monospace;">← RECEIVED</div><div style="border-top:1.5px solid #1c1a17;"></div><span style="position:absolute;left:-4px;top:-11px;font-size:15px;">◀</span></div></sc-if>
+                    <sc-if value="{{ C.run.showAcc }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;top:250px;left:30%;width:42%;"><div style="position:absolute;top:-18px;left:4px;font:600 13px 'JetBrains Mono',monospace;color:#3a6b4a;">← ACCEPTED ✔</div><div style="border-top:2px solid #3a6b4a;"></div><span style="position:absolute;left:-4px;top:-11px;font-size:15px;color:#3a6b4a;">◀</span></div></sc-if>
+                  </div>
+                </sc-if>
+              </div>
+              <div style="text-align:center;font:italic 400 13px 'Spectral',serif;color:#4a453d;margin-top:6px;border-top:1px solid #d8d0be;padding-top:6px;">Figure 4.6-1 — Command-2 interaction (Commander ⇄ Commandee)</div>
+            </div>
+
+            <!-- envelope form -->
+            <div style="margin-top:16px;display:flex;gap:26px;align-items:flex-start;">
+              <div style="flex:1;">
+                <div style="font:600 13px 'Spectral',serif;margin-bottom:5px;">Form H-1 — Message Envelope</div>
+                <div style="font:400 12.5px/1.85 'JetBrains Mono',monospace;">
+                  <div>SystemID …… <span style="color:#b02a1f;font-weight:700;text-decoration:underline wavy #b02a1f;">⟨blank⟩</span></div>
+                  <div>Timestamp …… 2026-07-02T09:14:03Z</div>
+                  <div>SchemaVersion …… 002.5 · Mode …… LIVE</div>
+                  <div>CommandID …… <span style="color:#b02a1f;font-weight:700;text-decoration:underline wavy #b02a1f;">f81d4fae-…-00a0zzz</span></div>
+                </div>
+              </div>
+              <div style="width:220px;font:400 12px/1.7 'Spectral',serif;">
+                <div style="font-weight:600;margin-bottom:3px;">Seeds</div>
+                <sc-for list="{{ C.run.seeds }}" as="seed" hint-placeholder-count="3">
+                  <div><span style="font-family:'JetBrains Mono',monospace;color:{{ seed.color }};">{{ seed.sym }}</span> {{ seed.n }} {{ seed.t }}</div>
+                </sc-for>
+                <div style="margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#8a8069;">par 2 msg · 3 hnd · ≤6 t</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- footer validation -->
+        <div style="border-top:1px solid #1c1a17;padding:8px 34px;font:400 13px/1.6 'JetBrains Mono',monospace;background:#f3eee1;">
+          <sc-if value="{{ C.isCompose }}" hint-placeholder-val="{{ true }}">
+            <span style="color:#b02a1f;font-weight:700;">✖ CERT SCH-000164 — MessageHeader missing required SystemID &nbsp;·&nbsp; ✖ RQMT USTD-000436 — CommandID is not a valid RFC-4122 UUID</span>
+          </sc-if>
+          <sc-if value="{{ C.isHandlers }}" hint-placeholder-val="{{ false }}"><span style="color:#3a6b4a;">✔ 0 blocking errors · handlers wired · proceed to §run</span></sc-if>
+          <sc-if value="{{ C.isRun }}" hint-placeholder-val="{{ false }}"><span style="color:#1c1a17;">▸ seed 1/3 in-order · tick {{ C.tick }} · lesson: a terminal ACCEPTED is your only proof of performance.</span></sc-if>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================ 1d OSCILLOSCOPE ============================================ -->
+    <div id="1d" style="display:flex;flex-direction:column;gap:11px;scroll-margin-top:16px;">
+      <div style="display:flex;align-items:baseline;gap:9px;">
+        <a href="#1d" style="font:700 11px 'JetBrains Mono',monospace;padding:3px 8px;background:rgba(0,0,0,.09);color:#1a1a1a;border-radius:5px;text-decoration:none;">1d</a>
+        <span style="font:400 13px 'Architects Daughter',cursive;color:rgba(0,0,0,.6);">Signal / oscilloscope terminal — phosphor traces, seeds as channel readouts. Shown mid-RUN, CH2 failing.</span>
+      </div>
+      <div style="width:1400px;height:900px;background:#050d09;color:#37e08a;position:relative;overflow:hidden;font-family:'JetBrains Mono',monospace;display:flex;flex-direction:column;border:2px solid #123a26;">
+        <!-- top status -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid #123a26;font-size:12px;letter-spacing:.06em;">
+          <span style="font-weight:700;text-shadow:0 0 6px #37e08a;">NORMAL FORM // SEQ ANALYZER</span>
+          <div style="display:flex;gap:6px;">
+            <button onClick="{{ D.tab.compose }}" style="background:none;border:1px solid #1c5a3a;color:#37e08a;padding:3px 10px;cursor:pointer;font:600 10px 'JetBrains Mono',monospace;{{ D.modeCompose }}">COMPOSE</button>
+            <button onClick="{{ D.tab.handlers }}" style="background:none;border:1px solid #1c5a3a;color:#37e08a;padding:3px 10px;cursor:pointer;font:600 10px 'JetBrains Mono',monospace;{{ D.modeHandlers }}">HANDLE</button>
+            <button onClick="{{ D.tab.run }}" style="background:none;border:1px solid #1c5a3a;color:#37e08a;padding:3px 10px;cursor:pointer;font:600 10px 'JetBrains Mono',monospace;{{ D.modeRun }}">RUN</button>
+          </div>
+          <span style="text-shadow:0 0 5px #37e08a;">T {{ D.tick }}/6 · TB 1t/div</span>
+        </div>
+
+        <div style="display:flex;flex:1;min-height:0;">
+          <!-- left measurement panel -->
+          <div style="width:236px;border-right:1px solid #123a26;padding:12px;font-size:11px;line-height:1.85;">
+            <div style="color:#1c8a56;letter-spacing:.08em;margin-bottom:6px;">◆ MEAS · ENVELOPE</div>
+            <div>SystemID <span style="color:#8ff0c0;">sys-alpha-01</span></div>
+            <div>Tstamp <span style="color:#8ff0c0;">09:14:03Z</span></div>
+            <div>Schema <span style="color:#8ff0c0;">002.5</span></div>
+            <div>Mode <span style="color:#8ff0c0;text-shadow:0 0 6px #37e08a;">LIVE</span></div>
+            <div>CmdID <span style="color:#8ff0c0;">f81d4fae…</span></div>
+            <div style="margin:12px 0 6px;color:#1c8a56;letter-spacing:.08em;">◆ STATE ENUM</div>
+            <div><span style="color:#6ea8ff;">RECEIVED</span> · <span style="color:#37e08a;">ACCEPTED</span></div>
+            <div><span style="color:#ff5a3c;">REJECTED</span> · <span style="color:#e0b96c;">CANCELED</span></div>
+            <div style="margin:12px 0 6px;color:#1c8a56;letter-spacing:.08em;">◆ ERR</div>
+            <div style="color:#ff5a3c;text-shadow:0 0 6px #ff5a3c;font-weight:700;">✖ CH2 REORDER FAULT<br>ACCEPTED &lt; RECEIVED</div>
+          </div>
+
+          <!-- center: scope board -->
+          <div style="flex:1;position:relative;min-width:0;background:repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(55,224,138,.09) 39px,rgba(55,224,138,.09) 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(55,224,138,.09) 39px,rgba(55,224,138,.09) 40px);">
+            <!-- center graticule -->
+            <div style="position:absolute;top:0;bottom:0;left:50%;border-left:1px solid rgba(55,224,138,.35);"></div>
+            <div style="position:absolute;left:0;right:0;top:50%;border-top:1px solid rgba(55,224,138,.35);"></div>
+            <!-- lifelines as bright columns -->
+            <div style="position:absolute;top:20px;left:30%;transform:translateX(-50%);border:1px solid #37e08a;padding:4px 12px;font-size:11px;font-weight:700;text-shadow:0 0 6px #37e08a;">COMMANDER</div>
+            <div style="position:absolute;top:20px;left:72%;transform:translateX(-50%);border:1px solid #37e08a;padding:4px 12px;font-size:11px;font-weight:700;text-shadow:0 0 6px #37e08a;">COMMANDEE</div>
+            <div style="position:absolute;top:52px;bottom:14px;left:30%;border-left:2px solid rgba(55,224,138,.7);box-shadow:0 0 8px rgba(55,224,138,.5);"></div>
+            <div style="position:absolute;top:52px;bottom:14px;left:72%;border-left:2px solid rgba(55,224,138,.7);box-shadow:0 0 8px rgba(55,224,138,.5);"></div>
+
+            <sc-if value="{{ D.isBuild }}" hint-placeholder-val="{{ false }}">
+              <div style="position:absolute;inset:0;">
+                <div style="position:absolute;top:120px;left:30%;width:42%;"><div style="position:absolute;top:-18px;left:2px;font-size:11px;text-shadow:0 0 6px #37e08a;">TaskCommand →</div><div style="border-top:2px solid #37e08a;box-shadow:0 0 6px #37e08a;"></div><span style="position:absolute;right:-3px;top:-10px;">▶</span></div>
+                <div style="position:absolute;top:220px;left:30%;width:42%;"><div style="position:absolute;top:-18px;left:2px;font-size:11px;color:#1c8a56;">← TaskCommandStatus</div><div style="border-top:2px dashed #1c8a56;"></div><span style="position:absolute;left:-3px;top:-10px;color:#1c8a56;">◀</span></div>
+                <sc-if value="{{ D.isHandlers }}" hint-placeholder-val="{{ false }}">
+                  <div style="position:absolute;top:290px;left:30%;transform:translateX(-50%);border:1px solid #37e08a;padding:8px 10px;width:270px;font-size:10px;line-height:1.8;text-shadow:0 0 4px #37e08a;">
+                    <div style="color:#1c8a56;">SM · on TaskCommandStatus</div>
+                    RECEIVED→wait · ACCEPTED→term✔<br>REJECTED→resend(1) · CANCELED→abort
+                  </div>
+                </sc-if>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ D.isRun }}" hint-placeholder-val="{{ true }}">
+              <div style="position:absolute;inset:0;">
+                <sc-if value="{{ D.run.showCmd }}" hint-placeholder-val="{{ true }}"><div style="position:absolute;top:110px;left:30%;width:42%;"><div style="position:absolute;top:-18px;left:2px;font-size:11px;text-shadow:0 0 6px #37e08a;">TaskCommand →</div><div style="border-top:2px solid #37e08a;box-shadow:0 0 8px #37e08a;"></div><span style="position:absolute;right:-3px;top:-10px;">▶</span></div></sc-if>
+                <sc-if value="{{ D.run.showAcc }}" hint-placeholder-val="{{ true }}"><div style="position:absolute;top:200px;left:30%;width:42%;"><div style="position:absolute;top:-18px;left:2px;font-size:11px;color:#ff5a3c;text-shadow:0 0 6px #ff5a3c;">← ACCEPTED (early)</div><div style="border-top:2px solid #ff5a3c;box-shadow:0 0 8px #ff5a3c;"></div><span style="position:absolute;left:-3px;top:-10px;color:#ff5a3c;">◀</span></div></sc-if>
+                <sc-if value="{{ D.run.failed }}" hint-placeholder-val="{{ true }}"><div style="position:absolute;top:236px;left:51%;transform:translateX(-50%);border:1px solid #ff5a3c;color:#ff5a3c;padding:3px 9px;font-size:10px;font-weight:700;text-shadow:0 0 6px #ff5a3c;animation:nfBlink 1s steps(1) infinite;">✖ TRIGGER: ACCEPTED before RECEIVED</div></sc-if>
+                <sc-if value="{{ D.run.showRecv }}" hint-placeholder-val="{{ true }}"><div style="position:absolute;top:300px;left:30%;width:42%;"><div style="position:absolute;top:-18px;left:2px;font-size:11px;color:#1c8a56;">← RECEIVED (late)</div><div style="border-top:2px dashed #1c8a56;"></div><span style="position:absolute;left:-3px;top:-10px;color:#1c8a56;">◀</span></div></sc-if>
+              </div>
+            </sc-if>
+          </div>
+
+          <!-- right channel strip -->
+          <div style="width:210px;border-left:1px solid #123a26;padding:12px;font-size:11px;">
+            <div style="color:#1c8a56;letter-spacing:.08em;margin-bottom:8px;">◆ CHANNELS</div>
+            <sc-for list="{{ D.run.seeds }}" as="seed" hint-placeholder-count="3">
+              <div style="border:1px solid #123a26;padding:6px 7px;margin-bottom:7px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;"><span style="color:#1c8a56;">CH{{ seed.n }}</span><span style="font-size:14px;color:{{ seed.color }};text-shadow:0 0 6px {{ seed.color }};">{{ seed.sym }}</span></div>
+                <div style="color:#37e08a;opacity:.75;font-size:10px;line-height:1.3;">{{ seed.t }}</div>
+              </div>
+            </sc-for>
+            <div style="margin-top:10px;color:#1c8a56;">◆ PAR</div>
+            <div style="color:#37e08a;">2 msg · 3 sz · ≤6 t</div>
+          </div>
+        </div>
+
+        <!-- bottom soft-keys (palette + run) -->
+        <div style="border-top:1px solid #123a26;padding:9px 14px;display:flex;align-items:center;gap:8px;">
+          <span style="color:#1c8a56;font-size:10px;margin-right:4px;">PALETTE ▸</span>
+          <span style="border:1px solid #123a26;color:#1c5a3a;padding:4px 8px;font-size:10px;">Status-1</span>
+          <span style="border:1px solid #123a26;color:#1c5a3a;padding:4px 8px;font-size:10px;">Data-1</span>
+          <span style="border:1px solid #123a26;color:#1c5a3a;padding:4px 8px;font-size:10px;">DataRecord-1</span>
+          <span style="border:1px solid #123a26;color:#1c5a3a;padding:4px 8px;font-size:10px;">DataRequest-2</span>
+          <span style="border:1px solid #123a26;color:#1c5a3a;padding:4px 8px;font-size:10px;">ActionRequest-2</span>
+          <span style="border:1px solid #37e08a;color:#37e08a;padding:4px 8px;font-size:10px;font-weight:700;text-shadow:0 0 6px #37e08a;">Command-2</span>
+          <div style="margin-left:auto;display:flex;gap:6px;">
+            <button onClick="{{ D.play }}" style="background:#123a26;color:#8ff0c0;border:1px solid #37e08a;padding:4px 12px;cursor:pointer;font:700 11px 'JetBrains Mono',monospace;text-shadow:0 0 6px #37e08a;">▶ RUN</button>
+            <button onClick="{{ D.step }}" style="background:none;color:#37e08a;border:1px solid #1c5a3a;padding:4px 10px;cursor:pointer;font:600 11px 'JetBrains Mono',monospace;">STEP</button>
+            <button onClick="{{ D.reset }}" style="background:none;color:#37e08a;border:1px solid #1c5a3a;padding:4px 10px;cursor:pointer;font:600 11px 'JetBrains Mono',monospace;">RST</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <p style="margin:30px 0 0;font:400 14px/1.6 'Architects Daughter',cursive;color:rgba(0,0,0,.55);max-width:820px;">Try next: "take <a href="#1b" style="color:#b23a2e;text-decoration:none;">1b</a> to hi-fi" · "merge <a href="#1a" style="color:#b23a2e;text-decoration:none;">1a</a>'s title block into <a href="#1b" style="color:#b23a2e;text-decoration:none;">1b</a>" · "add the score + level-select screens for <a href="#1c" style="color:#b23a2e;text-decoration:none;">1c</a>" · "make the RUN animation richer on <a href="#1d" style="color:#b23a2e;text-decoration:none;">1d</a>" · "new directions".</p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;runSpeed&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:750,&quot;min&quot;:250,&quot;max&quot;:1500,&quot;step&quot;:50,&quot;unit&quot;:&quot;ms&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Playback&quot;}}">
+class Component extends DCLogic {
+  state = {
+    phase: { a: 'compose', b: 'run', c: 'compose', d: 'run' },
+    tick:  { a: 0, b: 4, c: 0, d: 4 },
+    playing: { a: false, b: false, c: false, d: false },
+  };
+  timers = {};
+
+  setPhase(o, p) {
+    clearInterval(this.timers[o]);
+    this.setState(s => ({
+      phase:   { ...s.phase, [o]: p },
+      playing: { ...s.playing, [o]: false },
+      tick:    { ...s.tick, [o]: p === 'run' ? 4 : 0 },
+    }));
+  }
+  step(o) { this.setState(s => ({ tick: { ...s.tick, [o]: Math.min(6, s.tick[o] + 1) } })); }
+  reset(o) {
+    clearInterval(this.timers[o]);
+    this.setState(s => ({ tick: { ...s.tick, [o]: 0 }, playing: { ...s.playing, [o]: false } }));
+  }
+  play(o) {
+    if (this.state.playing[o]) {
+      clearInterval(this.timers[o]);
+      this.setState(s => ({ playing: { ...s.playing, [o]: false } }));
+      return;
+    }
+    const speed = this.props.runSpeed ?? 750;
+    this.setState(s => ({
+      phase:   { ...s.phase, [o]: 'run' },
+      playing: { ...s.playing, [o]: true },
+      tick:    { ...s.tick, [o]: 0 },
+    }));
+    this.timers[o] = setInterval(() => {
+      this.setState(s => {
+        const t = Math.min(6, s.tick[o] + 1);
+        const done = t >= 6;
+        if (done) clearInterval(this.timers[o]);
+        return { tick: { ...s.tick, [o]: t }, playing: { ...s.playing, [o]: done ? false : s.playing[o] } };
+      });
+    }, speed);
+  }
+  componentWillUnmount() { Object.values(this.timers).forEach(clearInterval); }
+
+  view(o, pal, activeCss) {
+    const phase = this.state.phase[o];
+    const tick = this.state.tick[o];
+    const playing = this.state.playing[o];
+    const failing = (o === 'b' || o === 'd');
+
+    let showCmd = tick >= 1, showRecv, showAcc, failed;
+    if (failing) { showAcc = tick >= 2; showRecv = tick >= 4; failed = tick >= 2; }
+    else { showRecv = tick >= 2; showAcc = tick >= 4; failed = false; }
+    const done = !failing && tick >= 6;
+
+    const symOf = st => st === 'pass' ? '\u2714' : st === 'fail' ? '\u2716' : st === 'run' ? '\u25B8' : '\u00B7';
+    const mk = (n, t, st) => ({ n, t, st, sym: symOf(st), color: pal[st] });
+    const seeds = failing
+      ? [ mk('\u2460', 'in-order', 'pass'), mk('\u2461', 'ACCEPTED before RECEIVED', failed ? 'fail' : 'run'), mk('\u2462', 'duplicate after terminal', 'wait') ]
+      : [ mk('\u2460', 'in-order', done ? 'pass' : 'run'), mk('\u2461', 'ACCEPTED before RECEIVED', 'wait'), mk('\u2462', 'duplicate after terminal', 'wait') ];
+
+    const act = activeCss || {};
+    return {
+      phase, tick, playing, failing,
+      tickPad: String(tick).padStart(4, '0'),
+      isCompose: phase === 'compose', isHandlers: phase === 'handlers', isRun: phase === 'run', isBuild: phase !== 'run',
+      tab: { compose: () => this.setPhase(o, 'compose'), handlers: () => this.setPhase(o, 'handlers'), run: () => this.setPhase(o, 'run') },
+      play: () => this.play(o), step: () => this.step(o), reset: () => this.reset(o),
+      run: { showCmd, showRecv, showAcc, failed, done, seeds },
+      // active-tab style fragments (per-direction css strings)
+      tabStyleCompose:  phase === 'compose'  ? act.tab : '',
+      tabStyleHandlers: phase === 'handlers' ? act.tab : '',
+      tabStyleRun:      phase === 'run'      ? act.tab : '',
+      modeCompose:  phase === 'compose'  ? act.mode : '',
+      modeHandlers: phase === 'handlers' ? act.mode : '',
+      modeRun:      phase === 'run'      ? act.mode : '',
+    };
+  }
+
+  renderVals() {
+    const P = {
+      a: { pass: '#2f6f4e', fail: '#b23a2e', run: '#24435f', wait: '#9a9384' },
+      b: { pass: '#5bbf8a', fail: '#e06c6c', run: '#6ea8ff', wait: '#5b6472' },
+      c: { pass: '#3a6b4a', fail: '#b02a1f', run: '#1c1a17', wait: '#a49a86' },
+      d: { pass: '#37e08a', fail: '#ff5a3c', run: '#37e08a', wait: '#2f6b4a' },
+    };
+    return {
+      A: this.view('a', P.a),
+      B: this.view('b', P.b, { tab: 'color:#e6ebf1;border-top-color:#6ea8ff;background:#12151b;' }),
+      C: this.view('c', P.c, { tab: 'border-bottom-color:#b02a1f;' }),
+      D: this.view('d', P.d, { mode: 'background:#123a26;box-shadow:0 0 8px rgba(55,224,138,.5);' }),
+    };
+  }
+}
+</script>
+</body>
+</html>
