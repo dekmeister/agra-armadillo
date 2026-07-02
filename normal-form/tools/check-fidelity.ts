@@ -17,7 +17,7 @@ function main(): void {
     process.exit(2);
   }
 
-  const { offenders, checkedNames, checkedCerts } = findOffenders(refsDir);
+  const { offenders, checkedNames, checkedCerts, checkedQuotes } = findOffenders(refsDir);
 
   const seen = new Set<string>();
   for (const t of offenders) {
@@ -30,14 +30,15 @@ function main(): void {
   if (offenders.length > 0) {
     const distinct = new Set(offenders.map((t) => t.value)).size;
     process.stderr.write(
-      `check-fidelity: FAIL — ${distinct} invented name(s)/number(s) not found under ${refsDir}\n`,
+      `check-fidelity: FAIL — ${distinct} invented/ misquoted item(s) not found under ${refsDir}\n`,
     );
     process.exit(1);
   }
 
   process.stderr.write(
-    `check-fidelity: OK — ${checkedNames} names present in the XSD, ` +
-      `${checkedCerts} CERT/RQMT numbers present in the specs (${refsDir})\n`,
+    `check-fidelity: OK — ${checkedNames} names in the XSD, ` +
+      `${checkedCerts} CERT/RQMT numbers in the specs, ` +
+      `${checkedQuotes} finding quotes verbatim (${refsDir})\n`,
   );
 }
 

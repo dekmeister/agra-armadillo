@@ -196,3 +196,96 @@ export const MESSAGE_CATALOG = {
 } as const;
 
 export type MessageCatalog = typeof MESSAGE_CATALOG;
+
+/* --- Validator findings (battery V1–V10; quotes policed verbatim) --- */
+export const FINDINGS = {
+  "V1-systemid": {
+    "id": "V1-systemid",
+    "code": "ENV HeaderType",
+    "message": "MessageHeader missing required SystemID",
+    "source": "xsd",
+    "docRef": "XSD HeaderType",
+    "quote": "This element represents the SystemID of the System that sent this message."
+  },
+  "V2-timestamp": {
+    "id": "V2-timestamp",
+    "code": "ENV HeaderType",
+    "message": "Timestamp missing or not ISO-8601",
+    "source": "xsd",
+    "docRef": "XSD HeaderType (DateTimeType)",
+    "quote": "This element represents the time and date at which the message was created and ready to be sent."
+  },
+  "V3-schemaversion": {
+    "id": "V3-schemaversion",
+    "code": "ENV HeaderType",
+    "message": "SchemaVersion missing or malformed",
+    "source": "xsd",
+    "docRef": "XSD HeaderType / UCI_SchemaVersionStringType",
+    "quote": "Indicates the schema version used to generate the message."
+  },
+  "V4-mode-enum": {
+    "id": "V4-mode-enum",
+    "code": "ENV HeaderType",
+    "message": "Mode is not a valid MessageModeEnum value",
+    "source": "xsd",
+    "docRef": "XSD HeaderType / MessageModeEnum",
+    "quote": "See enumeration values for details."
+  },
+  "V4-mode-mismatch": {
+    "id": "V4-mode-mismatch",
+    "code": "ENV HeaderType",
+    "message": "Mode does not match the sheet's declared mode",
+    "source": "game-rule",
+    "docRef": "game rule (mode-match, docs/02 lie #3)"
+  },
+  "V5-uuid-invalid": {
+    "id": "V5-uuid-invalid",
+    "code": "RQMT USTD-000436",
+    "message": "CommandID is not a valid RFC-4122 UUID",
+    "source": "std",
+    "docRef": "STD-001 §3",
+    "quote": "UCI UUIDs shall conform to any version of the Leach-Salz UUID variant (variant 1) or the nil UUID described in RFC 4122."
+  },
+  "V6-uuid-noncanonical": {
+    "id": "V6-uuid-noncanonical",
+    "code": "RQMT USTD-000673",
+    "message": "CommandID is not in canonical UUID string form",
+    "source": "std",
+    "docRef": "STD-001 §3",
+    "quote": "UCI UUIDs shall conform to the UUID string representation"
+  },
+  "V7-commandstate": {
+    "id": "V7-commandstate",
+    "code": "ENV CommandBaseType",
+    "message": "CommandState is not a valid CommandStateEnum value",
+    "source": "xsd",
+    "docRef": "XSD CommandBaseType",
+    "quote": "The state of the command message data."
+  },
+  "V8-binding": {
+    "id": "V8-binding",
+    "code": "CERT SCH-002461",
+    "message": "request/response must be named <MsgName>Command / <MsgName>CommandStatus",
+    "source": "spc",
+    "docRef": "SPC-001 §5.1.1",
+    "quote": "All Command-2 primitive types shall consist of two messages with names of the form"
+  },
+  "V9-roles": {
+    "id": "V9-roles",
+    "code": "CERT UNIS-000105",
+    "message": "both Command-2 roles must be bound to lifelines",
+    "source": "unis",
+    "docRef": "UNIS §4.6",
+    "quote": "A UCI Component fulfilling a role identified in the Command-2 message interaction pattern shall follow the interaction pattern"
+  },
+  "V10-terminal-handler": {
+    "id": "V10-terminal-handler",
+    "code": "READY",
+    "message": "no handler wired for a reachable terminal state",
+    "source": "game-rule",
+    "docRef": "game rule (READY gate)"
+  }
+} as const;
+
+export type FindingId = keyof typeof FINDINGS;
+export type FindingSpec = (typeof FINDINGS)[FindingId];

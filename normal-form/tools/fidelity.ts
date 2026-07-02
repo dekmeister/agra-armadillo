@@ -1,13 +1,15 @@
 // Pure fidelity-check logic (docs/02-fidelity.md §5), shared by the CLI
 // (check-fidelity.ts) and the vitest gate (fidelity.test.ts).
 //
-// Two token classes, two sources of truth:
+// Three token classes, three sources of truth:
 //   • NAME tokens  — every message/type/field/enum name + enum literal in the
 //     catalog — must appear as a name="…"/value="…" identifier in the UCI XSD.
 //   • CERT tokens  — every CERT/RQMT number (UNIS-/USTD-/SCH-xxxxxx) inside any
-//     `cite:` — must appear verbatim in the UCI .txt specifications.
-// Unknown names or numbers fail the build. The game may omit; it may never
-// rename or invent.
+//     `cite:` or a finding `code` — must appear verbatim in the UCI specs.
+//   • QUOTE tokens — every validator finding's verbatim `quote` — must appear
+//     (whitespace-normalized) in the source file it cites.
+// Unknown names, numbers, or quotes fail the build. The game may omit; it may
+// never rename, invent, or misquote.
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import type { CatalogComplexType } from "./catalog-source.ts";
@@ -15,8 +17,14 @@ import { loadCatalog, REFS_DIR } from "./catalog-source.ts";
 
 export interface Token {
   value: string;
-  kind: "name" | "cert";
+  kind: "name" | "cert" | "quote";
   owner: string;
+}
+
+/** Collapse all whitespace runs to single spaces so a quote matches across the
+ *  line wrapping introduced by PDF/txt extraction. */
+export function normalizeWhitespace(text: string): string {
+  return text.replace(/\s+/g, " ").trim();
 }
 
 const CERT_RE = /\b(?:UNIS|USTD|SCH)-\d{6}\b/g;
@@ -50,6 +58,12 @@ export function collectTokens(): Token[] {
   for (const t of [...catalog.envelope, ...catalog.types]) tokens.push(...complexTokens(t));
   for (const m of catalog.messages) tokens.push(...complexTokens(m, [m.mt]));
 
+  for (const f of catalog.findings) {
+    for (const c of f.code.match(CERT_RE) ?? [])
+      tokens.push({ value: c, kind: "cert", owner: f.id });
+    if (f.quote) tokens.push({ value: f.quote, kind: "quote", owner: `${f.id} (${f.source})` });
+  }
+
   return tokens;
 }
 
@@ -68,20 +82,52 @@ export interface FidelityResult {
   offenders: Token[];
   checkedNames: number;
   checkedCerts: number;
+  checkedQuotes: number;
 }
 
 /** Check the catalog against the vendored UCI sources under `refsDir`. */
 export function findOffenders(refsDir: string = REFS_DIR): FidelityResult {
   const catalog = loadCatalog();
-  const xsdNames = buildXsdNameIndex(readFileSync(resolve(refsDir, catalog.xsd), "utf8"));
-  const specText = catalog.sources.map((s) => readFileSync(resolve(refsDir, s), "utf8")).join("\n");
+  const xsdText = readFileSync(resolve(refsDir, catalog.xsd), "utf8");
+  const xsdNames = buildXsdNameIndex(xsdText);
+  const specText = Object.values(catalog.sources)
+    .map((s) => readFileSync(resolve(refsDir, s), "utf8"))
+    .join("\n");
+
+  // Normalized text per source key, so a quote matches across line wrapping.
+  const normalizedSource = new Map<string, string>();
+  const sourceText = (key: string): string => {
+    let t = normalizedSource.get(key);
+    if (t === undefined) {
+      const file = key === "xsd" ? catalog.xsd : catalog.sources[key];
+      t = normalizeWhitespace(readFileSync(resolve(refsDir, file ?? key), "utf8"));
+      normalizedSource.set(key, t);
+    }
+    return t;
+  };
 
   const tokens = collectTokens();
-  const offenders = tokens.filter((t) =>
-    t.kind === "name" ? !xsdNames.has(t.value) : !specText.includes(t.value),
-  );
+  const offenders: Token[] = [];
+  for (const t of tokens) {
+    if (t.kind === "name") {
+      if (!xsdNames.has(t.value)) offenders.push(t);
+    } else if (t.kind === "cert") {
+      if (!specText.includes(t.value)) offenders.push(t);
+    }
+  }
+  for (const f of catalog.findings) {
+    if (!f.quote) continue;
+    if (!sourceText(f.source).includes(normalizeWhitespace(f.quote))) {
+      offenders.push({ value: f.quote, kind: "quote", owner: `${f.id} (${f.source})` });
+    }
+  }
 
-  const names = new Set(tokens.filter((t) => t.kind === "name").map((t) => t.value));
-  const certs = new Set(tokens.filter((t) => t.kind === "cert").map((t) => t.value));
-  return { offenders, checkedNames: names.size, checkedCerts: certs.size };
+  const distinct = (kind: Token["kind"]) =>
+    new Set(tokens.filter((t) => t.kind === kind).map((t) => t.value)).size;
+  return {
+    offenders,
+    checkedNames: distinct("name"),
+    checkedCerts: distinct("cert"),
+    checkedQuotes: distinct("quote"),
+  };
 }

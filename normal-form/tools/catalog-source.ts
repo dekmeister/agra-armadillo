@@ -36,14 +36,28 @@ export interface CatalogMessage extends CatalogComplexType {
   role: "request" | "response";
 }
 
+/** A validator finding: text lives in the catalog (policed), not code. */
+export interface CatalogFinding {
+  id: string;
+  code: string;
+  message: string;
+  /** source key (`xsd` or a `sources` key) the quote is verified against, or
+   *  `game-rule` for findings the standard does not back with a quote */
+  source: string;
+  docRef: string;
+  quote?: string;
+}
+
 export interface Catalog {
   version: number;
   xsd: string;
-  sources: string[];
+  /** key → filename (key `xsd` is reserved for the schema) */
+  sources: Record<string, string>;
   enums: CatalogEnum[];
   envelope: CatalogComplexType[];
   messages: CatalogMessage[];
   types: CatalogComplexType[];
+  findings: CatalogFinding[];
 }
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -98,11 +112,12 @@ export function loadCatalog(path: string = CATALOG_PATH): Catalog {
 
   const version = typeof raw.version === "number" ? raw.version : 1;
   const xsd = typeof raw.xsd === "string" ? raw.xsd : fail("`xsd` missing");
-  if (!Array.isArray(raw.sources)) fail("`sources` must be a list");
-  const sources = raw.sources.map((s, i) => {
-    if (typeof s !== "string") fail(`sources[${i}] must be a string`);
-    return s;
-  });
+  const sourcesRaw = asRecord(raw.sources, "`sources`");
+  const sources: Record<string, string> = {};
+  for (const [key, val] of Object.entries(sourcesRaw)) {
+    if (typeof val !== "string") fail(`sources.${key} must be a string`);
+    sources[key] = val;
+  }
 
   const typeNames = new Set<string>();
   const enumNames = new Set<string>();
@@ -145,5 +160,37 @@ export function loadCatalog(path: string = CATALOG_PATH): Catalog {
     return { ...base, mt, role: rec.role };
   });
 
-  return { version, xsd, sources, enums, envelope, messages, types };
+  const findingIds = new Set<string>();
+  const findings: CatalogFinding[] = (
+    Array.isArray(raw.findings) ? raw.findings : fail("`findings` must be a list")
+  ).map((f, i) => {
+    const rec = asRecord(f, `findings[${i}]`);
+    const str = (k: string): string => {
+      const v = rec[k];
+      if (typeof v !== "string" || v.length === 0) fail(`findings[${i}].${k} missing`);
+      return v;
+    };
+    const id = str("id");
+    if (findingIds.has(id)) fail(`duplicate finding id ${id}`);
+    findingIds.add(id);
+    const source = str("source");
+    if (source !== "game-rule" && source !== "xsd" && !(source in sources)) {
+      fail(`finding ${id}: unknown source "${source}"`);
+    }
+    if (rec.quote !== undefined && typeof rec.quote !== "string")
+      fail(`${id}.quote must be a string`);
+    if (source !== "game-rule" && typeof rec.quote !== "string") {
+      fail(`finding ${id}: a non game-rule finding must carry a verbatim quote`);
+    }
+    return {
+      id,
+      code: str("code"),
+      message: str("message"),
+      source,
+      docRef: str("docRef"),
+      ...(typeof rec.quote === "string" ? { quote: rec.quote } : {}),
+    };
+  });
+
+  return { version, xsd, sources, enums, envelope, messages, types, findings };
 }
