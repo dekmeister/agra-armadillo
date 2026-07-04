@@ -1,18 +1,53 @@
-import { MESSAGE_CATALOG } from "@normal-form/core";
+// The Blueprint puzzle screen (S4): full-viewport vertical stack — header band,
+// goal/metrics sub-bar, the three-column main row (palette · board · inspector),
+// and the bottom row (validator console · title block). One screen, three phases;
+// the chrome is identical across phases, only the board/inspector/console bodies
+// change. RUN is wired to the real engine; COMPOSE/HANDLERS are read-only shells
+// until editing lands in S5.
+import { Board } from "./Board.tsx";
+import { Header } from "./Header.tsx";
+import { Inspector } from "./Inspector.tsx";
+import { Palette } from "./Palette.tsx";
+import { SubBar } from "./SubBar.tsx";
+import { TitleBlock } from "./TitleBlock.tsx";
+import { FONT, LAYOUT, SURFACE } from "./tokens.ts";
+import { usePlayback } from "./usePlayback.ts";
+import { ValidatorConsole } from "./ValidatorConsole.tsx";
 
-// S1 placeholder shell. The Blueprint puzzle screen is built in S4/S5; for now
-// this only proves the workspace graph (game -> core catalog) resolves and builds.
 export function App() {
-  const messages = Object.keys(MESSAGE_CATALOG.messages);
+  usePlayback();
   return (
-    <main style={{ fontFamily: "monospace", padding: 24, color: "#24435f" }}>
-      <h1>Normal Form</h1>
-      <p>Sequence Certification — scaffold. Catalog loaded:</p>
-      <ul>
-        {messages.map((name) => (
-          <li key={name}>{name}</li>
-        ))}
-      </ul>
-    </main>
+    <div
+      style={{
+        minWidth: LAYOUT.minWidth,
+        height: "100dvh",
+        minHeight: LAYOUT.minHeight,
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        background: SURFACE.vellum,
+        color: SURFACE.ink,
+        fontFamily: FONT.mono,
+      }}
+    >
+      <Header />
+      <SubBar />
+      <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
+        <Palette />
+        <Board />
+        <Inspector />
+      </div>
+      <div
+        style={{
+          height: LAYOUT.bottomH,
+          flex: `0 0 ${LAYOUT.bottomH}px`,
+          display: "flex",
+          borderTop: `1.5px solid ${SURFACE.ink}`,
+        }}
+      >
+        <ValidatorConsole />
+        <TitleBlock />
+      </div>
+    </div>
   );
 }
