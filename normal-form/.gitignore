@@ -14,6 +14,10 @@ coverage/
 .env.local
 .env.*.local
 
+# Deploy config (contains credentials)
+.deploy.env
+tools/deploy.sh
+
 # OS
 .DS_Store
 Thumbs.db
