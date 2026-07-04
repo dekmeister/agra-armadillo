@@ -4,6 +4,7 @@
 // engine-derived; nothing is editable in S4 (editing is S5).
 import type { MachineAction } from "@normal-form/core";
 import { sheet_1_1 } from "@normal-form/levels";
+import { useState } from "react";
 import { useGameStore } from "./store.ts";
 import { ENUM_COLOR, FONT, LAYOUT, STATUS, SURFACE, ZONE } from "./tokens.ts";
 import { useFindings } from "./useFindings.ts";
@@ -267,31 +268,80 @@ function RunBody() {
   );
 }
 
+// Codex stubs — "In the real standard…" (CommandProcessingStateEnum, SPC-001 §5.1.1).
+const CODEX: Record<(typeof ENUMS)[number], string> = {
+  RECEIVED:
+    "Non-terminal. The normal entry point — but it may never be reported if the Commandee transitions straight to a terminal state.",
+  ACCEPTED:
+    "Terminal. The command was accepted; the sequence ends and later responses are ignored.",
+  REJECTED:
+    "Terminal. The command was refused (reason in CommandProcessingStateReason). Retry is a NEW command, not an UPDATE.",
+  CANCELED: "Terminal. Reached via a CANCEL; terminal states ignore all subsequent updates.",
+};
+
 function EnumLegend() {
+  const [open, setOpen] = useState<(typeof ENUMS)[number] | null>(null);
   return (
-    <div style={{ marginTop: "auto", paddingTop: 10, borderTop: "1px dashed rgba(36,67,95,.4)" }}>
+    <div
+      style={{
+        marginTop: "auto",
+        paddingTop: 10,
+        borderTop: "1px dashed rgba(36,67,95,.4)",
+        position: "relative",
+      }}
+    >
       <SectionLabel>STATE ENUMS</SectionLabel>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
         {ENUMS.map((e) => (
-          <span
+          <button
+            type="button"
             key={e}
+            onClick={() => setOpen(open === e ? null : e)}
+            title="codex — in the real standard…"
             style={{
               display: "inline-flex",
               alignItems: "center",
               gap: 5,
+              background: open === e ? ENUM_COLOR[e] : "transparent",
               border: `1.5px solid ${ENUM_COLOR[e]}`,
-              color: ENUM_COLOR[e],
+              color: open === e ? "#fff" : ENUM_COLOR[e],
               borderRadius: 3,
               fontSize: 10,
               fontWeight: 700,
+              fontFamily: FONT.mono,
               padding: "2px 7px",
+              cursor: "pointer",
             }}
           >
-            <span style={{ width: 7, height: 7, borderRadius: "50%", background: ENUM_COLOR[e] }} />
+            <span
+              style={{
+                width: 7,
+                height: 7,
+                borderRadius: "50%",
+                background: open === e ? "#fff" : ENUM_COLOR[e],
+              }}
+            />
             {e}
-          </span>
+          </button>
         ))}
       </div>
+      {open && (
+        <div
+          style={{
+            marginTop: 6,
+            border: `1.5px solid ${ENUM_COLOR[open]}`,
+            background: "#fff",
+            padding: "6px 8px",
+            fontSize: 11,
+            fontWeight: 500,
+            lineHeight: 1.5,
+            color: SURFACE.ink,
+          }}
+        >
+          <b style={{ color: ENUM_COLOR[open] }}>{open}</b> — {CODEX[open]}{" "}
+          <span style={{ opacity: 0.6 }}>(CommandProcessingStateEnum · SPC-001 §5.1.1)</span>
+        </div>
+      )}
     </div>
   );
 }

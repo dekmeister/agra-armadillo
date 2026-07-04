@@ -20,7 +20,12 @@ export interface ArrowFrame {
   readonly muted?: boolean;
   /** ✔ glyph — the terminal ACCEPTED that certifies proof */
   readonly check?: boolean;
+  /** why a dropped delivery was ignored, e.g. "post-terminal" / "unhandled" */
+  readonly disposition?: string;
 }
+
+/** The standard-quote lesson keys (catalog FINDINGS ids) a RUN failure surfaces. */
+export type LessonId = "RUN-terminal" | "RUN-ordering";
 
 export interface BoardModel {
   readonly arrows: readonly ArrowFrame[];
@@ -29,6 +34,8 @@ export interface BoardModel {
   readonly fault: { readonly tick: number; readonly detail: string } | null;
   /** tick SystemB performed the tasked activity (world-state), for a lifeline mark */
   readonly activityTick: number | null;
+  /** the offending tick + violated-rule lesson when the seed fails, else null */
+  readonly failure: { readonly tick: number; readonly lessonId: LessonId } | null;
 }
 
 const ENUM_NAMES: readonly CommandProcessingStateEnum[] = [
@@ -54,6 +61,7 @@ export function runFrames(result: RunResult): BoardModel {
   let fault: BoardModel["fault"] = null;
   let activityTick: number | null = null;
   let endTick = 0;
+  let unhandledTick: number | null = null;
   let i = 0;
 
   for (const ev of result.log as readonly RunEvent[]) {
@@ -75,6 +83,9 @@ export function runFrames(result: RunResult): BoardModel {
         const dup = ev.detail.includes("(dup)");
         const dropped = ev.kind === "status-dropped";
         const check = !dropped && state === "ACCEPTED" && ev.detail.includes("terminal");
+        // status-dropped detail is `${tag} — ${disposition}`.
+        const disposition = dropped ? ev.detail.split(" — ")[1]?.trim() : undefined;
+        if (disposition === "unhandled" && unhandledTick === null) unhandledTick = ev.tick;
         arrows.push({
           key: `res-${i}`,
           dir: "response",
@@ -85,6 +96,7 @@ export function runFrames(result: RunResult): BoardModel {
           dashed: dropped,
           muted: dropped,
           check,
+          disposition,
         });
         break;
       }
@@ -101,5 +113,15 @@ export function runFrames(result: RunResult): BoardModel {
     i++;
   }
 
-  return { arrows, endTick, goalTick, fault, activityTick };
+  // A seed fails when the goal never held or a fault fired. Point the failure
+  // replay at the offending tick and the rule it violated: a fault is the
+  // terminal-state rule (seed ③); an unhandled drop with no goal is the ordering
+  // assumption (seed ②'s gated hang).
+  let failure: BoardModel["failure"] = null;
+  if (fault) failure = { tick: fault.tick, lessonId: "RUN-terminal" };
+  else if (goalTick === null && unhandledTick !== null)
+    failure = { tick: unhandledTick, lessonId: "RUN-ordering" };
+  else if (goalTick === null && endTick > 0) failure = { tick: endTick, lessonId: "RUN-ordering" };
+
+  return { arrows, endTick, goalTick, fault, activityTick, failure };
 }

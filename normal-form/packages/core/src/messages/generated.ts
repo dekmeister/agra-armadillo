@@ -284,6 +284,22 @@ export const FINDINGS = {
     "message": "no handler wired for a reachable terminal state",
     "source": "game-rule",
     "docRef": "game rule (READY gate)"
+  },
+  "RUN-ordering": {
+    "id": "RUN-ordering",
+    "code": "UNIS §4",
+    "message": "the bus assumes no ordering — gating ACCEPTED behind RECEIVED can hang",
+    "source": "unis",
+    "docRef": "UNIS §4 (Interaction Patterns)",
+    "quote": "there can be no assumption that messages come in any order or that there is guaranteed delivery"
+  },
+  "RUN-terminal": {
+    "id": "RUN-terminal",
+    "code": "UNIS §4.6.2",
+    "message": "acting on a response after a terminal state — the sequence had already ended",
+    "source": "unis",
+    "docRef": "UNIS §4.6.2 (Command-2 Terminal State Behavior)",
+    "quote": "once a terminal state is reported, the sequence should end"
   }
 } as const;
 

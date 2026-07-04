@@ -3,7 +3,8 @@
 // colored by state enum. In RUN the arrows reveal as the tick advances, driven by
 // the engine's frames; in COMPOSE/HANDLERS the board is a static shell of the
 // sheet's initial state (editing is S5).
-import type { Machine } from "@normal-form/core";
+import type { Machine, Score } from "@normal-form/core";
+import { sheet_1_1 } from "@normal-form/levels";
 import { useLayoutEffect, useRef, useState } from "react";
 import type { ArrowFrame } from "./frames.ts";
 import type { Phase } from "./store.ts";
@@ -39,7 +40,7 @@ export function Board() {
   const tick = useGameStore((s) => s.tick);
   const seedId = useGameStore((s) => s.seedId);
   const placed = useGameStore((s) => s.session.placed);
-  const { board, machine } = useRun();
+  const { board, machine, allPass, score } = useRun();
   const errorCount = useFindings().length;
 
   const xLeft = w * (LAYOUT.lifelineLeftPct / 100);
@@ -196,6 +197,9 @@ export function Board() {
 
       {/* handler widget (HTML overlay) — read-only mirror of the built machine */}
       {phase === "handlers" && placed && <HandlerWidget xLeft={xLeft} machine={machine} />}
+
+      {/* certification overlay — all three seeds pass */}
+      {phase === "run" && allPass && score && <CertifiedOverlay score={score} />}
     </div>
   );
 }
@@ -286,6 +290,19 @@ function Arrow({
       >
         {frame.label}
       </text>
+      {frame.disposition && (
+        <text
+          x={(xLeft + xRight) / 2}
+          y={y + 13}
+          fontFamily={FONT.mono}
+          fontSize={9}
+          fontWeight={700}
+          fill="#c0392b"
+          textAnchor="middle"
+        >
+          ✖ ignored · {frame.disposition}
+        </text>
+      )}
     </g>
   );
 }
@@ -446,6 +463,46 @@ function NoGoalStamp({ w, h }: { w: number; h: number }) {
         ✖ NO PROOF · seed fails
       </text>
     </g>
+  );
+}
+
+function CertifiedOverlay({ score }: { score: Score }) {
+  const pars = sheet_1_1.pars;
+  const metrics: { label: string; value: number; par: number; suffix?: string }[] = [
+    { label: "MSG", value: score.messages, par: pars.messages },
+    { label: "SIZE", value: score.machineSize, par: pars.machineSize },
+    { label: "TICK", value: score.ticks, par: pars.ticks, suffix: "≤" },
+  ];
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: 48,
+        right: 14,
+        background: "rgba(47,143,91,.1)",
+        border: "2.5px solid #2f8f5b",
+        boxShadow: "3px 3px 0 rgba(47,143,91,.25)",
+        padding: "8px 12px",
+        fontFamily: FONT.mono,
+        zIndex: 3,
+      }}
+    >
+      <div style={{ fontSize: 13, fontWeight: 800, color: "#2f8f5b", marginBottom: 4 }}>
+        ✔ CERTIFIED · all seeds pass
+      </div>
+      <div style={{ display: "flex", gap: 12 }}>
+        {metrics.map((m) => (
+          <span key={m.label} style={{ fontSize: 11, fontWeight: 700 }}>
+            <span style={{ opacity: 0.6 }}>{m.label} </span>
+            <span style={{ color: m.value <= m.par ? "#2f8f5b" : "#c07d1f" }}>{m.value}</span>
+            <span style={{ opacity: 0.5 }}>
+              /{m.suffix ?? ""}
+              {m.par}
+            </span>
+          </span>
+        ))}
+      </div>
+    </div>
   );
 }
 

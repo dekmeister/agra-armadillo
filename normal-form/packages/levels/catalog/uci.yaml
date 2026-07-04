@@ -163,3 +163,21 @@ findings:
     message: "no handler wired for a reachable terminal state"
     source: game-rule
     docRef: "game rule (READY gate)"
+
+  # Runtime-failure lessons (RUN phase, not the compose validator). Quoted
+  # verbatim and policed like the V-findings; the game surfaces these on a seed
+  # failure (docs/02-fidelity.md §5, PLAN_MVP S6). `code` cites a section, not a
+  # CERT number, so the CERT-number check does not fire; the quote check does.
+  - id: RUN-ordering
+    code: "UNIS §4"
+    message: "the bus assumes no ordering — gating ACCEPTED behind RECEIVED can hang"
+    source: unis
+    docRef: "UNIS §4 (Interaction Patterns)"
+    quote: "there can be no assumption that messages come in any order or that there is guaranteed delivery"
+
+  - id: RUN-terminal
+    code: "UNIS §4.6.2"
+    message: "acting on a response after a terminal state — the sequence had already ended"
+    source: unis
+    docRef: "UNIS §4.6.2 (Command-2 Terminal State Behavior)"
+    quote: "once a terminal state is reported, the sequence should end"

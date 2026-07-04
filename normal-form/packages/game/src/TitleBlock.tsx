@@ -3,6 +3,7 @@
 // (the shipped W1 name; the Blueprint mock's "One Way" predates the world split —
 // see 05-mvp note).
 import { sheet_1_1 } from "@normal-form/levels";
+import { FidelityNotes } from "./FidelityNotes.tsx";
 import { FONT, LAYOUT, STATUS, SURFACE, ZONE } from "./tokens.ts";
 
 function Cell({ label, value }: { label: string; value: string }) {
@@ -40,6 +41,9 @@ export function TitleBlock() {
       >
         <span style={{ width: 9, height: 9, background: ZONE.accent }} />
         <span style={{ fontSize: 12, fontWeight: 800 }}>TITLE BLOCK</span>
+        <span style={{ marginLeft: "auto" }}>
+          <FidelityNotes />
+        </span>
       </div>
 
       <div
