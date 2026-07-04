@@ -5,7 +5,7 @@
 // sheet's initial state (editing is S5).
 import type { Machine, Score } from "@normal-form/core";
 import { sheet_1_1 } from "@normal-form/levels";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { ArrowFrame } from "./frames.ts";
 import type { Phase } from "./store.ts";
 import { useGameStore } from "./store.ts";
@@ -38,6 +38,7 @@ export function Board() {
   const [ref, { w, h }] = useSize();
   const phase = useGameStore((s) => s.phase);
   const tick = useGameStore((s) => s.tick);
+  const runSpeed = useGameStore((s) => s.runSpeed);
   const seedId = useGameStore((s) => s.seedId);
   const placed = useGameStore((s) => s.session.placed);
   const { board, machine, allPass, score } = useRun();
@@ -49,6 +50,11 @@ export function Board() {
   const yBottom = Math.max(yTop + 40, h - 26);
   const rulerMax = Math.max(6, board?.endTick ?? 0);
   const yOf = (t: number) => yTop + (t / rulerMax) * (yBottom - yTop);
+
+  // Animation durations, a fraction of the per-tick window so each completes
+  // before the next tick fires.
+  const drawMs = Math.min(runSpeed * 0.6, 480);
+  const tokenMs = Math.min(runSpeed * 0.7, 520);
 
   return (
     <div
@@ -135,13 +141,39 @@ export function Board() {
             strokeDasharray="5 5"
           />
 
+          {/* playhead — a sweep line at the current tick that glides down the axis */}
+          {phase === "run" && <Playhead y={yOf(tick)} width={w} durMs={runSpeed} />}
+
           {/* arrows */}
           {phase === "run" ? (
-            board?.arrows
-              .filter((a) => a.tick <= tick)
-              .map((a) => (
-                <Arrow key={a.key} frame={a} xLeft={xLeft} xRight={xRight} y={yOf(a.tick)} />
-              ))
+            <>
+              {board?.arrows
+                .filter((a) => a.tick <= tick)
+                .map((a) => (
+                  <Arrow
+                    key={a.key}
+                    frame={a}
+                    xLeft={xLeft}
+                    xRight={xRight}
+                    y={yOf(a.tick)}
+                    animateDraw
+                    drawMs={drawMs}
+                  />
+                ))}
+              {/* in-flight token(s) riding the arrow(s) arriving at this tick */}
+              {board?.arrows
+                .filter((a) => a.tick === tick)
+                .map((a) => (
+                  <MovingToken
+                    key={`tok-${a.key}-${tick}`}
+                    frame={a}
+                    xLeft={xLeft}
+                    xRight={xRight}
+                    y={yOf(a.tick)}
+                    durMs={tokenMs}
+                  />
+                ))}
+            </>
           ) : placed ? (
             renderShellArrows(phase, xLeft, xRight, yOf)
           ) : (
@@ -247,26 +279,44 @@ function Arrow({
   xLeft,
   xRight,
   y,
+  animateDraw = false,
+  drawMs = 480,
 }: {
   frame: ArrowFrame;
   xLeft: number;
   xRight: number;
   y: number;
+  /** draw the shaft in from sender→receiver on first reveal (RUN only) */
+  animateDraw?: boolean;
+  drawMs?: number;
 }) {
   const isRequest = frame.dir === "request";
   const opacity = frame.muted ? 0.45 : 1;
   const headX = isRequest ? xRight : xLeft;
   const glyph = isRequest ? "▶" : "◀";
+  // Draw from the sender end: request grows left→right, response right→left.
+  const senderX = isRequest ? xLeft : xRight;
+  const receiverX = isRequest ? xRight : xLeft;
+  const len = Math.abs(xRight - xLeft);
+  const doDraw = animateDraw && !frame.dashed;
+  const [drawn, setDrawn] = useState(!doDraw);
+  useEffect(() => {
+    if (!doDraw) return;
+    const id = requestAnimationFrame(() => setDrawn(true));
+    return () => cancelAnimationFrame(id);
+  }, [doDraw]);
   return (
     <g opacity={opacity}>
       <line
-        x1={xLeft}
+        x1={senderX}
         y1={y}
-        x2={xRight}
+        x2={receiverX}
         y2={y}
         stroke={frame.color}
         strokeWidth={frame.check ? 3 : 2.5}
-        strokeDasharray={frame.dashed ? "6 5" : undefined}
+        strokeDasharray={frame.dashed ? "6 5" : doDraw ? `${len}` : undefined}
+        strokeDashoffset={doDraw ? (drawn ? 0 : len) : undefined}
+        style={doDraw ? { transition: `stroke-dashoffset ${drawMs}ms ease-out` } : undefined}
       />
       <text
         x={headX}
@@ -303,6 +353,67 @@ function Arrow({
           ✖ ignored · {frame.disposition}
         </text>
       )}
+    </g>
+  );
+}
+
+/** A message packet that rides an arrow from its sender lifeline to the receiver. */
+function MovingToken({
+  frame,
+  xLeft,
+  xRight,
+  y,
+  durMs,
+}: {
+  frame: ArrowFrame;
+  xLeft: number;
+  xRight: number;
+  y: number;
+  durMs: number;
+}) {
+  const isRequest = frame.dir === "request";
+  const from = isRequest ? xLeft : xRight;
+  const to = isRequest ? xRight : xLeft;
+  const [moved, setMoved] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setMoved(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+  return (
+    <circle
+      cx={from}
+      cy={y}
+      r={5.5}
+      fill={frame.color}
+      stroke="#fff"
+      strokeWidth={1.5}
+      style={{
+        transform: `translateX(${moved ? to - from : 0}px)`,
+        transition: `transform ${durMs}ms cubic-bezier(.4,0,.2,1)`,
+      }}
+    />
+  );
+}
+
+/** The current-tick sweep line; glides down the time axis as playback advances. */
+function Playhead({ y, width, durMs }: { y: number; width: number; durMs: number }) {
+  return (
+    <g
+      style={{
+        transform: `translateY(${y}px)`,
+        transition: `transform ${durMs}ms linear`,
+      }}
+    >
+      <line
+        x1={0}
+        y1={0}
+        x2={width}
+        y2={0}
+        stroke={ZONE.accent}
+        strokeWidth={1}
+        strokeDasharray="2 4"
+        opacity={0.55}
+      />
     </g>
   );
 }

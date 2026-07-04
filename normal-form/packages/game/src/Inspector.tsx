@@ -13,6 +13,19 @@ import { useRun } from "./useRun.ts";
 const ENUMS = ["RECEIVED", "ACCEPTED", "REJECTED", "CANCELED"] as const;
 const CIRCLED = ["①", "②", "③"] as const;
 
+/** A fresh canonical (lowercase, hyphenated) RFC-4122 v4 UUID — passes V5/V6. */
+function genUuid(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  // Fallback for non-secure contexts where crypto.randomUUID is unavailable.
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 function ZoneHeader() {
   return (
     <div
@@ -95,25 +108,49 @@ function ComposeBody() {
               <span style={{ fontWeight: 800 }}>{err ? "✖" : "✓"}</span>
             </div>
             {canEdit ? (
-              <input
-                aria-label={name}
-                value={value ?? ""}
-                placeholder={name === "SystemID" ? "⟨required⟩" : "canonical UUID"}
-                onChange={(e) => setField(name, e.target.value === "" ? null : e.target.value)}
-                style={{
-                  width: "100%",
-                  boxSizing: "border-box",
-                  marginTop: 4,
-                  padding: "3px 5px",
-                  fontFamily: FONT.mono,
-                  fontSize: name === "CommandID" ? 10 : 11,
-                  fontWeight: 600,
-                  color: err ? STATUS.fail : SURFACE.ink,
-                  background: "#fff",
-                  border: `1px solid ${err ? STATUS.fail : "rgba(36,67,95,.35)"}`,
-                  borderRadius: 2,
-                }}
-              />
+              <>
+                <input
+                  aria-label={name}
+                  value={value ?? ""}
+                  placeholder={name === "SystemID" ? "⟨required⟩" : "canonical UUID"}
+                  onChange={(e) => setField(name, e.target.value === "" ? null : e.target.value)}
+                  style={{
+                    width: "100%",
+                    boxSizing: "border-box",
+                    marginTop: 4,
+                    padding: "3px 5px",
+                    fontFamily: FONT.mono,
+                    fontSize: name === "CommandID" ? 10 : 11,
+                    fontWeight: 600,
+                    color: err ? STATUS.fail : SURFACE.ink,
+                    background: "#fff",
+                    border: `1px solid ${err ? STATUS.fail : "rgba(36,67,95,.35)"}`,
+                    borderRadius: 2,
+                  }}
+                />
+                {name === "CommandID" && (
+                  <button
+                    type="button"
+                    onClick={() => setField("CommandID", genUuid())}
+                    title="insert a fresh canonical UUID"
+                    style={{
+                      marginTop: 4,
+                      padding: "2px 8px",
+                      fontFamily: FONT.mono,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      letterSpacing: ".04em",
+                      color: ZONE.accent,
+                      background: "#fff",
+                      border: `1px solid ${ZONE.accent}`,
+                      borderRadius: 2,
+                      cursor: "pointer",
+                    }}
+                  >
+                    ⟳ generate UUID
+                  </button>
+                )}
+              </>
             ) : (
               value != null && (
                 <div style={{ fontSize: 11, fontWeight: 500, opacity: 0.75, marginTop: 2 }}>
@@ -230,7 +267,7 @@ function HandlersBody() {
 
 function RunBody() {
   const { all } = useRun();
-  const setSeed = useGameStore((s) => s.setSeed);
+  const activateRun = useGameStore((s) => s.activateRun);
   const seedId = useGameStore((s) => s.seedId);
   const statusById = new Map((all?.results ?? []).map((r) => [r.seedId, r.pass]));
 
@@ -246,7 +283,7 @@ function RunBody() {
           <button
             type="button"
             key={s.id}
-            onClick={() => setSeed(s.id)}
+            onClick={() => activateRun(s.id)}
             style={{
               textAlign: "left",
               background: "#fff",
@@ -346,8 +383,101 @@ function EnumLegend() {
   );
 }
 
+/**
+ * One collapsible workflow section in the stacked Inspector. Interacting anywhere
+ * inside (header click or focusing a control) makes it the active phase, so the
+ * board + validator console follow the section the player last touched.
+ */
+function Section({
+  step,
+  label,
+  active,
+  onActivate,
+  children,
+}: {
+  step: number;
+  label: string;
+  active: boolean;
+  onActivate: () => void;
+  children: React.ReactNode;
+}) {
+  const [collapsed, setCollapsed] = useState(false);
+  return (
+    <section
+      onFocusCapture={onActivate}
+      style={{
+        borderLeft: `4px solid ${active ? ZONE.accent : "transparent"}`,
+        background: active ? "rgba(192,125,31,.06)" : "transparent",
+        paddingLeft: 6,
+      }}
+    >
+      <button
+        type="button"
+        onClick={() => {
+          onActivate();
+          setCollapsed((c) => !c);
+        }}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          width: "100%",
+          textAlign: "left",
+          border: "none",
+          background: "transparent",
+          padding: "5px 2px",
+          cursor: "pointer",
+          userSelect: "none",
+          fontFamily: FONT.mono,
+        }}
+      >
+        <span
+          aria-hidden
+          style={{
+            fontSize: 11,
+            color: active ? ZONE.accent : "rgba(36,67,95,.6)",
+            width: 12,
+          }}
+        >
+          {collapsed ? "▸" : "▾"}
+        </span>
+        <span
+          style={{
+            width: 16,
+            height: 16,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: "50%",
+            fontSize: 10,
+            fontWeight: 800,
+            color: active ? "#fff" : ZONE.accent,
+            background: active ? ZONE.accent : "transparent",
+            border: `1.5px solid ${ZONE.accent}`,
+          }}
+        >
+          {step}
+        </span>
+        <span
+          style={{
+            fontSize: 11,
+            fontWeight: 800,
+            letterSpacing: ".06em",
+            color: active ? SURFACE.ink : "rgba(36,67,95,.7)",
+          }}
+        >
+          {label}
+        </span>
+      </button>
+      {!collapsed && <div style={{ padding: "2px 2px 10px" }}>{children}</div>}
+    </section>
+  );
+}
+
 export function Inspector() {
   const phase = useGameStore((s) => s.phase);
+  const setPhase = useGameStore((s) => s.setPhase);
+  const activateRun = useGameStore((s) => s.activateRun);
   return (
     <aside
       style={{
@@ -367,13 +497,30 @@ export function Inspector() {
           padding: 12,
           display: "flex",
           flexDirection: "column",
+          gap: 4,
           flex: 1,
           overflow: "auto",
         }}
       >
-        {phase === "compose" && <ComposeBody />}
-        {phase === "handlers" && <HandlersBody />}
-        {phase === "run" && <RunBody />}
+        <Section
+          step={1}
+          label="COMPOSE"
+          active={phase === "compose"}
+          onActivate={() => setPhase("compose")}
+        >
+          <ComposeBody />
+        </Section>
+        <Section
+          step={2}
+          label="HANDLERS"
+          active={phase === "handlers"}
+          onActivate={() => setPhase("handlers")}
+        >
+          <HandlersBody />
+        </Section>
+        <Section step={3} label="RUN" active={phase === "run"} onActivate={() => activateRun()}>
+          <RunBody />
+        </Section>
         <EnumLegend />
       </div>
     </aside>

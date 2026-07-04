@@ -7,13 +7,20 @@
 import type { CommandProcessingStateEnum } from "@normal-form/core";
 import {
   applyAction,
+  buildComposition,
   initialSession,
   type MachineAction,
   type PlayerAction,
   type Session,
+  validate,
 } from "@normal-form/core";
 import { sheet_1_1 } from "@normal-form/levels";
 import { create } from "zustand";
+
+/** RUN is unblocked when the arrow is placed and the composition validates clean. */
+function isReady(session: Session): boolean {
+  return session.placed && validate(sheet_1_1, buildComposition(sheet_1_1, session)).length === 0;
+}
 
 export type Phase = "compose" | "handlers" | "run";
 
@@ -35,6 +42,8 @@ export interface GameState {
   script: PlayerAction[];
 
   setPhase: (phase: Phase) => void;
+  /** Activate the RUN section and start playback (optionally on a given seed). */
+  activateRun: (seedId?: number) => void;
   setSeed: (seedId: number) => void;
   setTick: (tick: number) => void;
   play: () => void;
@@ -78,7 +87,20 @@ export const useGameStore = create<GameState>((set) => {
     script: [],
 
     // Switching phases resets tick and stops playback (handoff § Interactions).
-    setPhase: (phase) => set({ phase, tick: 0, playing: false }),
+    // Re-activating the current phase is a no-op so interacting twice within one
+    // section doesn't needlessly reset tick / stop playback.
+    setPhase: (phase) => set((s) => (s.phase === phase ? {} : { phase, tick: 0, playing: false })),
+    // Activate the RUN view and auto-start playback — but only when the composition
+    // validates clean (mirrors the SubBar's RUN gate). Running an unsolved
+    // composition would auto-play a misleading failure, so when not ready we just
+    // switch to the run view without playing.
+    activateRun: (seedId) =>
+      set((s) => ({
+        phase: "run",
+        seedId: clampSeed(seedId ?? s.seedId),
+        tick: 0,
+        playing: isReady(s.session),
+      })),
     // Switching seed restarts the run.
     setSeed: (seedId) => set({ seedId: clampSeed(seedId), tick: 0, playing: false }),
     setTick: (tick) => set({ tick: Math.max(0, tick) }),
