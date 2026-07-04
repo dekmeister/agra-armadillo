@@ -1,5 +1,22 @@
 # MVP — First Playable
 
+> **Post-review amendments (2026-07-04).** The MVP shipped and was reviewed
+> (`REVIEW_MVP.md` verdicts). This spec is kept as-built history; the following
+> supersede it going forward (see `PLAN_1_0.md` for the work plan):
+> 1. **Scoring/pars cut.** Certification is pass/fail; the metric pills, PAR
+>    row, and score-vs-par surfaces go away. Reference machines remain as the
+>    solvability proof only.
+> 2. **The gate ships pre-checked.** 1-1's "require RECEIVED first" toggle
+>    defaults ON (an inherited "sequential handler template"), so the seed-②
+>    lesson is guaranteed, not opt-in.
+> 3. **V10 becomes a readiness state, not a compose ERROR.** After the fields
+>    are clean the compose console reads clean; missing terminal handlers
+>    surface as an amber `HANDLERS NOT READY` badge, still blocking RUN.
+> 4. **Run phase gains a per-tick event log and a RUN ALL (all-seeds) check;**
+>    the static `RECEIVED → ACCEPTED` console line goes away.
+> 5. **Worlds are rescoped:** 1.0 = W0 + W1 (trimmed, renumbered) + epilogue
+>    (`03-levels.md`); W2/W3/W4 are post-1.0.
+
 **Target: sheet 1-1 "First Acknowledgement" (World 1 — Ask & Acknowledge),
 playable end-to-end in the browser.** Chosen because it exercises the *entire*
 loop — compose + validate + handlers + seeds — in one small level: the moment

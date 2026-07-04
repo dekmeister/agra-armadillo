@@ -16,6 +16,11 @@ invent**. Guard rail, restated: **no primitive without a citation.** A build-tim
 fidelity check greps the sources for every CERT/RQMT number, message name, field
 name, and enum literal in the game's catalog.
 
+Rows and lies below that reference W3 (type bench / versioning) or W4 (Message
+Set / Program Schema) describe **post-1.0** content — those worlds were cut from
+1.0 at the MVP review (`03-levels.md` "Post-1.0"). The decisions stand and are
+kept here so the content revives without re-research.
+
 ## 1. Primitive ↔ citation (every game object traced)
 
 | Game object | Real construct | Citation |
@@ -57,7 +62,7 @@ name, and enum literal in the game's catalog.
 | Envelope reduced to 4 player-visible fields (`SystemID`, `Timestamp`, `SchemaVersion`, `Mode`) + the pattern's ID field | `HeaderType` also has optional `ServiceID`, `MissionID`; every field kept is real and unrenamed | Low — optional fields omitted, shown in the codex |
 | `SecurityInformation` collapsed to a read-only marking chip | required first element of `MessageType`; its type lives in `UCI_SecurityMarkings_v2_5_0.xsd` (a separate schema file in the release, not vendored here) | Player never populates markings; chip states this |
 | Single requestee/commandee per pattern instance | -1 patterns explicitly go to "one or more consumers"; -2 patterns are 1:1 in the figures | Multi-consumer appears only for -1 patterns (W0 fan-out), never for -2 |
-| Tick-discrete time; 1 tick ≈ 1 bus delivery opportunity | spec has no clock at all — it prescribes *no transport* | The tick is game apparatus; "Ticks" par is a game economy |
+| Tick-discrete time; 1 tick ≈ 1 bus delivery opportunity | spec has no clock at all — it prescribes *no transport* | The tick is game apparatus (scoring/pars were cut at the MVP review; the tick survives only as the replay's time axis) |
 | Short display IDs (`CMD-7`) over real UUIDs | `ID_Type.UUID` is the identity; correlation (CommandID ↔ status) preserved exactly | Inspector shows the full UUID; the W0/W1 validator still checks real UUID syntax |
 | Handler language is tiny (per-enum rule: wait / terminal / retry n / abort / send X) | the spec puts **no** design implication on the requestee's state machine beyond the terminal rule (UNIS §4) | We constrain the *requester* side for puzzle tractability; flagged in-game |
 | MDT payloads abstracted to a small typed field list per level | real MDTs are deep (e.g. `TaskCommandMDT` → `CapabilityCommandBaseType` chains) | Content is the Forge's subject only where the CERT rules bite; elsewhere payload is a token |
@@ -86,11 +91,11 @@ name, and enum literal in the game's catalog.
    a fresh UUID — never an UPDATE, since terminal states ignore updates) is our
    reading of `CommandProcessingStateEnum`'s annotations, and the correct part is
    cited.
-6. **The versioning grader is mechanical.** W3 scores a change as
+6. **(post-1.0) The versioning grader is mechanical.** W3 scores a change as
    Structural/Optional × Direct/Indirect straight from Tables 5.2-1/5.2-2. The
    real process also involves OACWG governance, deprecation, and NOSCs (Table
    5.2-2 "Delete" row) — the game grades the classification only.
-7. **Palette cost (W4) is a game economy.** STD-001 lets a Message Set be "all or
+7. **(post-1.0) Palette cost (W4) is a game economy.** STD-001 lets a Message Set be "all or
    less" of the schema freely; the cost pressure models integration/maintenance
    burden, which the standard motivates ("use only the messages they need") but
    does not price.

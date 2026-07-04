@@ -63,16 +63,22 @@ Record a verdict for each below.
   plumbing (`RequestProcessingStateEnum`) is a seam, not an implementation.
 - Landscape ≥1024 only; no touch/accessibility pass beyond semantic HTML + focus.
 
-## Verdicts (fill during the review)
+## Verdicts (filled 2026-07-04)
 
 | # | Topic | Verdict | Doc/edit that follows |
 |---|-------|---------|-----------------------|
-| 1 | Seed curve | | |
-| 2 | Validator text | | |
-| 3 | Handler vocabulary | | |
-| 4 | 1024px readability | | |
-| 5 | V10-in-compose | | |
-| 6 | Gate discoverability | | |
+| 1 | Seed curve | **Keep ①②③.** Reorder-hang before duplicate-fault is the right ramp. But the lesson was opt-in (see #6) — order is right, delivery wasn't guaranteed. | `03-levels.md` design rule "the lesson is guaranteed" |
+| 2 | Validator text | **Keep, verbatim.** The CERT/RQMT quotes are the game's soul. Run-phase console was the weak surface (static line) → replaced by a per-tick event log. | `05-mvp.md` amendment 4; PLAN_1_0 WS-B |
+| 3 | Handler vocabulary | **Thin but sufficient** for the trimmed W1 (4+1 sheets). Generalize the one-off checkbox into a per-rule "only after X" qualifier so the footgun is part of the handler language and reusable in 1-2. | `03-levels.md`; PLAN_1_0 WS-B/WS-F |
+| 4 | 1024px readability | **Unverified** — needs the real-human playtest (code review suggests OK; arrow label collisions at dense ticks are the risk). | PLAN_1_0 WS-G playtest checklist |
+| 5 | V10-in-compose | **Wrong as shipped.** "1 ERROR · RUN BLOCKED" after fixing both fields steals the reward beat. V10 becomes an amber `HANDLERS NOT READY` readiness state (still blocks RUN), not a compose error. | `05-mvp.md` amendment 3; PLAN_1_0 WS-B |
+| 6 | Gate discoverability | **Invert it.** Don't make the player find the footgun — ship the sheet with the gate pre-checked (inherited "sequential handler template"), mirroring the broken compose fields. Seed ② failure becomes guaranteed. | `05-mvp.md` amendment 2; `03-levels.md` 1-1 entry |
+
+**Review outcome beyond the six questions:** scoring/pars cut entirely
+(pass/fail certification only); 1.0 rescoped to W0 + W1(trimmed) + epilogue with
+W2/W3/W4 moved post-1.0; new meta surfaces (welcome card, How to Play, UCI
+Reference codex — `docs/06-how-to-play.md`, `docs/07-uci-reference.md`); RUN ALL
++ event log for iteration speed. Work plan: `PLAN_1_0.md`.
 
 ## After the review
 

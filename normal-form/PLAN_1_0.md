@@ -1,0 +1,192 @@
+# PLAN 1.0 — from MVP to the complete game
+
+Successor to `PLAN_MVP.md` (S1–S6, done) and the MVP review (`REVIEW_MVP.md`,
+verdicts filled 2026-07-04). Target: **the full 1.0 — 7 sheets + 1 bonus +
+epilogue, one 30–40 minute playthrough** per the rescoped `docs/03-levels.md`.
+Scoring is cut; W2/W3/W4 are post-1.0.
+
+## How to use this plan
+
+Each **workstream (WS-A…WS-G)** is sized for one focused Claude Code session
+and is independently shippable. Run them in dependency order; parallel where
+marked. Every session starts by reading, in order:
+
+1. `CLAUDE.md` (repo conventions — fidelity gate, determinism, ESM/strict TS)
+2. `docs/01-game-design.md` + the doc(s) named in the workstream
+3. This file's entry for the workstream
+
+Non-negotiables for every session:
+
+- **Docs are source of truth.** If implementation forces a design change, edit
+  `docs/` in the same session, before the code.
+- **Fidelity gate stays green.** Any new message/field/enum/citation goes in
+  `packages/levels/catalog/uci.yaml` → `npm run gen:catalog` → `npm run
+  check:fidelity`. Never hand-edit `generated.ts`. The game may omit; it may
+  never rename or invent.
+- **Core stays pure.** No DOM/RNG/wall-clock in `packages/core`.
+- **Exit checks:** `npm test`, `npm run check:types`, `npm run
+  check:types:game`, `npm run lint`, `npm run check:fidelity` — all green.
+- **No git add/commit/push** — the user reviews and commits.
+- A sheet ships only with a passing test-only reference machine + golden test.
+
+Dependency graph:
+
+```
+WS-A (in flight) ──► WS-B ──► WS-C ──┬──► WS-E ──┐
+                                     ├──► WS-F ──┼──► WS-G
+                                     └──► WS-D ──┘   (playtest + release)
+```
+
+(WS-D/E/F can run in parallel once WS-C lands; WS-E and WS-F only share the
+sheet-unlock ordering data.)
+
+---
+
+## WS-A — UI mechanics round *(IN FLIGHT in a separate session — do not start)*
+
+Already underway elsewhere: stack the three phases vertically (kill the header
+tabs), a generate button for `CommandID` UUIDs, full arrow-motion sequencing on
+RUN. Later workstreams touching `packages/game` must land **after** this to
+avoid conflicts, and should re-read the changed layout before editing.
+
+## WS-B — Make 1-1 teach reliably; remove scoring
+
+*The review-verdict fixes (`REVIEW_MVP.md`) + amendments 1–4 in `docs/05-mvp.md`.
+All in `packages/game` + small `core`/`levels` touches. Depends on WS-A.*
+
+- **Gate pre-checked.** 1-1's session starts with `gateAccepted: true`, framed
+  in the UI as an inherited "sequential handler template" — seed ② failure is
+  guaranteed. Consider generalizing the checkbox into a per-rule "only after X"
+  qualifier (machine schema + interpreter already close); if deferred to WS-F,
+  say so in the code.
+- **V10 → readiness state.** Compose console reads clean once fields are fixed;
+  missing terminal handlers render as an amber `HANDLERS NOT READY` badge (still
+  blocks RUN). Split the finding channel accordingly.
+- **Run event log.** Replace the static `RECEIVED → ACCEPTED` console line with
+  a per-tick log: delivery, machine reaction (incl. "gated, waiting for
+  RECEIVED"), world-state changes. This is what makes the seed-② hang legible.
+- **RUN ALL.** One button runs all seeds headless (engine is pure — `useRun`
+  already computes this), lights the seed strip ✔/✖; click a seed to watch it.
+- **Scoring removal.** Delete metric pills, PAR row, score-vs-par in the
+  CERTIFIED overlay and machine-size par text; drop `pars` from sheet JSON +
+  level types; remove `core/src/score.ts` and its exports (knip will confirm).
+  CERTIFIED overlay shows the sheet's **recap line** (new sheet field, see
+  `03-levels.md`) instead of metrics.
+- Update project `CLAUDE.md` (it documents score.ts and pars) and
+  `REVIEW_MVP.md` known-debts where now stale.
+
+**Done when:** the definition-of-done script in `REVIEW_MVP.md` plays with the
+new flow — a naive player *must* fail seed ② and ③ before certifying — and no
+scoring surface remains.
+
+## WS-C — Level infrastructure (registry, flow, persistence)
+
+*The gating refactor for all content work. `packages/levels` + `game`. Depends
+on WS-B (shared files).*
+
+- **De-hardcode `sheet_1_1`.** Every game component currently imports it
+  directly (`Board`/`Inspector`/`SubBar`/`Palette`/`Header`/`TitleBlock`/
+  `ValidatorConsole`/`store`). Introduce a sheet registry in `@normal-form/levels`
+  (id-ordered list + loader) and a `currentSheet` in the store; components read
+  from the store. Also un-hardcode seed-count assumptions (`clampSeed`,
+  `CIRCLED` arrays) and the inspector's "TaskCommand" header.
+- **Progression flow.** Sheet-select screen (Blueprint "drawing index" styling
+  fits) + CERTIFIED → next-sheet unlock; sheets list locked/certified state.
+- **Persistence.** localStorage: per-sheet action `script` (already recorded
+  per edit) + certified flags; restore on load; JSON export/import per
+  `docs/04-tech.md`. The welcome card (WS-D) keys off "no save exists".
+
+**Done when:** two registered sheets (1-1 + a stub) can be played in sequence
+with unlock + reload-restore, all goldens green.
+
+## WS-D — Meta screens: welcome card, How to Play, UCI Reference
+
+*Docs `06-how-to-play.md` and `07-uci-reference.md` are the specs — copy lives
+there; port, don't rewrite. Depends on WS-C (header/nav + save detection);
+parallel with WS-E/F.*
+
+- **Welcome card** (first visit, no save) and **HOW TO PLAY** screen — copy
+  verbatim from `06-how-to-play.md`.
+- **UCI REFERENCE** codex per `07-uci-reference.md`: catalog-bound layer
+  rendered from `generated.ts`; curated layer authored in a new `reference`
+  section of `catalog/uci.yaml` so `check-fidelity.ts` polices its names,
+  numbers, and quotes (extend the gate to walk that section).
+- Header gains `▤ UCI REFERENCE` + `? HOW TO PLAY`; inspector enum popovers and
+  palette chips (incl. locked chips) deep-link into the reference.
+
+**Done when:** a player can, without leaving the game, read what UCI is, what
+each pattern is for, and every enum/message the game uses — with citations —
+and the fidelity gate fails on an invented name in the reference YAML.
+
+## WS-E — World 0 (sheets 0-1, 0-2, 0-3)
+
+*New engine capabilities + three sheets, per `docs/03-levels.md` W0. `core` +
+`levels` + `game`. Depends on WS-C.*
+
+- **Engine:** `drop` seed op (schema slot exists in `seeds.ts` vocabulary,
+  unimplemented); multi-consumer fan-out for -1 patterns (0-2 has three
+  consumer lifelines — board must render 2–4 lifelines from sheet data);
+  Status-1/Data-1 pattern semantics (terminal-on-send, periodic republish as a
+  compose-time choice); world-state goals "console shows status by tick N" /
+  "datum held continuously t6–t12".
+- **Catalog:** concrete Status-1/Data-1 message bindings + citations (pick real
+  XSD global elements; verify with the fidelity gate before building on them).
+- **The "wrong palette" finding (0-3):** the one novel UI affordance in 1.0 —
+  filing a finding as the pass condition. Prototype early in the session;
+  design note into `03-levels.md` if the interaction changes.
+- Three reference machines + goldens; per-sheet fidelity notes + recap lines.
+
+**Done when:** 0-1→0-3 playable in ~11 min total, each arriving broken per the
+"lesson guaranteed" rule, goldens + fidelity green.
+
+## WS-F — World 1 remainder (1-2, 1-3, 1-4, bonus 1-5)
+
+*Per rescoped `docs/03-levels.md` W1 (note renumbering: old 1-4/1-5/1-6 → new
+1-3/1-4/1-5; old 1-3 folded into 1-1). `core` + `levels`. Depends on WS-C;
+parallel with WS-E.*
+
+- **1-2 Skipping the Pleasantries:** needs nothing new beyond requestee configs
+  that skip RECEIVED / go straight to REJECTED — and the per-rule "only after
+  X" qualifier if WS-B deferred it (it's this sheet's footgun).
+- **1-3 Rejection Letter:** reject-configured requestee (`CannotComplyType`
+  reason from the catalog), retry-as-NEW enforcement (fresh UUID; UPDATE to a
+  dead CommandID ignored → timeout), retry budget as sheet data (fidelity lie
+  #5 surfaced in that sheet's notes).
+- **1-4 Request Is Not Command:** DataRequest-2/ActionRequest-2 patterns +
+  `RequestStateEnum`/`RequestProcessingStateEnum` plumbing (declared seam in
+  the machine/interpreter); two-job sheets (two goals, two placed primitives);
+  pattern-choice consequences per the sheet spec.
+- **1-5 Cancel Culture (bonus, skippable in the flow):** CANCEL as player
+  action mid-run; the race seed with the "whichever outcome" goal variant.
+- Reference machines + goldens for all four; recap lines; fidelity notes.
+
+**Done when:** full W1 playable; a wrong pattern choice on 1-4 visibly
+dead-ends its job's world-state; goldens + fidelity green.
+
+## WS-G — Epilogue, polish, playtest (release gate)
+
+*Depends on everything above.*
+
+- **Epilogue debrief** screen: the collected recap lines as a checklist + the
+  A-GRA bridge table (render from the same data the UCI Reference uses), with
+  the "now play the sentences" pointer to the sibling games.
+- **Polish sweep:** 1024px readability check on every sheet (arrow-label
+  collisions at dense ticks were flagged unverified in the review); focus/
+  keyboard pass; empty-state and error-state copy; consistent stamps.
+- **The playtest:** a real human, no UNIS knowledge, one sitting. Instrument
+  nothing — sit with them. **Release bar:** completes W0+W1 in ≤40 min and can
+  explain, in the standard's terms, (a) why the duplicate ACCEPTED had to be
+  ignored and (b) why a request is not a command. If it overruns, cut the
+  bonus sheet, not the lessons.
+- Record playtest outcomes in a `REVIEW_1_0.md` (same pattern as
+  `REVIEW_MVP.md`); doc edits before any post-1.0 code.
+
+**Done when:** the playtest passes the bar and `REVIEW_1_0.md` is filled.
+
+---
+
+## Explicitly out of 1.0
+
+W2 Records, W3 Forge, W4 Program Schema (designs preserved in `03-levels.md`
+"Post-1.0"); scoring/pars/histograms; player-authored seeds; touch/mobile;
+audio; backend anything.

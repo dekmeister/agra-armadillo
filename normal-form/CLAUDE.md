@@ -12,15 +12,17 @@ Service Bus).
 
 **The design docs are the source of truth, updated before code** (`REVIEW_MVP.md`).
 Read them before making design-affecting changes:
-- `docs/01-game-design.md` — the one-page game design (core loop, worlds, scoring)
+- `docs/01-game-design.md` — the one-page game design (core loop, worlds; no scoring — pass/fail)
 - `docs/02-fidelity.md` — **the honesty contract** (see "Fidelity" below)
+- `docs/03-levels.md` — the 1.0 sheet lineup (W0 + W1 + epilogue; W2–W4 are post-1.0)
 - `docs/04-tech.md` — architecture and stack rationale
-- `docs/05-mvp.md` — the MVP sheet 1-1 spec (validator battery V1–V10, seeds, build order)
-- `PLAN_MVP.md` / `REVIEW_MVP.md` — build stages S1–S6 and the play-test checkpoint
+- `docs/05-mvp.md` — the MVP sheet 1-1 spec, as built + post-review amendments
+- `docs/06-how-to-play.md` / `docs/07-uci-reference.md` — meta-screen specs and player-facing copy
+- `PLAN_1_0.md` — the workstream plan (WS-A…WS-G, one per session) / `REVIEW_MVP.md` — review verdicts
 
 Current state: the MVP (sheet 1-1 "First Acknowledgement") is complete and playable
-end-to-end. Everything past World 1 sheet 1-1 is deferred (see `docs/05-mvp.md`
-"Explicitly deferred").
+end-to-end; the MVP review verdicts are in. Work proceeds by `PLAN_1_0.md`
+workstreams (WS-A UI mechanics is in flight in a separate session).
 
 ## Commands
 
