@@ -64,16 +64,13 @@ export function ValidatorConsole() {
   const phase = useGameStore((s) => s.phase);
   const tick = useGameStore((s) => s.tick);
   const seedId = useGameStore((s) => s.seedId);
-  const machine = useGameStore((s) => s.machine);
   const findings = useFindings();
-  const { all } = useRun();
+  const { all, machine } = useRun();
 
   const errorCount = findings.length;
 
   let badge: React.ReactNode = null;
-  if (phase === "compose") {
-    badge = <Badge text={`${errorCount} ERRORS · RUN BLOCKED`} bg={STATUS.fail} />;
-  } else if (phase === "handlers") {
+  if (phase === "compose" || phase === "handlers") {
     badge =
       errorCount === 0 ? (
         <Badge text="0 ERRORS · READY" bg={STATUS.pass} />
@@ -126,8 +123,10 @@ export function ValidatorConsole() {
             {findings.map((f) => (
               <FindingLine key={f.id} f={f} />
             ))}
-            <div style={{ color: "rgba(36,67,95,.55)" }}>
-              ▸ fix the flagged fields in the inspector to unblock RUN.
+            <div style={{ color: errorCount === 0 ? STATUS.pass : "rgba(36,67,95,.55)" }}>
+              {errorCount === 0
+                ? "✔ composition validates clean · wire handlers, then RUN."
+                : "▸ fix the flagged fields in the inspector to unblock RUN."}
             </div>
           </>
         )}
@@ -135,9 +134,8 @@ export function ValidatorConsole() {
         {phase === "handlers" && (
           <>
             <div style={{ color: errorCount === 0 ? STATUS.pass : STATUS.fail }}>
-              {errorCount === 0 ? "✔" : "✖"} {errorCount} blocking errors ·{" "}
-              {machine ? machine.rules.length : 0} handler rules wired · machine size{" "}
-              {machine ? machine.rules.length : 0}/{sheet_1_1.pars.machineSize}
+              {errorCount === 0 ? "✔" : "✖"} {errorCount} blocking errors · {machine.rules.length}{" "}
+              handler rules wired · machine size {machine.rules.length}/{sheet_1_1.pars.machineSize}
             </div>
             <div style={{ color: "rgba(36,67,95,.55)" }}>
               ▸ wire a rule for every reachable terminal state to reach READY.

@@ -2,6 +2,7 @@
 // envelope fields (COMPOSE), handler rules (HANDLERS), seed schedule (RUN) — with
 // the STATE ENUMS legend pinned to the bottom. All values are level data or
 // engine-derived; nothing is editable in S4 (editing is S5).
+import type { MachineAction } from "@normal-form/core";
 import { sheet_1_1 } from "@normal-form/levels";
 import { useGameStore } from "./store.ts";
 import { ENUM_COLOR, FONT, LAYOUT, STATUS, SURFACE, ZONE } from "./tokens.ts";
@@ -54,25 +55,25 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
+const ORDER = ["SystemID", "Timestamp", "SchemaVersion", "Mode", "CommandID"] as const;
+
 function ComposeBody() {
   const findings = useFindings();
+  const fields = useGameStore((s) => s.session.fields);
+  const setField = useGameStore((s) => s.setField);
+  const editable = new Set(sheet_1_1.compose.editable);
   const errorFields = new Set(findings.map((f) => f.field).filter(Boolean));
-  const fields = sheet_1_1.compose.initialFields;
-  const rows: { name: string; value: string | null }[] = [
-    "SystemID",
-    "Timestamp",
-    "SchemaVersion",
-    "Mode",
-    "CommandID",
-  ].map((name) => ({ name, value: fields[name] ?? null }));
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <SectionLabel>ENVELOPE FIELDS</SectionLabel>
-      {rows.map((r) => {
-        const err = errorFields.has(r.name);
+      {ORDER.map((name) => {
+        const value = fields[name] ?? null;
+        const err = errorFields.has(name);
+        const canEdit = editable.has(name);
         return (
           <div
-            key={r.name}
+            key={name}
             style={{
               background: err ? STATUS.errorBg : "#fff",
               border: err ? `1.5px solid ${STATUS.fail}` : "1px solid rgba(36,67,95,.25)",
@@ -84,23 +85,40 @@ function ComposeBody() {
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-              <span>{r.name}</span>
-              <span style={{ fontWeight: 800 }}>
-                {err ? (r.name === "SystemID" ? "✖ ⟨required⟩" : "✖ not UUID") : "✓"}
+              <span>
+                {name}
+                {canEdit && (
+                  <span style={{ color: ZONE.accent, marginLeft: 4, fontSize: 10 }}>✎</span>
+                )}
               </span>
+              <span style={{ fontWeight: 800 }}>{err ? "✖" : "✓"}</span>
             </div>
-            {r.value != null && (
-              <div
+            {canEdit ? (
+              <input
+                aria-label={name}
+                value={value ?? ""}
+                placeholder={name === "SystemID" ? "⟨required⟩" : "canonical UUID"}
+                onChange={(e) => setField(name, e.target.value === "" ? null : e.target.value)}
                 style={{
-                  fontSize: r.name === "CommandID" ? 10 : 11,
-                  fontWeight: 500,
-                  opacity: 0.75,
-                  wordBreak: "break-all",
-                  marginTop: 2,
+                  width: "100%",
+                  boxSizing: "border-box",
+                  marginTop: 4,
+                  padding: "3px 5px",
+                  fontFamily: FONT.mono,
+                  fontSize: name === "CommandID" ? 10 : 11,
+                  fontWeight: 600,
+                  color: err ? STATUS.fail : SURFACE.ink,
+                  background: "#fff",
+                  border: `1px solid ${err ? STATUS.fail : "rgba(36,67,95,.35)"}`,
+                  borderRadius: 2,
                 }}
-              >
-                {r.value}
-              </div>
+              />
+            ) : (
+              value != null && (
+                <div style={{ fontSize: 11, fontWeight: 500, opacity: 0.75, marginTop: 2 }}>
+                  {value}
+                </div>
+              )
             )}
           </div>
         );
@@ -109,34 +127,87 @@ function ComposeBody() {
   );
 }
 
+const HANDLER_ENUMS = ["RECEIVED", "ACCEPTED", "REJECTED"] as const;
+const ACTIONS = ["wait", "terminal", "retry"] as const;
+
 function HandlersBody() {
-  const machine = useGameStore((s) => s.machine);
+  const handlers = useGameStore((s) => s.session.handlers);
+  const gate = useGameStore((s) => s.session.gateAccepted);
+  const setHandler = useGameStore((s) => s.setHandler);
+  const setGate = useGameStore((s) => s.setGate);
+  const size = HANDLER_ENUMS.filter((e) => handlers[e] !== undefined).length;
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <SectionLabel>HANDLER RULES · on TaskCommandStatus</SectionLabel>
-      {machine ? (
-        machine.rules.map((r) => (
-          <div
-            key={`${r.from}-${r.on}`}
-            style={{
-              background: "#fff",
-              borderLeft: `4px solid ${ENUM_COLOR[r.on]}`,
-              border: "1px solid rgba(36,67,95,.2)",
-              padding: "5px 8px",
-              fontSize: 12,
-              fontWeight: 700,
-            }}
-          >
-            <span style={{ color: ENUM_COLOR[r.on] }}>{r.on}</span> → {r.action}
-            {r.action === "terminal" ? " ✔" : ""}
-            {r.action === "retry" && r.budget != null ? ` (max ${r.budget})` : ""}
+      {HANDLER_ENUMS.map((on) => (
+        <div
+          key={on}
+          style={{
+            background: "#fff",
+            borderLeft: `4px solid ${ENUM_COLOR[on]}`,
+            border: "1px solid rgba(36,67,95,.2)",
+            padding: "5px 8px",
+            fontSize: 12,
+            fontWeight: 700,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ color: ENUM_COLOR[on], flex: 1 }}>{on}</span>
+            <span>→</span>
+            <select
+              aria-label={`${on} action`}
+              value={handlers[on] ?? ""}
+              onChange={(e) =>
+                setHandler(on, e.target.value === "" ? null : (e.target.value as MachineAction))
+              }
+              style={{
+                fontFamily: FONT.mono,
+                fontSize: 12,
+                fontWeight: 700,
+                padding: "2px 4px",
+                border: "1px solid rgba(36,67,95,.35)",
+                borderRadius: 2,
+                background: "#fff",
+                color: SURFACE.ink,
+              }}
+            >
+              <option value="">unset</option>
+              {ACTIONS.map((a) => (
+                <option key={a} value={a}>
+                  {a}
+                  {a === "terminal" ? " ✔" : ""}
+                  {a === "retry" ? " (1)" : ""}
+                </option>
+              ))}
+            </select>
           </div>
-        ))
-      ) : (
-        <div style={{ fontSize: 12, color: "rgba(36,67,95,.6)" }}>
-          No handler machine wired (editing lands in S5). Open with ?ref=1 to load the reference.
+          {on === "ACCEPTED" && (
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                marginTop: 4,
+                fontSize: 10,
+                fontWeight: 600,
+                color: "rgba(36,67,95,.7)",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={gate}
+                onChange={(e) => setGate(e.target.checked)}
+                aria-label="require RECEIVED first"
+              />
+              require RECEIVED first
+            </label>
+          )}
         </div>
-      )}
+      ))}
+      <div style={{ fontSize: 10, fontWeight: 600, color: "rgba(36,67,95,.6)", paddingLeft: 2 }}>
+        CANCELED → (legend only)
+      </div>
       <div
         style={{
           border: `1px solid ${SURFACE.ink}`,
@@ -147,8 +218,8 @@ function HandlersBody() {
           marginTop: 4,
         }}
       >
-        Machine size <b>{machine ? machine.rules.length : 0}</b> —{" "}
-        {machine && machine.rules.length === sheet_1_1.pars.machineSize
+        Machine size <b>{size}</b> —{" "}
+        {size === sheet_1_1.pars.machineSize
           ? "matches par."
           : `par is ${sheet_1_1.pars.machineSize}.`}
       </div>

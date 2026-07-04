@@ -2,6 +2,7 @@
 // primitives. Command-2 is the active chip this sheet; the other five are locked.
 // Lock/unlock is read from the sheet's palette data.
 import { sheet_1_1 } from "@normal-form/levels";
+import { useGameStore } from "./store.ts";
 import { FONT, LAYOUT, RADIUS, SHADOW, SURFACE, ZONE } from "./tokens.ts";
 
 const CIRCLED = ["①", "②", "③", "④", "⑤", "⑥"] as const;
@@ -51,12 +52,19 @@ function LockedChip({ pattern, color }: { pattern: string; color: string }) {
 }
 
 function ActiveChip({ pattern }: { pattern: string }) {
+  const placed = useGameStore((s) => s.session.placed);
+  const place = useGameStore((s) => s.place);
   return (
-    <div
+    <button
+      type="button"
+      onClick={() => !placed && place()}
+      title={placed ? "placed on the board" : "click to place its arrow pair"}
       style={{
         display: "flex",
         alignItems: "center",
         gap: 8,
+        width: "100%",
+        textAlign: "left",
         background: ZONE.accentFill,
         border: `2px solid ${ZONE.accent}`,
         borderLeft: `5px solid ${ZONE.accent}`,
@@ -64,14 +72,15 @@ function ActiveChip({ pattern }: { pattern: string }) {
         padding: "7px 8px",
         borderRadius: RADIUS.chip,
         fontFamily: FONT.mono,
+        cursor: placed ? "default" : "pointer",
       }}
     >
       <span style={{ width: 7, height: 7, borderRadius: "50%", background: ZONE.accent }} />
       <span style={{ fontSize: 13, fontWeight: 800, flex: 1 }}>{pattern}</span>
       <span style={{ fontSize: 8, fontWeight: 700, color: ZONE.accent, letterSpacing: ".08em" }}>
-        READY
+        {placed ? "PLACED ✓" : "PLACE ▸"}
       </span>
-    </div>
+    </button>
   );
 }
 
@@ -141,7 +150,7 @@ export function Palette() {
           padding: "8px 12px",
         }}
       >
-        Only Command-2 is unlocked this sheet. Drag it onto a lifeline to place its arrow pair.
+        Only Command-2 is unlocked this sheet. Click it to place its arrow pair on the board.
       </p>
     </aside>
   );

@@ -3,11 +3,13 @@
 // colored by state enum. In RUN the arrows reveal as the tick advances, driven by
 // the engine's frames; in COMPOSE/HANDLERS the board is a static shell of the
 // sheet's initial state (editing is S5).
+import type { Machine } from "@normal-form/core";
 import { useLayoutEffect, useRef, useState } from "react";
 import type { ArrowFrame } from "./frames.ts";
 import type { Phase } from "./store.ts";
 import { useGameStore } from "./store.ts";
 import { ENUM_COLOR, FONT, LAYOUT, SURFACE, ZONE } from "./tokens.ts";
+import { useFindings } from "./useFindings.ts";
 import { useRun } from "./useRun.ts";
 
 function useSize() {
@@ -36,8 +38,9 @@ export function Board() {
   const phase = useGameStore((s) => s.phase);
   const tick = useGameStore((s) => s.tick);
   const seedId = useGameStore((s) => s.seedId);
-  const machine = useGameStore((s) => s.machine);
-  const { board } = useRun();
+  const placed = useGameStore((s) => s.session.placed);
+  const { board, machine } = useRun();
+  const errorCount = useFindings().length;
 
   const xLeft = w * (LAYOUT.lifelineLeftPct / 100);
   const xRight = w * (LAYOUT.lifelineRightPct / 100);
@@ -132,13 +135,26 @@ export function Board() {
           />
 
           {/* arrows */}
-          {phase === "run"
-            ? board?.arrows
-                .filter((a) => a.tick <= tick)
-                .map((a) => (
-                  <Arrow key={a.key} frame={a} xLeft={xLeft} xRight={xRight} y={yOf(a.tick)} />
-                ))
-            : renderShellArrows(phase, xLeft, xRight, yOf)}
+          {phase === "run" ? (
+            board?.arrows
+              .filter((a) => a.tick <= tick)
+              .map((a) => (
+                <Arrow key={a.key} frame={a} xLeft={xLeft} xRight={xRight} y={yOf(a.tick)} />
+              ))
+          ) : placed ? (
+            renderShellArrows(phase, xLeft, xRight, yOf)
+          ) : (
+            <text
+              x={(xLeft + xRight) / 2}
+              y={yOf(2)}
+              fontFamily={FONT.hand}
+              fontSize={15}
+              fill="rgba(36,67,95,.5)"
+              textAnchor="middle"
+            >
+              ◂ click Command-2 in the palette to place its arrow pair
+            </text>
+          )}
 
           {/* activity mark on SystemB lifeline */}
           {phase === "run" && board?.activityTick != null && tick >= board.activityTick && (
@@ -158,7 +174,9 @@ export function Board() {
           )}
 
           {/* stamps */}
-          {phase === "compose" && <RejectStamp w={w} />}
+          {phase === "compose" && placed && errorCount > 0 && (
+            <RejectStamp w={w} count={errorCount} />
+          )}
           {phase === "run" &&
             board?.goalTick != null &&
             tick >= board.goalTick &&
@@ -166,11 +184,18 @@ export function Board() {
           {phase === "run" && board?.fault != null && tick >= board.fault.tick && (
             <FaultStamp w={w} y={yOf(board.fault.tick)} />
           )}
+          {/* seed-② hang: the run finished with no proof and no fault */}
+          {phase === "run" &&
+            board != null &&
+            board.goalTick === null &&
+            board.fault === null &&
+            tick >= board.endTick &&
+            board.endTick > 0 && <NoGoalStamp w={w} h={h} />}
         </svg>
       )}
 
-      {/* handler widget (HTML overlay) */}
-      {phase === "handlers" && <HandlerWidget xLeft={xLeft} machine={machine} />}
+      {/* handler widget (HTML overlay) — read-only mirror of the built machine */}
+      {phase === "handlers" && placed && <HandlerWidget xLeft={xLeft} machine={machine} />}
     </div>
   );
 }
@@ -347,7 +372,7 @@ function renderShellArrows(
   );
 }
 
-function RejectStamp({ w }: { w: number }) {
+function RejectStamp({ w, count }: { w: number; count: number }) {
   return (
     <g transform={`translate(${w - 210}, 92) rotate(-9)`}>
       <rect width={188} height={34} fill="rgba(178,58,46,.08)" stroke="#b23a2e" strokeWidth={3} />
@@ -361,7 +386,7 @@ function RejectStamp({ w }: { w: number }) {
         textAnchor="middle"
         letterSpacing="0.05em"
       >
-        ✖ REJECTED · 2 ERR
+        ✖ REJECTED · {count} ERR
       </text>
     </g>
   );
@@ -405,13 +430,26 @@ function FaultStamp({ w, y }: { w: number; y: number }) {
   );
 }
 
-function HandlerWidget({
-  xLeft,
-  machine,
-}: {
-  xLeft: number;
-  machine: ReturnType<typeof useGameStore.getState>["machine"];
-}) {
+function NoGoalStamp({ w, h }: { w: number; h: number }) {
+  return (
+    <g transform={`translate(${w / 2 - 150}, ${h - 96}) rotate(-6)`}>
+      <rect width={300} height={40} fill="rgba(192,57,43,.08)" stroke="#c0392b" strokeWidth={3} />
+      <text
+        x={150}
+        y={26}
+        fontFamily={FONT.mono}
+        fontSize={15}
+        fontWeight={800}
+        fill="#c0392b"
+        textAnchor="middle"
+      >
+        ✖ NO PROOF · seed fails
+      </text>
+    </g>
+  );
+}
+
+function HandlerWidget({ xLeft, machine }: { xLeft: number; machine: Machine }) {
   const width = 300;
   return (
     <div
@@ -435,20 +473,20 @@ function HandlerWidget({
         <span>Δ HANDLER</span>
         <span style={{ color: ZONE.accent }}>on TaskCommandStatus</span>
       </div>
-      {machine ? (
+      {machine.rules.length > 0 ? (
         <>
           {machine.rules.map((r) => (
             <div key={`${r.from}-${r.on}`} style={{ color: ENUM_COLOR[r.on] }}>
               {r.on} → {r.action === "terminal" ? "terminal ✔" : r.action}
               {r.action === "retry" && r.budget != null ? ` (max ${r.budget})` : ""}
+              {r.target ? ` ⇒ ${r.target}` : ""}
             </div>
           ))}
           <div style={{ color: ENUM_COLOR.CANCELED, opacity: 0.6 }}>CANCELED → (legend only)</div>
         </>
       ) : (
         <div style={{ fontFamily: FONT.hand, fontWeight: 400, color: "rgba(36,67,95,.6)" }}>
-          No handlers wired yet — wiring is Phase 2 editing (S5). Open with ?ref=1 to preview the
-          reference machine.
+          No rules wired yet — pick an action per enum in the inspector.
         </div>
       )}
     </div>

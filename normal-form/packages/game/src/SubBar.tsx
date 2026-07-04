@@ -64,16 +64,16 @@ function MetricPill({
 export function SubBar() {
   const tick = useGameStore((s) => s.tick);
   const playing = useGameStore((s) => s.playing);
-  const machine = useGameStore((s) => s.machine);
   const play = useGameStore((s) => s.play);
   const pause = useGameStore((s) => s.pause);
   const reset = useGameStore((s) => s.reset);
   const setTick = useGameStore((s) => s.setTick);
-  const { score, endTick } = useRun();
+  const { score, endTick, ready } = useRun();
 
   const pars = sheet_1_1.pars;
   const dash = "—";
-  const canRun = machine !== null && endTick > 0;
+  // RUN is unblocked only when the composition validates clean (S3 gate).
+  const canRun = ready && endTick > 0;
 
   const onPlay = () => {
     if (playing) {

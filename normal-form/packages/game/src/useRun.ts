@@ -1,14 +1,17 @@
 // Derived engine state for the run view. Pure and cheap — recomputed with useMemo
-// keyed on the wired machine + selected seed. When no machine is wired (S4 without
-// `?ref=1`), everything degrades to an empty/disabled run.
+// keyed on the session + selected seed. The wired machine is built from the
+// player's session; `ready` reflects the S3 validator gate (placed + clean).
 import {
   type AllSeedsResult,
+  buildComposition,
+  buildMachine,
   evaluateSheet,
   type Machine,
   type RunResult,
   runAllSeeds,
   runSeed,
   type Score,
+  validate,
 } from "@normal-form/core";
 import { sheet_1_1 } from "@normal-form/levels";
 import { useMemo } from "react";
@@ -16,33 +19,26 @@ import { type BoardModel, runFrames } from "./frames.ts";
 import { useGameStore } from "./store.ts";
 
 export interface DerivedRun {
-  readonly machine: Machine | null;
-  /** the selected seed's run, or null when no machine is wired */
+  readonly machine: Machine;
   readonly result: RunResult | null;
   readonly board: BoardModel | null;
-  /** last tick of the selected run (playback bound), 0 when no machine */
+  /** last tick of the selected run (playback bound) */
   readonly endTick: number;
   readonly all: AllSeedsResult | null;
   readonly score: Score | null;
   readonly allPass: boolean;
+  /** RUN is unblocked: the arrow is placed and the composition validates clean */
+  readonly ready: boolean;
 }
 
 export function useRun(): DerivedRun {
-  const machine = useGameStore((s) => s.machine);
+  const session = useGameStore((s) => s.session);
   const seedId = useGameStore((s) => s.seedId);
 
   return useMemo<DerivedRun>(() => {
-    if (!machine) {
-      return {
-        machine: null,
-        result: null,
-        board: null,
-        endTick: 0,
-        all: null,
-        score: null,
-        allPass: false,
-      };
-    }
+    const machine = buildMachine(session);
+    const ready =
+      session.placed && validate(sheet_1_1, buildComposition(sheet_1_1, session)).length === 0;
     const seed = sheet_1_1.seeds.find((s) => s.id === seedId);
     if (!seed) {
       return {
@@ -53,12 +49,13 @@ export function useRun(): DerivedRun {
         all: null,
         score: null,
         allPass: false,
+        ready,
       };
     }
     const result = runSeed(sheet_1_1, machine, seed);
     const board = runFrames(result);
     const all = runAllSeeds(sheet_1_1, machine);
     const { score, allPass } = evaluateSheet(sheet_1_1, machine);
-    return { machine, result, board, endTick: board.endTick, all, score, allPass };
-  }, [machine, seedId]);
+    return { machine, result, board, endTick: board.endTick, all, score, allPass, ready };
+  }, [session, seedId]);
 }

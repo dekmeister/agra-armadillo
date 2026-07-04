@@ -11,5 +11,6 @@ export * from "./messages/index.ts";
 export * from "./requestee/index.ts";
 export * from "./score.ts";
 export * from "./seeds.ts";
+export * from "./session/index.ts";
 export * from "./types.ts";
 export * from "./validator/index.ts";
