@@ -42,7 +42,10 @@ export function Board() {
   const seedId = useGameStore((s) => s.seedId);
   const placed = useGameStore((s) => s.session.placed);
   const { board, machine, allPass } = useRun();
-  const errorCount = useFindings().length;
+  // Compose reject stamp counts only the field findings (V1–V9); the terminal-
+  // handler readiness gate (V10, code "READY") is a handlers-phase state, not a
+  // compose error, so it must not stamp the board (WS-B — matches the console).
+  const errorCount = useFindings().filter((f) => f.code !== "READY").length;
 
   const xLeft = w * (LAYOUT.lifelineLeftPct / 100);
   const xRight = w * (LAYOUT.lifelineRightPct / 100);

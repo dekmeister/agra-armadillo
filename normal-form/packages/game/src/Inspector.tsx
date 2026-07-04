@@ -2,7 +2,7 @@
 // envelope fields (COMPOSE), handler rules (HANDLERS), seed schedule (RUN) — with
 // the STATE ENUMS legend pinned to the bottom. All values are level data or
 // engine-derived; nothing is editable in S4 (editing is S5).
-import type { MachineAction } from "@normal-form/core";
+import { isTerminalState, type MachineAction } from "@normal-form/core";
 import { sheet_1_1 } from "@normal-form/levels";
 import { useState } from "react";
 import { useGameStore } from "./store.ts";
@@ -174,86 +174,105 @@ function HandlersBody() {
   const setHandler = useGameStore((s) => s.setHandler);
   const setGate = useGameStore((s) => s.setGate);
   const size = HANDLER_ENUMS.filter((e) => handlers[e] !== undefined).length;
+  // The readiness gate (V10) requires a handler only for every reachable terminal
+  // state — the terminal states this sheet's requestee actually reports (ACCEPTED
+  // here). Those rows are flagged like an invalid envelope field while unset; the
+  // non-terminal RECEIVED and the unreached REJECTED stay optional (leaving them
+  // unset is the player's call — and NOT flagging RECEIVED keeps the seed-② gate
+  // lesson intact).
+  const requiredTerminals = new Set(
+    sheet_1_1.requestee.onCommand.map((r) => r.report).filter(isTerminalState),
+  );
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <SectionLabel>HANDLER RULES · on TaskCommandStatus</SectionLabel>
-      {HANDLER_ENUMS.map((on) => (
-        <div
-          key={on}
-          style={{
-            background: "#fff",
-            borderLeft: `4px solid ${ENUM_COLOR[on]}`,
-            border: "1px solid rgba(36,67,95,.2)",
-            padding: "5px 8px",
-            fontSize: 12,
-            fontWeight: 700,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ color: ENUM_COLOR[on], flex: 1 }}>{on}</span>
-            <span>→</span>
-            <select
-              aria-label={`${on} action`}
-              value={handlers[on] ?? ""}
-              onChange={(e) =>
-                setHandler(on, e.target.value === "" ? null : (e.target.value as MachineAction))
-              }
-              style={{
-                fontFamily: FONT.mono,
-                fontSize: 12,
-                fontWeight: 700,
-                padding: "2px 4px",
-                border: "1px solid rgba(36,67,95,.35)",
-                borderRadius: 2,
-                background: "#fff",
-                color: SURFACE.ink,
-              }}
-            >
-              <option value="">unset</option>
-              {ACTIONS.map((a) => (
-                <option key={a} value={a}>
-                  {a}
-                  {a === "terminal" ? " ✔" : ""}
-                  {a === "retry" ? " (1)" : ""}
-                </option>
-              ))}
-            </select>
-          </div>
-          {on === "ACCEPTED" && (
-            <div style={{ marginTop: 4 }}>
-              <label
+      {HANDLER_ENUMS.map((on) => {
+        const missing = requiredTerminals.has(on) && handlers[on] === undefined;
+        return (
+          <div
+            key={on}
+            style={{
+              background: missing ? STATUS.errorBg : "#fff",
+              border: missing ? `1.5px solid ${STATUS.fail}` : "1px solid rgba(36,67,95,.2)",
+              borderLeft: `4px solid ${missing ? STATUS.fail : ENUM_COLOR[on]}`,
+              padding: "5px 8px",
+              fontSize: 12,
+              fontWeight: 700,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ color: ENUM_COLOR[on], flex: 1 }}>
+                {on}
+                {missing && (
+                  <span style={{ color: STATUS.fail, marginLeft: 5, fontWeight: 800 }}>
+                    ✖ required
+                  </span>
+                )}
+              </span>
+              <span>→</span>
+              <select
+                aria-label={`${on} action`}
+                value={handlers[on] ?? ""}
+                onChange={(e) =>
+                  setHandler(on, e.target.value === "" ? null : (e.target.value as MachineAction))
+                }
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 5,
-                  fontSize: 10,
-                  fontWeight: 600,
-                  color: "rgba(36,67,95,.7)",
+                  fontFamily: FONT.mono,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  padding: "2px 4px",
+                  border: `1px solid ${missing ? STATUS.fail : "rgba(36,67,95,.35)"}`,
+                  borderRadius: 2,
+                  background: "#fff",
+                  color: missing ? STATUS.fail : SURFACE.ink,
                 }}
               >
-                <input
-                  type="checkbox"
-                  checked={gate}
-                  onChange={(e) => setGate(e.target.checked)}
-                  aria-label="require RECEIVED first"
-                />
-                require RECEIVED first
-              </label>
-              <div
-                style={{
-                  fontSize: 9,
-                  fontWeight: 500,
-                  color: "rgba(36,67,95,.5)",
-                  paddingLeft: 19,
-                }}
-              >
-                inherited: sequential handler template
-              </div>
+                <option value="">unset</option>
+                {ACTIONS.map((a) => (
+                  <option key={a} value={a}>
+                    {a}
+                    {a === "terminal" ? " ✔" : ""}
+                    {a === "retry" ? " (1)" : ""}
+                  </option>
+                ))}
+              </select>
             </div>
-          )}
-        </div>
-      ))}
+            {on === "ACCEPTED" && (
+              <div style={{ marginTop: 4 }}>
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 5,
+                    fontSize: 10,
+                    fontWeight: 600,
+                    color: "rgba(36,67,95,.7)",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={gate}
+                    onChange={(e) => setGate(e.target.checked)}
+                    aria-label="require RECEIVED first"
+                  />
+                  require RECEIVED first
+                </label>
+                <div
+                  style={{
+                    fontSize: 9,
+                    fontWeight: 500,
+                    color: "rgba(36,67,95,.5)",
+                    paddingLeft: 19,
+                  }}
+                >
+                  inherited: sequential handler template
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
       <div style={{ fontSize: 10, fontWeight: 600, color: "rgba(36,67,95,.6)", paddingLeft: 2 }}>
         CANCELED → (legend only)
       </div>
