@@ -17,6 +17,10 @@ coverage/
 # Headless sweep output
 sweeps/*.csv
 
+# Deploy config (contains credentials)
+.deploy.env
+tools/deploy.sh
+
 # OS
 .DS_Store
 Thumbs.db
