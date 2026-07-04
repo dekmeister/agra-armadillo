@@ -63,7 +63,7 @@
       "schedule": [{ "op": "dup", "msg": "ACCEPTED", "delay": 2 }]
     }
   ],
-  "pars": { "messages": 2, "machineSize": 3, "ticks": 6 },
+  "recap": "No ordering on the bus; once terminal, stop listening.",
   "fidelityNotes": [
     "lie-1-bounded-seeds",
     "lie-2-visible-bus",

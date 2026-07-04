@@ -3,7 +3,7 @@
 // colored by state enum. In RUN the arrows reveal as the tick advances, driven by
 // the engine's frames; in COMPOSE/HANDLERS the board is a static shell of the
 // sheet's initial state (editing is S5).
-import type { Machine, Score } from "@normal-form/core";
+import type { Machine } from "@normal-form/core";
 import { sheet_1_1 } from "@normal-form/levels";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { ArrowFrame } from "./frames.ts";
@@ -41,7 +41,7 @@ export function Board() {
   const runSpeed = useGameStore((s) => s.runSpeed);
   const seedId = useGameStore((s) => s.seedId);
   const placed = useGameStore((s) => s.session.placed);
-  const { board, machine, allPass, score } = useRun();
+  const { board, machine, allPass } = useRun();
   const errorCount = useFindings().length;
 
   const xLeft = w * (LAYOUT.lifelineLeftPct / 100);
@@ -231,7 +231,7 @@ export function Board() {
       {phase === "handlers" && placed && <HandlerWidget xLeft={xLeft} machine={machine} />}
 
       {/* certification overlay — all three seeds pass */}
-      {phase === "run" && allPass && score && <CertifiedOverlay score={score} />}
+      {phase === "run" && allPass && <CertifiedOverlay />}
     </div>
   );
 }
@@ -577,19 +577,14 @@ function NoGoalStamp({ w, h }: { w: number; h: number }) {
   );
 }
 
-function CertifiedOverlay({ score }: { score: Score }) {
-  const pars = sheet_1_1.pars;
-  const metrics: { label: string; value: number; par: number; suffix?: string }[] = [
-    { label: "MSG", value: score.messages, par: pars.messages },
-    { label: "SIZE", value: score.machineSize, par: pars.machineSize },
-    { label: "TICK", value: score.ticks, par: pars.ticks, suffix: "≤" },
-  ];
+function CertifiedOverlay() {
   return (
     <div
       style={{
         position: "absolute",
         top: 48,
         right: 14,
+        maxWidth: 260,
         background: "rgba(47,143,91,.1)",
         border: "2.5px solid #2f8f5b",
         boxShadow: "3px 3px 0 rgba(47,143,91,.25)",
@@ -601,17 +596,9 @@ function CertifiedOverlay({ score }: { score: Score }) {
       <div style={{ fontSize: 13, fontWeight: 800, color: "#2f8f5b", marginBottom: 4 }}>
         ✔ CERTIFIED · all seeds pass
       </div>
-      <div style={{ display: "flex", gap: 12 }}>
-        {metrics.map((m) => (
-          <span key={m.label} style={{ fontSize: 11, fontWeight: 700 }}>
-            <span style={{ opacity: 0.6 }}>{m.label} </span>
-            <span style={{ color: m.value <= m.par ? "#2f8f5b" : "#c07d1f" }}>{m.value}</span>
-            <span style={{ opacity: 0.5 }}>
-              /{m.suffix ?? ""}
-              {m.par}
-            </span>
-          </span>
-        ))}
+      {/* the sheet's recap line — the one-sentence lesson (replaces the score row) */}
+      <div style={{ fontFamily: FONT.hand, fontSize: 14, fontWeight: 500, color: SURFACE.ink }}>
+        {sheet_1_1.recap}
       </div>
     </div>
   );

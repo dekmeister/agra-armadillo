@@ -5,12 +5,10 @@ import {
   type AllSeedsResult,
   buildComposition,
   buildMachine,
-  evaluateSheet,
   type Machine,
   type RunResult,
   runAllSeeds,
   runSeed,
-  type Score,
   validate,
 } from "@normal-form/core";
 import { sheet_1_1 } from "@normal-form/levels";
@@ -25,7 +23,7 @@ export interface DerivedRun {
   /** last tick of the selected run (playback bound) */
   readonly endTick: number;
   readonly all: AllSeedsResult | null;
-  readonly score: Score | null;
+  /** every seed passes — certification is pass/fail (scoring was cut, WS-B) */
   readonly allPass: boolean;
   /** RUN is unblocked: the arrow is placed and the composition validates clean */
   readonly ready: boolean;
@@ -47,7 +45,6 @@ export function useRun(): DerivedRun {
         board: null,
         endTick: 0,
         all: null,
-        score: null,
         allPass: false,
         ready,
       };
@@ -55,7 +52,6 @@ export function useRun(): DerivedRun {
     const result = runSeed(sheet_1_1, machine, seed);
     const board = runFrames(result);
     const all = runAllSeeds(sheet_1_1, machine);
-    const { score, allPass } = evaluateSheet(sheet_1_1, machine);
-    return { machine, result, board, endTick: board.endTick, all, score, allPass, ready };
+    return { machine, result, board, endTick: board.endTick, all, allPass: all.allPass, ready };
   }, [session, seedId]);
 }

@@ -221,25 +221,36 @@ function HandlersBody() {
             </select>
           </div>
           {on === "ACCEPTED" && (
-            <label
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 5,
-                marginTop: 4,
-                fontSize: 10,
-                fontWeight: 600,
-                color: "rgba(36,67,95,.7)",
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={gate}
-                onChange={(e) => setGate(e.target.checked)}
-                aria-label="require RECEIVED first"
-              />
-              require RECEIVED first
-            </label>
+            <div style={{ marginTop: 4 }}>
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 5,
+                  fontSize: 10,
+                  fontWeight: 600,
+                  color: "rgba(36,67,95,.7)",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={gate}
+                  onChange={(e) => setGate(e.target.checked)}
+                  aria-label="require RECEIVED first"
+                />
+                require RECEIVED first
+              </label>
+              <div
+                style={{
+                  fontSize: 9,
+                  fontWeight: 500,
+                  color: "rgba(36,67,95,.5)",
+                  paddingLeft: 19,
+                }}
+              >
+                inherited: sequential handler template
+              </div>
+            </div>
           )}
         </div>
       ))}
@@ -256,10 +267,7 @@ function HandlersBody() {
           marginTop: 4,
         }}
       >
-        Machine size <b>{size}</b> —{" "}
-        {size === sheet_1_1.pars.machineSize
-          ? "matches par."
-          : `par is ${sheet_1_1.pars.machineSize}.`}
+        Machine size <b>{size}</b> rules — wire every reachable terminal state to reach READY.
       </div>
     </div>
   );
@@ -269,13 +277,16 @@ function RunBody() {
   const { all } = useRun();
   const activateRun = useGameStore((s) => s.activateRun);
   const seedId = useGameStore((s) => s.seedId);
+  // Verdicts are computed live, but stay hidden (○) until the player runs — RUN ALL
+  // or clicking a seed — so the seed strip doesn't spoil the pass/fail outcomes.
+  const ranAll = useGameStore((s) => s.ranAll);
   const statusById = new Map((all?.results ?? []).map((r) => [r.seedId, r.pass]));
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <SectionLabel>SEED SCHEDULE</SectionLabel>
       {sheet_1_1.seeds.map((s) => {
-        const pass = statusById.get(s.id);
+        const pass = ranAll ? statusById.get(s.id) : undefined;
         const color = pass === undefined ? STATUS.waitSeed : pass ? STATUS.pass : STATUS.fail;
         const glyph = pass === undefined ? "○" : pass ? "✔" : "✖";
         const selected = seedId === s.id;

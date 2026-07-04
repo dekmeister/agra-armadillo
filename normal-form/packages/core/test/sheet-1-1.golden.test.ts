@@ -3,7 +3,7 @@
 //   ② reorder(RECEIVED, ACCEPTED) kills a machine that hard-sequences the two.
 //   ③ dup(ACCEPTED after terminal) kills a machine whose ACCEPTED isn't terminal.
 
-import { evaluateSheet, type Machine, runAllSeeds, runSeed } from "@normal-form/core";
+import { type Machine, runAllSeeds, runSeed } from "@normal-form/core";
 import { sheet_1_1 } from "@normal-form/levels";
 import { describe, expect, it } from "vitest";
 import negHardseq from "./reference/neg-hardseq.json" with { type: "json" };
@@ -18,13 +18,6 @@ describe("sheet 1-1 — reference machine", () => {
   it("passes all three seeds", () => {
     const { results, allPass } = runAllSeeds(sheet_1_1, ref);
     expect(allPass, JSON.stringify(results.map((r) => [r.seedId, r.pass, r.fault]))).toBe(true);
-  });
-
-  it("scores match pars (2 messages · 3 machine size · ≤6 ticks)", () => {
-    const { score } = evaluateSheet(sheet_1_1, ref);
-    expect(score.messages).toBe(sheet_1_1.pars.messages); // 2
-    expect(score.machineSize).toBe(sheet_1_1.pars.machineSize); // 3
-    expect(score.ticks).toBeLessThanOrEqual(sheet_1_1.pars.ticks); // ≤6
   });
 });
 

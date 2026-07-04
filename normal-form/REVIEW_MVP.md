@@ -55,6 +55,13 @@ Record a verdict for each below.
 
 ## Known debts accepted into the MVP (from PLAN_MVP)
 
+> **Resolved in WS-B (2026-07-05):** scoring/pars cut entirely (`score.ts`
+> removed; no metric pills / PAR row / score-vs-par — certification is pass/fail);
+> the gate ships pre-checked so seed ② is a guaranteed fail-then-fix; V10 is an
+> amber `HANDLERS NOT READY` readiness state, not a compose error; the run phase
+> has a per-tick event log + RUN ALL. The debts below are the original MVP notes,
+> kept as history.
+
 - Handler vocabulary is the minimum honest set (`wait / terminal / retry`) — the
   gate toggle is the one concession that makes seed ② a fail-then-fix.
 - `SchemaVersion` / `Timestamp` are prefilled-valid, not exercised — envelope

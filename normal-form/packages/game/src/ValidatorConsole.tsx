@@ -1,14 +1,19 @@
 // Validator / console (handoff § Component: Validator / Console). A core mechanic:
 // players study this text, so it quotes the standard verbatim and stays ≥13px.
-// COMPOSE lists the S3 validator findings; HANDLERS shows the READY summary; RUN
-// reports the live tick + bus policy for the selected seed.
+// COMPOSE lists the S3 field findings (V1–V9); HANDLERS surfaces the terminal-handler
+// readiness gate (V10) as an amber HANDLERS NOT READY state, not a compose error
+// (05-mvp amendment 3); RUN streams the per-tick event log for the selected seed.
 
-import { FINDINGS, type Finding } from "@normal-form/core";
+import { FINDINGS, type Finding, type RunEvent } from "@normal-form/core";
 import { sheet_1_1 } from "@normal-form/levels";
 import { useGameStore } from "./store.ts";
-import { ENUM_COLOR, FONT, RADIUS, STATUS, SURFACE } from "./tokens.ts";
+import { ENUM_COLOR, FONT, RADIUS, STATUS, SURFACE, ZONE } from "./tokens.ts";
 import { useFindings } from "./useFindings.ts";
 import { useRun } from "./useRun.ts";
+
+/** V10 (the terminal-handler readiness gate) carries this finding code; it is a
+ *  readiness state, not a compose field error, so it is channeled separately. */
+const READINESS_CODE = "READY";
 
 const CIRCLED = ["①", "②", "③"] as const;
 
@@ -117,23 +122,75 @@ function busPolicy(seedId: number): string {
   return op ? op.toUpperCase() : "IN-ORDER";
 }
 
+/** Render one engine RunEvent as a legible console line. `gated` reframes an
+ *  unhandled drop as the sequencing footgun so the seed-② hang reads plainly. */
+function eventLine(ev: RunEvent, gated: boolean): { text: string; color: string } {
+  const dim = "rgba(36,67,95,.75)";
+  switch (ev.kind) {
+    case "command-sent":
+      return { text: `${ev.detail} sent →`, color: dim };
+    case "status-delivered":
+      // detail is `${state} → ${terminal|wait}`.
+      return { text: `${ev.detail}`, color: SURFACE.ink };
+    case "status-dropped": {
+      // detail is `${state[ (dup)]} — ${disposition}`.
+      const [head, disp] = ev.detail.split(" — ").map((s) => s.trim());
+      const state = head ?? ev.detail;
+      if (disp === "unhandled") {
+        return gated
+          ? {
+              text: `${state} arrived before RECEIVED — machine still waiting (gated)`,
+              color: STATUS.fail,
+            }
+          : { text: `${state} — no handler armed`, color: STATUS.fail };
+      }
+      if (disp === "post-terminal")
+        return { text: `${state} — ignored, already terminal`, color: dim };
+      if (disp === "not-correlated")
+        return { text: `${state} — ignored, not your CommandID`, color: dim };
+      return { text: ev.detail, color: dim };
+    }
+    case "activity-executed":
+      return { text: "SystemB performed the activity", color: ENUM_COLOR.ACCEPTED };
+    case "goal-reached":
+      return { text: "✔ goal reached", color: STATUS.pass };
+    case "fault":
+      return { text: `✖ ${ev.detail}`, color: STATUS.fail };
+  }
+}
+
 export function ValidatorConsole() {
   const phase = useGameStore((s) => s.phase);
   const tick = useGameStore((s) => s.tick);
   const seedId = useGameStore((s) => s.seedId);
   const setTick = useGameStore((s) => s.setTick);
+  const gated = useGameStore((s) => s.session.gateAccepted);
   const findings = useFindings();
-  const { all, machine, board } = useRun();
+  const { all, machine, board, result } = useRun();
 
-  const errorCount = findings.length;
+  // Split the field findings (V1–V9, the compose gate) from the terminal-handler
+  // readiness gate (V10). Compose reads clean once the fields are fixed; a missing
+  // terminal handler is an amber readiness state, not a compose error.
+  const composeFindings = findings.filter((f) => f.code !== READINESS_CODE);
+  const notReady = findings.some((f) => f.code === READINESS_CODE);
+  const errorCount = composeFindings.length;
 
   let badge: React.ReactNode = null;
-  if (phase === "compose" || phase === "handlers") {
+  if (phase === "compose") {
     badge =
       errorCount === 0 ? (
         <Badge text="0 ERRORS · READY" bg={STATUS.pass} />
       ) : (
         <Badge text={`${errorCount} ERRORS · RUN BLOCKED`} bg={STATUS.fail} />
+      );
+  } else if (phase === "handlers") {
+    badge =
+      errorCount > 0 ? (
+        <Badge text={`${errorCount} ERRORS · RUN BLOCKED`} bg={STATUS.fail} />
+      ) : notReady ? (
+        <Badge text="HANDLERS NOT READY" bg={ZONE.accent} />
+      ) : (
+        <Badge text="0 ERRORS · READY" bg={STATUS.pass} />
       );
   } else {
     badge = <Badge text={`RUNNING · SEED ${CIRCLED[seedId - 1] ?? seedId}`} bg={SURFACE.ink} />;
@@ -178,7 +235,7 @@ export function ValidatorConsole() {
       >
         {phase === "compose" && (
           <>
-            {findings.map((f) => (
+            {composeFindings.map((f) => (
               <FindingLine key={f.id} f={f} />
             ))}
             <div style={{ color: errorCount === 0 ? STATUS.pass : "rgba(36,67,95,.55)" }}>
@@ -191,9 +248,16 @@ export function ValidatorConsole() {
 
         {phase === "handlers" && (
           <>
-            <div style={{ color: errorCount === 0 ? STATUS.pass : STATUS.fail }}>
-              {errorCount === 0 ? "✔" : "✖"} {errorCount} blocking errors · {machine.rules.length}{" "}
-              handler rules wired · machine size {machine.rules.length}/{sheet_1_1.pars.machineSize}
+            <div
+              style={{
+                color: errorCount > 0 ? STATUS.fail : notReady ? ZONE.accent : STATUS.pass,
+              }}
+            >
+              {errorCount > 0
+                ? `✖ ${errorCount} blocking field errors · fix COMPOSE first`
+                : notReady
+                  ? `▲ HANDLERS NOT READY · ${machine.rules.length} rules wired`
+                  : `✔ READY · ${machine.rules.length} handler rules wired`}
             </div>
             <div style={{ color: "rgba(36,67,95,.55)" }}>
               ▸ wire a rule for every reachable terminal state to reach READY.
@@ -212,16 +276,27 @@ export function ValidatorConsole() {
                 </span>
               )}
             </div>
-            {seedPass === false && board?.failure ? (
+            {/* per-tick event log, revealed as playback advances (replaces the old
+                static RECEIVED → ACCEPTED line — 05-mvp amendment 4). */}
+            {result?.log
+              .filter((ev) => ev.tick <= tick)
+              .map((ev) => {
+                const line = eventLine(ev, gated);
+                return (
+                  <div
+                    key={`${ev.tick}-${ev.kind}-${ev.detail}`}
+                    style={{ color: line.color, display: "flex", gap: 8 }}
+                  >
+                    <span style={{ opacity: 0.5, minWidth: 30 }}>t{ev.tick}</span>
+                    <span>{line.text}</span>
+                  </div>
+                );
+              })}
+            {seedPass === false && board?.failure && (
               <FailureReplay
                 lesson={FINDINGS[board.failure.lessonId]}
                 onScrub={() => setTick(board.failure!.tick)}
               />
-            ) : (
-              <div>
-                <span style={{ color: ENUM_COLOR.RECEIVED }}>RECEIVED</span> →{" "}
-                <span style={{ color: ENUM_COLOR.ACCEPTED }}>ACCEPTED</span>
-              </div>
             )}
           </>
         )}

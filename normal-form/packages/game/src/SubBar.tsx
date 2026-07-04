@@ -1,65 +1,11 @@
-// Goal + metrics sub-bar (handoff § Component: Goal + metrics sub-bar): GOAL
-// badge + hand-lettered goal line on the left; the three live metric pills and
-// the RUN controls on the right. Metrics come from the engine (useRun), TICK from
-// live playback state.
+// Goal + run-controls sub-bar (handoff § Component: Goal sub-bar): GOAL badge +
+// hand-lettered goal line on the left; the RUN controls on the right. Scoring was
+// cut at the MVP review (WS-B), so the three metric pills are gone — certification
+// is pass/fail.
 import { sheet_1_1 } from "@normal-form/levels";
 import { useGameStore } from "./store.ts";
-import { FONT, LAYOUT, RADIUS, STATUS, SURFACE, ZONE } from "./tokens.ts";
+import { FONT, LAYOUT, RADIUS, SURFACE } from "./tokens.ts";
 import { useRun } from "./useRun.ts";
-
-function MetricPill({
-  label,
-  value,
-  denom,
-  capColor,
-  valueColor,
-}: {
-  label: string;
-  value: string;
-  denom: number;
-  capColor: string;
-  valueColor: string;
-}) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "stretch",
-        border: `1px solid ${capColor}`,
-        borderRadius: RADIUS.pill,
-        overflow: "hidden",
-        fontFamily: FONT.mono,
-      }}
-    >
-      <span
-        style={{
-          background: capColor,
-          color: "#fff",
-          fontSize: 9,
-          fontWeight: 700,
-          padding: "0 6px",
-          display: "flex",
-          alignItems: "center",
-        }}
-      >
-        {label}
-      </span>
-      <span
-        style={{
-          fontSize: 12,
-          fontWeight: 700,
-          padding: "2px 7px",
-          color: valueColor,
-          display: "flex",
-          alignItems: "center",
-        }}
-      >
-        {value}
-        <span style={{ opacity: 0.5 }}>/{denom}</span>
-      </span>
-    </div>
-  );
-}
 
 export function SubBar() {
   const tick = useGameStore((s) => s.tick);
@@ -68,10 +14,9 @@ export function SubBar() {
   const pause = useGameStore((s) => s.pause);
   const reset = useGameStore((s) => s.reset);
   const setTick = useGameStore((s) => s.setTick);
-  const { score, endTick, ready } = useRun();
+  const runAll = useGameStore((s) => s.runAll);
+  const { endTick, ready } = useRun();
 
-  const pars = sheet_1_1.pars;
-  const dash = "—";
   // RUN is unblocked only when the composition validates clean (S3 gate).
   const canRun = ready && endTick > 0;
 
@@ -129,27 +74,15 @@ export function SubBar() {
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <MetricPill
-          label="MSG"
-          value={score ? String(score.messages) : dash}
-          denom={pars.messages}
-          capColor={STATUS.pass}
-          valueColor={SURFACE.ink}
-        />
-        <MetricPill
-          label="SIZE"
-          value={score ? String(score.machineSize) : dash}
-          denom={pars.machineSize}
-          capColor={ZONE.sendRespond}
-          valueColor={SURFACE.ink}
-        />
-        <MetricPill
-          label="TICK"
-          value={String(tick)}
-          denom={pars.ticks}
-          capColor={ZONE.accent}
-          valueColor={playing ? ZONE.accent : SURFACE.ink}
-        />
+        <button
+          type="button"
+          onClick={runAll}
+          disabled={!ready}
+          style={outlineBtn(ready)}
+          title="run every seed headless and light the seed strip"
+        >
+          ⧉ RUN ALL
+        </button>
 
         <span style={{ width: 1, height: 24, background: "rgba(36,67,95,.3)" }} />
 

@@ -1,7 +1,7 @@
 // Sheet = a certification job as data (docs/04, 05-mvp JSON sketch). The core
-// runtime reads `requestee`, `seeds`, `pars`, and the opening command; the rest
-// (palette, compose fields, cites, fidelity notes) is carried data consumed by the
-// validator (S3) and UI (S4+).
+// runtime reads `requestee`, `seeds`, and the opening command; the rest
+// (palette, compose fields, cites, fidelity notes, recap) is carried data consumed
+// by the validator (S3) and UI (S4+). Certification is pass/fail — no scoring/pars.
 import type { CommandStateEnum } from "../messages/index.ts";
 import type { RequesteeConfig } from "../requestee/index.ts";
 import type { Seed } from "../seeds.ts";
@@ -15,12 +15,6 @@ export interface WinClause {
 export interface Goal {
   readonly text: string;
   readonly win: { readonly all: readonly WinClause[] };
-}
-
-export interface Pars {
-  readonly messages: number;
-  readonly machineSize: number;
-  readonly ticks: number;
 }
 
 export interface Lifeline {
@@ -58,7 +52,8 @@ export interface Sheet {
   readonly opening: OpeningCommand;
   readonly requestee: RequesteeConfig;
   readonly seeds: readonly Seed[];
-  readonly pars: Pars;
+  /** the one-line lesson shown on the CERTIFIED stamp (docs/03-levels). */
+  readonly recap: string;
   readonly fidelityNotes?: readonly string[];
   readonly cites?: readonly string[];
   /** hard cap on run length; defaults to the last scheduled delivery */

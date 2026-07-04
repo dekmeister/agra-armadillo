@@ -93,7 +93,7 @@ failure replay):
    emissions into an ordered list of `Delivery`s.
 4. `machine/` — the handler machine is **data** (JSON): per-enum rules from a tiny
    closed vocabulary (`wait` / `terminal` / `retry`). `interpreter.ts` reacts to
-   deliveries; `schema.ts` defines the shape and `machineSize` scoring.
+   deliveries; `schema.ts` defines the shape (and a `machineSize` helper).
 5. `level/runtime.ts` — `runSeed(sheet, machine, seed)` ties it together and judges
    the goal by **world-state** ("the activity executed AND machine reached terminal"),
    never "message sent".
@@ -103,14 +103,17 @@ failure replay):
    stay distinct — see fidelity lie #11).
 7. `session/` — the player's editable work as a headless `Session`; edits fold in
    via `applyAction` and record into a replayable script.
-8. `score.ts` — the three Zachtronics metrics: messages / machine size / ticks.
 
-### Reference machines & pars
+Certification is **pass/fail** — scoring/pars were cut at the MVP review (WS-B);
+there is no `score.ts`. A sheet is certified when every seed reaches its goal
+world-state.
+
+### Reference machines
 
 Each sheet ships a **test-only** reference machine (in `packages/core/test/`, never
-bundled in `levels`) that golden tests prove passes all seeds. Pars are derived from
-its scores. A sheet with no passing reference machine cannot ship. Golden JSON lives
-in `packages/core/test/reference/`.
+bundled in `levels`) that golden tests prove passes all seeds. A sheet with no
+passing reference machine cannot ship. Golden JSON lives in
+`packages/core/test/reference/`.
 
 ### Game (packages/game)
 

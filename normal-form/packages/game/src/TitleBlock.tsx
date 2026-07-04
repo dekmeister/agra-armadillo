@@ -1,10 +1,10 @@
-// Title block (handoff § Component: Title block): a drafting-style grid of cells
-// plus the PAR row. Values are sheet data. The world chip reads "Ask & Acknowledge"
-// (the shipped W1 name; the Blueprint mock's "One Way" predates the world split —
-// see 05-mvp note).
+// Title block (handoff § Component: Title block): a drafting-style grid of cells.
+// Values are sheet data. The world chip reads "Ask & Acknowledge" (the shipped W1
+// name; the Blueprint mock's "One Way" predates the world split — see 05-mvp note).
+// The PAR row was removed with scoring (WS-B) — certification is pass/fail.
 import { sheet_1_1 } from "@normal-form/levels";
 import { FidelityNotes } from "./FidelityNotes.tsx";
-import { FONT, LAYOUT, STATUS, SURFACE, ZONE } from "./tokens.ts";
+import { FONT, LAYOUT, SURFACE, ZONE } from "./tokens.ts";
 
 function Cell({ label, value }: { label: string; value: string }) {
   return (
@@ -16,7 +16,6 @@ function Cell({ label, value }: { label: string; value: string }) {
 }
 
 export function TitleBlock() {
-  const pars = sheet_1_1.pars;
   return (
     <aside
       style={{
@@ -59,22 +58,6 @@ export function TitleBlock() {
         <Cell label="WORLD" value="W1 · Ask & Acknowledge" />
         <Cell label="DRAWN BY" value="sys-alpha-01" />
         <Cell label="SCALE" value="1 tick : 1 msg" />
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          gap: 14,
-          padding: "8px 12px",
-          borderTop: "1px solid rgba(36,67,95,.2)",
-          fontSize: 12,
-          fontWeight: 800,
-        }}
-      >
-        <span style={{ color: "rgba(36,67,95,.55)", fontWeight: 600 }}>PAR</span>
-        <span style={{ color: STATUS.pass }}>{pars.messages} msg</span>
-        <span style={{ color: ZONE.sendRespond }}>{pars.machineSize} size</span>
-        <span style={{ color: ZONE.accent }}>≤{pars.ticks} ticks</span>
       </div>
     </aside>
   );

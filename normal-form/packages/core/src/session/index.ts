@@ -36,7 +36,11 @@ export function initialSession(sheet: Sheet): Session {
     placed: false,
     fields: { ...sheet.compose.initialFields },
     handlers: {},
-    gateAccepted: false,
+    // Ships ON as an inherited "sequential handler template" (05-mvp amendment 2)
+    // so seed ② is a guaranteed kill the player must discover and remove.
+    // Generalizing this one global flag into a per-rule "only after X" qualifier
+    // is deferred to WS-F.
+    gateAccepted: true,
   };
 }
 
