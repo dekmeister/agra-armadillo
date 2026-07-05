@@ -12,7 +12,7 @@ Recommendation: the sibling stack (Brain Swap / Service Bus conventions), with
 | Lint/format | biome | sibling convention |
 | Sim core | Pure TS, zero DOM deps | headless deterministic sim + validator; vitest-tested; runs in CI |
 | Board rendering | **SVG + React** (divergence) | the board *is* a diagram: lifelines, arrows, text labels, selection boxes, drafting stamps — DOM/SVG's native material. Message-flow motion is transform/opacity animation along a lifeline, comfortably within SVG budget (tens of elements, not thousands). The siblings use PixiJS for *maps* (spatial worlds, trails, many sprites); Normal Form has no map. SVG keeps text crisp at every zoom, makes the Blueprint design's hard-offset shadows and dashed strokes trivial CSS, and keeps hit-testing/drag native |
-| UI chrome | React 18 | palette, inspector, validator console, title block — per the Blueprint handoff (`design_handoff_normal_form_blueprint/README.md`), which is the UI/UX spec: recreate the design, do not port its prototype runtime |
+| UI chrome | React 18 | palette, inspector, validator console, title block — recreating the Blueprint design handoff's UI/UX spec (not its prototype runtime) |
 | App state | Zustand | thin store bridging sim core ↔ React; sim emits immutable per-tick snapshots (sibling pattern) |
 | Tests | vitest + golden runs | level + reference machine → expected outcome, byte-stable |
 | Persistence | localStorage + JSON export/import | machines and solutions shareable as files; no backend, static site |

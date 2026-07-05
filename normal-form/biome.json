@@ -12,7 +12,6 @@
       "!**/dist",
       "!**/packages/game/dist",
       "!**/.claude",
-      "!design_handoff_normal_form_blueprint",
       "!docs/UCI References",
       "!**/messages/generated.ts"
     ]

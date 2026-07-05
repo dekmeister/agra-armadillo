@@ -1,7 +1,6 @@
 // Design tokens for the Blueprint puzzle screen — the single source that keeps
-// the chrome and the SVG board in lockstep with
-// `design_handoff_normal_form_blueprint/README.md` (§ Design Tokens). Every hex
-// and measurement here is quoted from that handoff; do not invent new ones.
+// the chrome and the SVG board in lockstep. Every hex and measurement here is
+// quoted from the original Blueprint design handoff; do not invent new ones.
 import type { CommandProcessingStateEnum } from "@normal-form/core";
 
 /** Surfaces (handoff § Colors — surfaces). */

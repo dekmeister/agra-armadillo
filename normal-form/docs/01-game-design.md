@@ -84,7 +84,7 @@ Reference** codex bound to the generated, fidelity-policed catalog
 
 **Tone & presentation.** Clean spec-document aesthetic — the shipped "Blueprint"
 visual direction (drafting ink on vellum, red drafting stamps for errors, a title
-block; see `../design_handoff_normal_form_blueprint/`). Failure screens quote the
+block, per the original design handoff). Failure screens quote the
 actual CERT text. Each level has a **Fidelity Notes** panel (sibling convention)
 stating exactly what is simplified relative to UCI 2.5, so the game never teaches
 something false.

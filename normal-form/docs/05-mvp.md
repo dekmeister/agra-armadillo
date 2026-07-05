@@ -22,9 +22,8 @@ playable end-to-end in the browser.** Chosen because it exercises the *entire*
 loop — compose + validate + handlers + seeds — in one small level: the moment
 your composition is stamped `✖ REJECTED` by the validator with real RQMT text,
 and the moment your machine survives the out-of-order seed you'd have sworn
-couldn't happen. The Blueprint handoff
-(`../design_handoff_normal_form_blueprint/`) mocks exactly this sheet and is the
-UI spec.
+couldn't happen. The Blueprint design handoff mocked exactly this sheet and was
+the UI spec, now implemented.
 
 ## The sheet
 
