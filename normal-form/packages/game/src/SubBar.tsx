@@ -2,12 +2,12 @@
 // hand-lettered goal line on the left; the RUN controls on the right. Scoring was
 // cut at the MVP review (WS-B), so the three metric pills are gone — certification
 // is pass/fail.
-import { sheet_1_1 } from "@normal-form/levels";
 import { useGameStore } from "./store.ts";
 import { FONT, LAYOUT, RADIUS, SURFACE } from "./tokens.ts";
 import { useRun } from "./useRun.ts";
 
 export function SubBar() {
+  const sheet = useGameStore((s) => s.sheet);
   const tick = useGameStore((s) => s.tick);
   const playing = useGameStore((s) => s.playing);
   const play = useGameStore((s) => s.play);
@@ -69,7 +69,7 @@ export function SubBar() {
             textOverflow: "ellipsis",
           }}
         >
-          {sheet_1_1.goal.text}
+          {sheet.goal.text}
         </span>
       </div>
 

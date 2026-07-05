@@ -69,8 +69,8 @@ npm workspaces monorepo, TypeScript strict everywhere. Three packages + a tools 
 
 ```
 packages/core/    # the game's deterministic truth — NO DOM, NO RNG, NO wall-clock
-packages/levels/  # data only: the YAML catalog, sheet JSON, level loader
-packages/game/    # React 18 + SVG app (the one Blueprint screen)
+packages/levels/  # data only: the YAML catalog, sheet JSON, the sheet registry
+packages/game/    # React 18 + SVG app (drawing-index + Blueprint play screen)
 tools/            # catalog codegen + the fidelity CI gate
 ```
 
@@ -117,13 +117,31 @@ passing reference machine cannot ship. Golden JSON lives in
 
 ### Game (packages/game)
 
-One screen (`App.tsx`): header · sub-bar · [palette · board · inspector] · [console
-· title block]. Three phases (compose / handlers / run) share identical chrome —
-only the bodies change. State: **Zustand** store (`store.ts`) wraps a core `Session`;
-derived data (validator findings, wired machine, playback) lives in the `use*.ts`
-hooks. The board is **SVG, not PixiJS** (deliberate divergence from siblings — the
+Two screens (`App.tsx` switches on `store.screen`): the **drawing index**
+(`SheetSelect.tsx`, the sheet lineup with locked/ready/certified state + JSON
+export/import) and the **play screen** — header · sub-bar · [palette · board ·
+inspector] · [console · title block]. Three phases (compose / handlers / run) share
+identical chrome — only the bodies change. State: **Zustand** store (`store.ts`)
+wraps a core `Session` and holds the current sheet + registry progression; derived
+data (validator findings, wired machine, playback) lives in the `use*.ts` hooks.
+Components read the current sheet from the store (never a hardcoded `sheet_1_1`);
+`sheet.ts` derives per-sheet bits (the placed pattern's message binding, seed-index
+glyphs). The board is **SVG, not PixiJS** (deliberate divergence from siblings — the
 board *is* a sequence diagram; see `docs/04-tech.md`). Styling is inline via design
 tokens in `tokens.ts` (the "Blueprint" drafting-on-vellum aesthetic).
+
+### Sheet registry & progression (WS-C)
+
+`@normal-form/levels` exports an **id-ordered `SHEET_LIST`** plus `SHEETS`,
+`getSheet(id)`, `nextSheetId(id)`, and `FIRST_SHEET_ID` — the single source for the
+lineup and the CERTIFIED → next-sheet unlock (a sheet unlocks when its predecessor
+is certified). `persist.ts` saves progress to localStorage (`normal-form/save/v1`):
+`{ certified, scripts, lastSheet }`, where each sheet's `scripts[id]` is the
+recorded `PlayerAction` list — restored on load by replaying it back into a
+`Session` (there is no serialized runtime state to drift). The same shape is the
+JSON export/import file. Every registered sheet still ships a test-only reference
+machine + golden (`sheet-1-2` is a WS-C infrastructure stub; WS-F replaces it with
+the real 1-2).
 
 ## Conventions
 

@@ -1,10 +1,14 @@
 // Title block (handoff § Component: Title block): a drafting-style grid of cells.
-// Values are sheet data. The world chip reads "Ask & Acknowledge" (the shipped W1
-// name; the Blueprint mock's "One Way" predates the world split — see 05-mvp note).
-// The PAR row was removed with scoring (WS-B) — certification is pass/fail.
-import { sheet_1_1 } from "@normal-form/levels";
+// Values are the current sheet's data. The PAR row was removed with scoring
+// (WS-B) — certification is pass/fail.
 import { FidelityNotes } from "./FidelityNotes.tsx";
+import { useGameStore } from "./store.ts";
 import { FONT, LAYOUT, SURFACE, ZONE } from "./tokens.ts";
+
+const WORLD_LABEL: Record<string, string> = {
+  w0: "W0 · One Way",
+  w1: "W1 · Ask & Acknowledge",
+};
 
 function Cell({ label, value }: { label: string; value: string }) {
   return (
@@ -16,6 +20,7 @@ function Cell({ label, value }: { label: string; value: string }) {
 }
 
 export function TitleBlock() {
+  const sheet = useGameStore((s) => s.sheet);
   return (
     <aside
       style={{
@@ -54,8 +59,8 @@ export function TitleBlock() {
           flex: 1,
         }}
       >
-        <Cell label="SHEET" value={sheet_1_1.id} />
-        <Cell label="WORLD" value="W1 · Ask & Acknowledge" />
+        <Cell label="SHEET" value={sheet.id} />
+        <Cell label="WORLD" value={WORLD_LABEL[sheet.world] ?? sheet.world.toUpperCase()} />
         <Cell label="DRAWN BY" value="sys-alpha-01" />
         <Cell label="SCALE" value="1 tick : 1 msg" />
       </div>

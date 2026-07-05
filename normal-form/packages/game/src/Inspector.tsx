@@ -3,15 +3,14 @@
 // the STATE ENUMS legend pinned to the bottom. All values are level data or
 // engine-derived; nothing is editable in S4 (editing is S5).
 import { isTerminalState, type MachineAction } from "@normal-form/core";
-import { sheet_1_1 } from "@normal-form/levels";
 import { useState } from "react";
+import { circled, primaryBinding } from "./sheet.ts";
 import { useGameStore } from "./store.ts";
 import { ENUM_COLOR, FONT, LAYOUT, STATUS, SURFACE, ZONE } from "./tokens.ts";
 import { useFindings } from "./useFindings.ts";
 import { useRun } from "./useRun.ts";
 
 const ENUMS = ["RECEIVED", "ACCEPTED", "REJECTED", "CANCELED"] as const;
-const CIRCLED = ["①", "②", "③"] as const;
 
 /** A fresh canonical (lowercase, hyphenated) RFC-4122 v4 UUID — passes V5/V6. */
 function genUuid(): string {
@@ -27,6 +26,8 @@ function genUuid(): string {
 }
 
 function ZoneHeader() {
+  const sheet = useGameStore((s) => s.sheet);
+  const { request } = primaryBinding(sheet);
   return (
     <div
       style={{
@@ -47,7 +48,7 @@ function ZoneHeader() {
           color: "rgba(36,67,95,.55)",
         }}
       >
-        TaskCommand
+        {request}
       </span>
     </div>
   );
@@ -75,7 +76,7 @@ function ComposeBody() {
   const findings = useFindings();
   const fields = useGameStore((s) => s.session.fields);
   const setField = useGameStore((s) => s.setField);
-  const editable = new Set(sheet_1_1.compose.editable);
+  const editable = new Set(useGameStore((s) => s.sheet.compose.editable));
   const errorFields = new Set(findings.map((f) => f.field).filter(Boolean));
 
   return (
@@ -169,10 +170,12 @@ const HANDLER_ENUMS = ["RECEIVED", "ACCEPTED", "REJECTED"] as const;
 const ACTIONS = ["wait", "terminal", "retry"] as const;
 
 function HandlersBody() {
+  const sheet = useGameStore((s) => s.sheet);
   const handlers = useGameStore((s) => s.session.handlers);
   const gate = useGameStore((s) => s.session.gateAccepted);
   const setHandler = useGameStore((s) => s.setHandler);
   const setGate = useGameStore((s) => s.setGate);
+  const { response } = primaryBinding(sheet);
   const size = HANDLER_ENUMS.filter((e) => handlers[e] !== undefined).length;
   // The readiness gate (V10) requires a handler only for every reachable terminal
   // state — the terminal states this sheet's requestee actually reports (ACCEPTED
@@ -181,12 +184,12 @@ function HandlersBody() {
   // unset is the player's call — and NOT flagging RECEIVED keeps the seed-② gate
   // lesson intact).
   const requiredTerminals = new Set(
-    sheet_1_1.requestee.onCommand.map((r) => r.report).filter(isTerminalState),
+    sheet.requestee.onCommand.map((r) => r.report).filter(isTerminalState),
   );
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <SectionLabel>HANDLER RULES · on TaskCommandStatus</SectionLabel>
+      <SectionLabel>HANDLER RULES · on {response}</SectionLabel>
       {HANDLER_ENUMS.map((on) => {
         const missing = requiredTerminals.has(on) && handlers[on] === undefined;
         return (
@@ -293,6 +296,7 @@ function HandlersBody() {
 }
 
 function RunBody() {
+  const sheet = useGameStore((s) => s.sheet);
   const { all } = useRun();
   const activateRun = useGameStore((s) => s.activateRun);
   const seedId = useGameStore((s) => s.seedId);
@@ -304,7 +308,7 @@ function RunBody() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <SectionLabel>SEED SCHEDULE</SectionLabel>
-      {sheet_1_1.seeds.map((s) => {
+      {sheet.seeds.map((s) => {
         const pass = ranAll ? statusById.get(s.id) : undefined;
         const color = pass === undefined ? STATUS.waitSeed : pass ? STATUS.pass : STATUS.fail;
         const glyph = pass === undefined ? "○" : pass ? "✔" : "✖";
@@ -327,7 +331,7 @@ function RunBody() {
               color: SURFACE.ink,
             }}
           >
-            <span style={{ color }}>{glyph}</span> {CIRCLED[s.id - 1] ?? s.id} {s.label}
+            <span style={{ color }}>{glyph}</span> {circled(s.id)} {s.label}
           </button>
         );
       })}

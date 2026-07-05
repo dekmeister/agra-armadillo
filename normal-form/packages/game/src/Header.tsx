@@ -1,10 +1,13 @@
-// Header band (handoff § Component: Header band): title cluster + sheet chip. The
-// phase tabs used to live here on the right, but they're now stacked sections in
-// the Inspector (the panel they drive) — see Inspector.tsx.
-import { sheet_1_1 } from "@normal-form/levels";
+// Header band (handoff § Component: Header band): an INDEX button back to the
+// drawing-index screen, the title cluster, and the current sheet chip. The phase
+// tabs used to live here on the right, but they're now stacked sections in the
+// Inspector (the panel they drive) — see Inspector.tsx.
+import { useGameStore } from "./store.ts";
 import { FONT, LAYOUT, RADIUS, SURFACE } from "./tokens.ts";
 
 export function Header() {
+  const sheet = useGameStore((s) => s.sheet);
+  const backToSelect = useGameStore((s) => s.backToSelect);
   return (
     <header
       style={{
@@ -20,6 +23,26 @@ export function Header() {
       }}
     >
       <div style={{ display: "flex", alignItems: "baseline", gap: 14 }}>
+        <button
+          type="button"
+          onClick={backToSelect}
+          title="back to the drawing index"
+          style={{
+            alignSelf: "center",
+            background: "transparent",
+            color: SURFACE.vellum,
+            border: "1px solid rgba(243,239,228,.4)",
+            borderRadius: RADIUS.chip,
+            padding: "3px 9px",
+            fontFamily: FONT.mono,
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: ".04em",
+            cursor: "pointer",
+          }}
+        >
+          ◂ INDEX
+        </button>
         <span style={{ fontSize: 15, fontWeight: 800, letterSpacing: ".04em" }}>NORMAL FORM</span>
         <span style={{ fontSize: 12, fontWeight: 500, opacity: 0.65, letterSpacing: ".05em" }}>
           SEQUENCE CERTIFICATION
@@ -35,7 +58,7 @@ export function Header() {
           borderRadius: RADIUS.chip,
         }}
       >
-        SHEET {sheet_1_1.id} · {sheet_1_1.title}
+        SHEET {sheet.id} · {sheet.title}
       </span>
     </header>
   );

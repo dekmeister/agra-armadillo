@@ -1,11 +1,10 @@
 // Palette column (handoff § Component: Palette): two grouped lists of interaction
-// primitives. Command-2 is the active chip this sheet; the other five are locked.
-// Lock/unlock is read from the sheet's palette data.
-import { sheet_1_1 } from "@normal-form/levels";
+// primitives. The sheet's unlocked pattern(s) are active chips; the rest are
+// locked. Lock/unlock is read from the current sheet's palette data.
+import type { Sheet } from "@normal-form/core";
+import { circled } from "./sheet.ts";
 import { useGameStore } from "./store.ts";
 import { FONT, LAYOUT, RADIUS, SHADOW, SURFACE, ZONE } from "./tokens.ts";
-
-const CIRCLED = ["①", "②", "③", "④", "⑤", "⑥"] as const;
 
 interface Group {
   heading: string;
@@ -23,13 +22,14 @@ const GROUPS: readonly Group[] = [
   },
 ];
 
-const UNLOCKED = new Set(sheet_1_1.palette.filter((p) => p.unlocked).map((p) => p.pattern));
+/** The current sheet's unlocked patterns, and a stable locked-chip numbering. */
+function paletteState(sheet: Sheet) {
+  const unlocked = new Set(sheet.palette.filter((p) => p.unlocked).map((p) => p.pattern));
+  const lockedOrder = GROUPS.flatMap((g) => g.patterns).filter((p) => !unlocked.has(p));
+  return { unlocked, lockedOrder };
+}
 
-// Stable ①–⑤ index across all locked primitives, in handoff order.
-const LOCKED_ORDER = GROUPS.flatMap((g) => g.patterns).filter((p) => !UNLOCKED.has(p));
-const lockIndex = (pattern: string) => LOCKED_ORDER.indexOf(pattern);
-
-function LockedChip({ pattern, color }: { pattern: string; color: string }) {
+function LockedChip({ pattern, color, index }: { pattern: string; color: string; index: number }) {
   return (
     <div
       style={{
@@ -44,7 +44,7 @@ function LockedChip({ pattern, color }: { pattern: string; color: string }) {
         fontFamily: FONT.mono,
       }}
     >
-      <span style={{ fontSize: 13, color }}>{CIRCLED[lockIndex(pattern)] ?? "○"}</span>
+      <span style={{ fontSize: 13, color }}>{index >= 0 ? circled(index + 1) : "○"}</span>
       <span style={{ fontSize: 12, fontWeight: 500, flex: 1 }}>{pattern}</span>
       <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: ".08em" }}>LOCK</span>
     </div>
@@ -85,6 +85,11 @@ function ActiveChip({ pattern }: { pattern: string }) {
 }
 
 export function Palette() {
+  const sheet = useGameStore((s) => s.sheet);
+  const { unlocked, lockedOrder } = paletteState(sheet);
+  const unlockedNames = [...unlocked];
+  const unlockedLabel =
+    unlockedNames.length === 1 ? `Only ${unlockedNames[0]} is` : `${unlockedNames.join(", ")} are`;
   return (
     <aside
       style={{
@@ -130,10 +135,10 @@ export function Palette() {
               <span style={{ flex: 1, height: 1, background: "currentColor", opacity: 0.4 }} />
             </div>
             {g.patterns.map((p) =>
-              UNLOCKED.has(p) ? (
+              unlocked.has(p) ? (
                 <ActiveChip key={p} pattern={p} />
               ) : (
-                <LockedChip key={p} pattern={p} color={g.color} />
+                <LockedChip key={p} pattern={p} color={g.color} index={lockedOrder.indexOf(p)} />
               ),
             )}
           </div>
@@ -150,7 +155,7 @@ export function Palette() {
           padding: "8px 12px",
         }}
       >
-        Only Command-2 is unlocked this sheet. Click it to place its arrow pair on the board.
+        {unlockedLabel} unlocked this sheet. Click to place its arrow pair on the board.
       </p>
     </aside>
   );

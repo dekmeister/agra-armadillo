@@ -1,28 +1,36 @@
 // UI state for the Blueprint screen. The player's editable work is a core
-// `Session` (headless, pure) — the store folds edits into it via `applyAction`
-// and records each into a replayable `script` (PLAN_MVP S5). The wired machine
-// and the validated composition are derived from the session in the hooks. Phase
-// / tick / seed can still be deep-linked from URL query for headless screenshots.
+// `Session` (headless, pure) — the store folds edits into it via `applyAction` and
+// records each into a replayable `script`. The wired machine and validated
+// composition are derived from the session in the hooks.
+//
+// WS-C de-hardcodes the store off a single `sheet_1_1` import: it holds the
+// `currentSheet` and the whole registry's progression (which sheets are certified,
+// each sheet's saved script), switches between a `select` drawing-index screen and
+// the `play` screen, and persists everything to localStorage so a reload restores
+// the player where they were. Phase / tick / seed still deep-link from the URL for
+// headless screenshots.
 
-import type { CommandProcessingStateEnum } from "@normal-form/core";
+import type { CommandProcessingStateEnum, Sheet } from "@normal-form/core";
 import {
   applyAction,
   buildComposition,
-  initialSession,
+  isReady as compositionReady,
   type MachineAction,
   type PlayerAction,
+  replayScript,
   type Session,
-  validate,
 } from "@normal-form/core";
-import { sheet_1_1 } from "@normal-form/levels";
+import { FIRST_SHEET_ID, getSheet, nextSheetId } from "@normal-form/levels";
 import { create } from "zustand";
+import { loadSave, parseSave, type SaveState, writeSave } from "./persist.ts";
 
 /** RUN is unblocked when the arrow is placed and the composition validates clean. */
-function isReady(session: Session): boolean {
-  return session.placed && validate(sheet_1_1, buildComposition(sheet_1_1, session)).length === 0;
+function isReady(sheet: Sheet, session: Session): boolean {
+  return session.placed && compositionReady(sheet, buildComposition(sheet, session));
 }
 
 export type Phase = "compose" | "handlers" | "run";
+type Screen = "select" | "play";
 
 /** Handoff run speed: default 750ms, clamp 250–1500ms. */
 export const RUN_SPEED_DEFAULT = 750;
@@ -30,6 +38,7 @@ export const RUN_SPEED_MIN = 250;
 export const RUN_SPEED_MAX = 1500;
 
 export interface GameState {
+  screen: Screen;
   phase: Phase;
   tick: number;
   playing: boolean;
@@ -40,10 +49,27 @@ export interface GameState {
    *  on any edit that changes the machine/composition. */
   ranAll: boolean;
 
-  /** the player's editable work (core reducer state) */
+  /** the sheet currently being played */
+  sheet: Sheet;
+  /** sheet id → certified (all seeds pass); unlocks the next sheet */
+  certified: Readonly<Record<string, boolean>>;
+  /** sheet id → its saved edit script (so switching/reloading restores work) */
+  scripts: Readonly<Record<string, readonly PlayerAction[]>>;
+
+  /** the current sheet's editable work (core reducer state) */
   session: Session;
-  /** ordered record of every edit — the replayable solve script */
-  script: PlayerAction[];
+  /** ordered record of every edit to the current sheet — the replayable solve */
+  script: readonly PlayerAction[];
+
+  // Progression / navigation.
+  selectSheet: (id: string) => void;
+  backToSelect: () => void;
+  /** mark the current sheet certified (all seeds pass) — unlocks the next sheet */
+  certifyCurrent: () => void;
+  /** open the next sheet in the lineup, if there is one */
+  goNextSheet: () => void;
+  /** replace all progress from an imported save file (JSON export/import) */
+  importState: (json: string) => void;
 
   setPhase: (phase: Phase) => void;
   /** Run every seed headless and reveal the seed strip verdicts. */
@@ -63,40 +89,127 @@ export interface GameState {
   setGate: (value: boolean) => void;
 }
 
-function readInitialView(): { phase: Phase; seedId: number; tick: number } {
+/** The first seed id declared on a sheet (no assumption seeds start at 1). */
+function firstSeedId(sheet: Sheet): number {
+  return sheet.seeds[0]?.id ?? 1;
+}
+
+/** Clamp a seed number to one this sheet actually declares (de-hardcodes the old
+ *  {1,2,3} assumption); falls back to the sheet's first seed. */
+function clampSeed(sheet: Sheet, n: number): number {
+  return sheet.seeds.some((s) => s.id === n) ? n : firstSeedId(sheet);
+}
+
+const save = loadSave();
+const startSheet = getSheet(save.lastSheet ?? "") ?? getSheet(FIRST_SHEET_ID);
+if (!startSheet) throw new Error("no sheets registered in @normal-form/levels");
+
+function readInitialView(sheet: Sheet): {
+  screen: Screen;
+  phase: Phase;
+  seedId: number;
+  tick: number;
+} {
   const q = new URLSearchParams(typeof window === "undefined" ? "" : window.location.search);
   const phaseParam = q.get("phase");
   const phase: Phase = phaseParam === "handlers" || phaseParam === "run" ? phaseParam : "compose";
-  const seedId = clampSeed(Number(q.get("seed")));
+  const seedId = clampSeed(sheet, Number(q.get("seed")));
   const tick = Number.isFinite(Number(q.get("tick"))) ? Math.max(0, Number(q.get("tick"))) : 0;
-  return { phase, seedId, tick };
+  // A deep-linked view (used by headless screenshots) opens straight into play;
+  // otherwise the drawing index is the entry point.
+  const deepLinked = q.has("phase") || q.has("seed") || q.has("tick");
+  return { screen: deepLinked ? "play" : "select", phase, seedId, tick };
 }
 
-function clampSeed(n: number): number {
-  return n === 2 || n === 3 ? n : 1;
-}
+const view = readInitialView(startSheet);
 
-const view = readInitialView();
+export const useGameStore = create<GameState>((set, get) => {
+  /** Persist the durable slice (progression + scripts + last sheet). */
+  const persist = (partial?: Partial<Pick<SaveState, "certified" | "scripts" | "lastSheet">>) => {
+    const s = get();
+    writeSave({
+      version: 1,
+      certified: partial?.certified ?? s.certified,
+      scripts: partial?.scripts ?? s.scripts,
+      lastSheet: partial?.lastSheet ?? s.sheet.id,
+    });
+  };
 
-export const useGameStore = create<GameState>((set) => {
-  // Fold an action into the session and record it for replay. Any edit changes
-  // the machine/composition, so stale seed verdicts are hidden again (ranAll: false).
+  // Fold an action into the session, record it, and persist the updated script.
+  // Any edit changes the machine/composition, so stale seed verdicts are hidden
+  // again (ranAll: false).
   const dispatch = (action: PlayerAction) =>
-    set((s) => ({
-      session: applyAction(s.session, action),
-      script: [...s.script, action],
-      ranAll: false,
-    }));
+    set((s) => {
+      const script = [...s.script, action];
+      const scripts = { ...s.scripts, [s.sheet.id]: script };
+      writeSave({ version: 1, certified: s.certified, scripts, lastSheet: s.sheet.id });
+      return { session: applyAction(s.session, action), script, scripts, ranAll: false };
+    });
 
   return {
+    screen: view.screen,
     phase: view.phase,
     tick: view.tick,
     playing: false,
     seedId: view.seedId,
     runSpeed: RUN_SPEED_DEFAULT,
     ranAll: false,
-    session: initialSession(sheet_1_1),
-    script: [],
+
+    sheet: startSheet,
+    certified: save.certified,
+    scripts: save.scripts,
+    session: replayScript(startSheet, save.scripts[startSheet.id] ?? []).session,
+    script: save.scripts[startSheet.id] ?? [],
+
+    selectSheet: (id) => {
+      const sheet = getSheet(id);
+      if (!sheet) return;
+      const script = get().scripts[id] ?? [];
+      const session = replayScript(sheet, script).session;
+      persist({ lastSheet: id });
+      set({
+        screen: "play",
+        sheet,
+        session,
+        script,
+        phase: "compose",
+        tick: 0,
+        playing: false,
+        seedId: firstSeedId(sheet),
+        ranAll: false,
+      });
+    },
+    backToSelect: () => set({ screen: "select", playing: false }),
+    certifyCurrent: () =>
+      set((s) => {
+        if (s.certified[s.sheet.id]) return {};
+        const certified = { ...s.certified, [s.sheet.id]: true };
+        writeSave({ version: 1, certified, scripts: s.scripts, lastSheet: s.sheet.id });
+        return { certified };
+      }),
+    goNextSheet: () => {
+      const next = nextSheetId(get().sheet.id);
+      if (next) get().selectSheet(next);
+    },
+    importState: (json) => {
+      let imported: SaveState;
+      try {
+        imported = parseSave(json);
+      } catch {
+        return; // invalid JSON — leave progress untouched
+      }
+      writeSave(imported);
+      const sheet = get().sheet;
+      const script = imported.scripts[sheet.id] ?? [];
+      set({
+        certified: imported.certified,
+        scripts: imported.scripts,
+        session: replayScript(sheet, script).session,
+        script,
+        screen: "select",
+        playing: false,
+      });
+    },
 
     // Switching phases resets tick and stops playback (handoff § Interactions).
     // Re-activating the current phase is a no-op so interacting twice within one
@@ -112,13 +225,14 @@ export const useGameStore = create<GameState>((set) => {
     activateRun: (seedId) =>
       set((s) => ({
         phase: "run",
-        seedId: clampSeed(seedId ?? s.seedId),
+        seedId: clampSeed(s.sheet, seedId ?? s.seedId),
         tick: 0,
-        playing: isReady(s.session),
+        playing: isReady(s.sheet, s.session),
         ranAll: true,
       })),
     // Switching seed restarts the run.
-    setSeed: (seedId) => set({ seedId: clampSeed(seedId), tick: 0, playing: false }),
+    setSeed: (seedId) =>
+      set((s) => ({ seedId: clampSeed(s.sheet, seedId), tick: 0, playing: false })),
     setTick: (tick) => set({ tick: Math.max(0, tick) }),
     play: () => set({ playing: true }),
     pause: () => set({ playing: false }),

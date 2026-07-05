@@ -4,14 +4,21 @@
 // the engine's frames; in COMPOSE/HANDLERS the board is a static shell of the
 // sheet's initial state (editing is S5).
 import type { Machine } from "@normal-form/core";
-import { sheet_1_1 } from "@normal-form/levels";
+import { nextSheetId } from "@normal-form/levels";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { ArrowFrame } from "./frames.ts";
+import { circled, type PrimaryBinding, primaryBinding } from "./sheet.ts";
 import type { Phase } from "./store.ts";
 import { useGameStore } from "./store.ts";
 import { ENUM_COLOR, FONT, LAYOUT, SURFACE, ZONE } from "./tokens.ts";
 import { useFindings } from "./useFindings.ts";
 import { useRun } from "./useRun.ts";
+
+/** Split a lifeline label like "Commander (you)" into its name and "(tag)". */
+function splitLabel(label: string): { name: string; tag: string } {
+  const m = label.match(/^(.*?)\s*(\([^)]*\))\s*$/);
+  return m ? { name: m[1] ?? label, tag: m[2] ?? "" } : { name: label, tag: "" };
+}
 
 function useSize() {
   const ref = useRef<HTMLDivElement>(null);
@@ -36,12 +43,16 @@ const GRID_BG =
 
 export function Board() {
   const [ref, { w, h }] = useSize();
+  const sheet = useGameStore((s) => s.sheet);
   const phase = useGameStore((s) => s.phase);
   const tick = useGameStore((s) => s.tick);
   const runSpeed = useGameStore((s) => s.runSpeed);
   const seedId = useGameStore((s) => s.seedId);
   const placed = useGameStore((s) => s.session.placed);
   const { board, machine, allPass } = useRun();
+  const binding = primaryBinding(sheet);
+  const commander = sheet.lifelines.find((l) => l.player) ?? sheet.lifelines[0];
+  const commandee = sheet.lifelines.find((l) => !l.player) ?? sheet.lifelines[1];
   // Compose reject stamp counts only the field findings (V1–V9); the terminal-
   // handler readiness gate (V10, code "READY") is a handlers-phase state, not a
   // compose error, so it must not stamp the board (WS-B — matches the console).
@@ -86,7 +97,8 @@ export function Board() {
         <span style={{ width: 9, height: 9, background: SURFACE.ink }} />
         <span style={{ fontSize: 12, fontWeight: 800 }}>DIAGRAM</span>
         <span style={{ fontFamily: FONT.hand, fontSize: 12, color: "rgba(36,67,95,.55)" }}>
-          sequence · Commander ⇄ Commandee
+          sequence · {splitLabel(commander?.label ?? "Commander").name} ⇄{" "}
+          {splitLabel(commandee?.label ?? "Commandee").name}
         </span>
       </div>
 
@@ -118,11 +130,16 @@ export function Board() {
           ))}
 
           {/* lifelines */}
-          <LifelineHeader x={xLeft} label="Commander" tag="(you)" tagColor={ZONE.accent} />
+          <LifelineHeader
+            x={xLeft}
+            label={splitLabel(commander?.label ?? "Commander").name}
+            tag={splitLabel(commander?.label ?? "Commander").tag}
+            tagColor={ZONE.accent}
+          />
           <LifelineHeader
             x={xRight}
-            label="Commandee"
-            tag="(SystemB)"
+            label={splitLabel(commandee?.label ?? "Commandee").name}
+            tag={splitLabel(commandee?.label ?? "Commandee").tag}
             tagColor="rgba(36,67,95,.6)"
           />
           <line
@@ -178,7 +195,7 @@ export function Board() {
                 ))}
             </>
           ) : placed ? (
-            renderShellArrows(phase, xLeft, xRight, yOf)
+            renderShellArrows(phase, xLeft, xRight, yOf, binding)
           ) : (
             <text
               x={(xLeft + xRight) / 2}
@@ -188,7 +205,7 @@ export function Board() {
               fill="rgba(36,67,95,.5)"
               textAnchor="middle"
             >
-              ◂ click Command-2 in the palette to place its arrow pair
+              ◂ click {binding.pattern} in the palette to place its arrow pair
             </text>
           )}
 
@@ -233,7 +250,7 @@ export function Board() {
       {/* handler widget (HTML overlay) — read-only mirror of the built machine */}
       {phase === "handlers" && placed && <HandlerWidget xLeft={xLeft} machine={machine} />}
 
-      {/* certification overlay — all three seeds pass */}
+      {/* certification overlay — every seed passes */}
       {phase === "run" && allPass && <CertifiedOverlay />}
     </div>
   );
@@ -427,11 +444,18 @@ function renderShellArrows(
   xLeft: number,
   xRight: number,
   yOf: (t: number) => number,
+  binding: PrimaryBinding,
 ) {
   const req = (
     <Arrow
       key="shell-req"
-      frame={{ key: "req", dir: "request", tick: 1, label: "TaskCommand →", color: ZONE.oneWay }}
+      frame={{
+        key: "req",
+        dir: "request",
+        tick: 1,
+        label: `${binding.request} →`,
+        color: ZONE.oneWay,
+      }}
       xLeft={xLeft}
       xRight={xRight}
       y={yOf(1)}
@@ -469,7 +493,7 @@ function renderShellArrows(
             key: "res",
             dir: "response",
             tick: 3,
-            label: "← TaskCommandStatus ⟨unset⟩",
+            label: `← ${binding.response} ⟨unset⟩`,
             color: "rgba(36,67,95,.5)",
             dashed: true,
             muted: true,
@@ -491,7 +515,7 @@ function renderShellArrows(
           key: "res",
           dir: "response",
           tick: 3,
-          label: "← TaskCommandStatus",
+          label: `← ${binding.response}`,
           color: ENUM_COLOR.ACCEPTED,
           state: "ACCEPTED",
         }}
@@ -536,7 +560,7 @@ function GoalStamp({ w, h, seedId }: { w: number; h: number; seedId: number }) {
         fill="#2f8f5b"
         textAnchor="middle"
       >
-        ✔ GOAL REACHED · seed {["①", "②", "③"][seedId - 1] ?? seedId} pass
+        ✔ GOAL REACHED · seed {circled(seedId)} pass
       </text>
     </g>
   );
@@ -581,6 +605,10 @@ function NoGoalStamp({ w, h }: { w: number; h: number }) {
 }
 
 function CertifiedOverlay() {
+  const sheet = useGameStore((s) => s.sheet);
+  const hasNext = useGameStore((s) => nextSheetId(s.sheet.id) !== undefined);
+  const goNextSheet = useGameStore((s) => s.goNextSheet);
+  const backToSelect = useGameStore((s) => s.backToSelect);
   return (
     <div
       style={{
@@ -601,13 +629,34 @@ function CertifiedOverlay() {
       </div>
       {/* the sheet's recap line — the one-sentence lesson (replaces the score row) */}
       <div style={{ fontFamily: FONT.hand, fontSize: 14, fontWeight: 500, color: SURFACE.ink }}>
-        {sheet_1_1.recap}
+        {sheet.recap}
       </div>
+      <button
+        type="button"
+        onClick={hasNext ? goNextSheet : backToSelect}
+        style={{
+          marginTop: 8,
+          background: "#2f8f5b",
+          color: "#fff",
+          border: "none",
+          borderRadius: 3,
+          padding: "5px 11px",
+          fontFamily: FONT.mono,
+          fontSize: 11,
+          fontWeight: 800,
+          letterSpacing: ".04em",
+          cursor: "pointer",
+        }}
+      >
+        {hasNext ? "NEXT SHEET ▸" : "◂ BACK TO INDEX"}
+      </button>
     </div>
   );
 }
 
 function HandlerWidget({ xLeft, machine }: { xLeft: number; machine: Machine }) {
+  const sheet = useGameStore((s) => s.sheet);
+  const { response } = primaryBinding(sheet);
   const width = 300;
   return (
     <div
@@ -629,7 +678,7 @@ function HandlerWidget({ xLeft, machine }: { xLeft: number; machine: Machine }) 
     >
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
         <span>Δ HANDLER</span>
-        <span style={{ color: ZONE.accent }}>on TaskCommandStatus</span>
+        <span style={{ color: ZONE.accent }}>on {response}</span>
       </div>
       {machine.rules.length > 0 ? (
         <>

@@ -1,11 +1,41 @@
-// @normal-form/levels — sheet data (goal, palette, seeds, pars, fidelity notes,
-// citations). Sheets are JSON under sheets/; this module loads and types them.
-// Reference machines are test-only (packages/core/test) and never bundled here.
+// @normal-form/levels — sheet data (goal, palette, seeds, fidelity notes,
+// citations). Sheets are JSON under sheets/; this module loads, types, and
+// registers them. Reference machines are test-only (packages/core/test) and never
+// bundled here.
+//
+// The registry is the single ordered source of truth for the sheet lineup: the
+// game reads `SHEET_LIST` (id-ordered) for the drawing-index / progression flow
+// and looks sheets up by id via `getSheet`. De-hardcoding the game off a direct
+// `sheet_1_1` import onto this registry is WS-C.
 import type { Sheet } from "@normal-form/core";
 import sheet11 from "../sheets/w1/sheet-1-1.json" with { type: "json" };
+import sheet12 from "../sheets/w1/sheet-1-2.json" with { type: "json" };
 
 export const sheet_1_1: Sheet = sheet11 as unknown as Sheet;
+// WS-C infrastructure stub: a second solvable Command-2 sheet that proves the
+// registry + progression flow generalize past one hardcoded sheet. WS-F replaces
+// this with the real 1-2 "Skipping the Pleasantries" (needs new engine work).
+export const sheet_1_2: Sheet = sheet12 as unknown as Sheet;
 
-export const SHEETS: Readonly<Record<string, Sheet>> = {
-  [sheet_1_1.id]: sheet_1_1,
-};
+/** The sheet lineup in play order — the progression / drawing-index source. */
+export const SHEET_LIST: readonly Sheet[] = [sheet_1_1, sheet_1_2];
+
+export const SHEETS: Readonly<Record<string, Sheet>> = Object.fromEntries(
+  SHEET_LIST.map((s) => [s.id, s]),
+);
+
+/** The first sheet in the lineup (always unlocked). */
+export const FIRST_SHEET_ID: string = SHEET_LIST[0]?.id ?? "";
+
+/** Look a sheet up by id, or undefined if it isn't registered. */
+export function getSheet(id: string): Sheet | undefined {
+  return SHEETS[id];
+}
+
+/** The id of the sheet after `id` in play order, or undefined if `id` is last
+ *  (or unregistered) — drives CERTIFIED → next-sheet unlock. */
+export function nextSheetId(id: string): string | undefined {
+  const i = SHEET_LIST.findIndex((s) => s.id === id);
+  if (i < 0) return undefined;
+  return SHEET_LIST[i + 1]?.id;
+}

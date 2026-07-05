@@ -2,8 +2,8 @@
 // honesty surface: the subset of "lies we tell" that sheet 1-1 touches, listed by
 // the sheet's `fidelityNotes` keys. This is game commentary about the standard —
 // not a policed verbatim quote (those live in the validator/failure findings).
-import { sheet_1_1 } from "@normal-form/levels";
 import { useState } from "react";
+import { useGameStore } from "./store.ts";
 import { FONT, RADIUS, SURFACE, ZONE } from "./tokens.ts";
 
 const NOTES: Record<string, { title: string; body: string }> = {
@@ -27,7 +27,8 @@ const NOTES: Record<string, { title: string; body: string }> = {
 
 export function FidelityNotes() {
   const [open, setOpen] = useState(false);
-  const keys = sheet_1_1.fidelityNotes ?? [];
+  const sheet = useGameStore((s) => s.sheet);
+  const keys = sheet.fidelityNotes ?? [];
 
   return (
     <>
@@ -98,7 +99,9 @@ export function FidelityNotes() {
               }}
             >
               <span style={{ width: 9, height: 9, background: ZONE.stamp }} />
-              <span style={{ fontSize: 13, fontWeight: 800 }}>FIDELITY NOTES · SHEET 1-1</span>
+              <span style={{ fontSize: 13, fontWeight: 800 }}>
+                FIDELITY NOTES · SHEET {sheet.id}
+              </span>
               <button
                 type="button"
                 onClick={() => setOpen(false)}

@@ -1,21 +1,37 @@
-// The Blueprint puzzle screen (S4): full-viewport vertical stack — header band,
-// goal/metrics sub-bar, the three-column main row (palette · board · inspector),
-// and the bottom row (validator console · title block). One screen, three phases;
-// the chrome is identical across phases, only the board/inspector/console bodies
-// change. RUN is wired to the real engine; COMPOSE/HANDLERS are read-only shells
-// until editing lands in S5.
+// The app shell. Two screens (WS-C): the `select` drawing index and the `play`
+// Blueprint puzzle screen. The play screen is the full-viewport vertical stack —
+// header band, goal/run sub-bar, the three-column main row (palette · board ·
+// inspector), and the bottom row (validator console · title block). One screen,
+// three phases; the chrome is identical across phases, only the board/inspector/
+// console bodies change.
+import { useEffect } from "react";
 import { Board } from "./Board.tsx";
 import { Header } from "./Header.tsx";
 import { Inspector } from "./Inspector.tsx";
 import { Palette } from "./Palette.tsx";
+import { SheetSelect } from "./SheetSelect.tsx";
 import { SubBar } from "./SubBar.tsx";
+import { useGameStore } from "./store.ts";
 import { TitleBlock } from "./TitleBlock.tsx";
 import { FONT, LAYOUT, SURFACE } from "./tokens.ts";
 import { usePlayback } from "./usePlayback.ts";
+import { useRun } from "./useRun.ts";
 import { ValidatorConsole } from "./ValidatorConsole.tsx";
 
-export function App() {
+/** Certify the current sheet the moment all its seeds pass on the RUN screen —
+ *  this is what unlocks the next sheet + persists progress. */
+function useCertify() {
+  const phase = useGameStore((s) => s.phase);
+  const certifyCurrent = useGameStore((s) => s.certifyCurrent);
+  const { allPass } = useRun();
+  useEffect(() => {
+    if (phase === "run" && allPass) certifyCurrent();
+  }, [phase, allPass, certifyCurrent]);
+}
+
+function PlayScreen() {
   usePlayback();
+  useCertify();
   return (
     <div
       style={{
@@ -50,4 +66,9 @@ export function App() {
       </div>
     </div>
   );
+}
+
+export function App() {
+  const screen = useGameStore((s) => s.screen);
+  return screen === "select" ? <SheetSelect /> : <PlayScreen />;
 }

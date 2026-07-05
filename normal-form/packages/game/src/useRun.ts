@@ -11,7 +11,6 @@ import {
   runSeed,
   validate,
 } from "@normal-form/core";
-import { sheet_1_1 } from "@normal-form/levels";
 import { useMemo } from "react";
 import { type BoardModel, runFrames } from "./frames.ts";
 import { useGameStore } from "./store.ts";
@@ -30,14 +29,14 @@ export interface DerivedRun {
 }
 
 export function useRun(): DerivedRun {
+  const sheet = useGameStore((s) => s.sheet);
   const session = useGameStore((s) => s.session);
   const seedId = useGameStore((s) => s.seedId);
 
   return useMemo<DerivedRun>(() => {
     const machine = buildMachine(session);
-    const ready =
-      session.placed && validate(sheet_1_1, buildComposition(sheet_1_1, session)).length === 0;
-    const seed = sheet_1_1.seeds.find((s) => s.id === seedId);
+    const ready = session.placed && validate(sheet, buildComposition(sheet, session)).length === 0;
+    const seed = sheet.seeds.find((s) => s.id === seedId);
     if (!seed) {
       return {
         machine,
@@ -49,9 +48,9 @@ export function useRun(): DerivedRun {
         ready,
       };
     }
-    const result = runSeed(sheet_1_1, machine, seed);
+    const result = runSeed(sheet, machine, seed);
     const board = runFrames(result);
-    const all = runAllSeeds(sheet_1_1, machine);
+    const all = runAllSeeds(sheet, machine);
     return { machine, result, board, endTick: board.endTick, all, allPass: all.allPass, ready };
-  }, [session, seedId]);
+  }, [sheet, session, seedId]);
 }

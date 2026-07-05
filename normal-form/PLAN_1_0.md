@@ -79,10 +79,22 @@ All in `packages/game` + small `core`/`levels` touches. Depends on WS-A.*
 new flow — a naive player *must* fail seed ② and ③ before certifying — and no
 scoring surface remains.
 
-## WS-C — Level infrastructure (registry, flow, persistence)
+## WS-C — Level infrastructure (registry, flow, persistence) *(LANDED)*
 
 *The gating refactor for all content work. `packages/levels` + `game`. Depends
 on WS-B (shared files).*
+
+**Done:** `@normal-form/levels` now exports an id-ordered registry
+(`SHEET_LIST` / `getSheet` / `nextSheetId` / `FIRST_SHEET_ID`); the game reads the
+current sheet from the Zustand store (no component imports `sheet_1_1`); a
+`select` drawing-index screen (`SheetSelect.tsx`) drives play with predecessor-
+certified unlock; `persist.ts` saves `{certified, scripts, lastSheet}` to
+localStorage with JSON export/import and replay-based restore. A second registered
+sheet (`sheet-1-2`, an infrastructure **stub** — WS-F replaces it with the real
+1-2) proves the pipeline generalizes; it ships a reference machine + golden.
+Seed-count/`clampSeed`/circled-glyph and the "TaskCommand" header are all
+de-hardcoded (`sheet.ts` derives per-sheet bits). Save schema documented in
+`docs/04-tech.md`; `CLAUDE.md` updated.
 
 - **De-hardcode `sheet_1_1`.** Every game component currently imports it
   directly (`Board`/`Inspector`/`SubBar`/`Palette`/`Header`/`TitleBlock`/

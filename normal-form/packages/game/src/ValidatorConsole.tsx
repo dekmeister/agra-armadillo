@@ -4,8 +4,8 @@
 // readiness gate (V10) as an amber HANDLERS NOT READY state, not a compose error
 // (05-mvp amendment 3); RUN streams the per-tick event log for the selected seed.
 
-import { FINDINGS, type Finding, type RunEvent } from "@normal-form/core";
-import { sheet_1_1 } from "@normal-form/levels";
+import { FINDINGS, type Finding, type RunEvent, type Sheet } from "@normal-form/core";
+import { circled } from "./sheet.ts";
 import { useGameStore } from "./store.ts";
 import { ENUM_COLOR, FONT, RADIUS, STATUS, SURFACE, ZONE } from "./tokens.ts";
 import { useFindings } from "./useFindings.ts";
@@ -14,8 +14,6 @@ import { useRun } from "./useRun.ts";
 /** V10 (the terminal-handler readiness gate) carries this finding code; it is a
  *  readiness state, not a compose field error, so it is channeled separately. */
 const READINESS_CODE = "READY";
-
-const CIRCLED = ["①", "②", "③"] as const;
 
 function Badge({ text, bg }: { text: string; bg: string }) {
   return (
@@ -116,8 +114,8 @@ function FailureReplay({
   );
 }
 
-function busPolicy(seedId: number): string {
-  const seed = sheet_1_1.seeds.find((s) => s.id === seedId);
+function busPolicy(sheet: Sheet, seedId: number): string {
+  const seed = sheet.seeds.find((s) => s.id === seedId);
   const op = seed?.schedule[0]?.op;
   return op ? op.toUpperCase() : "IN-ORDER";
 }
@@ -160,6 +158,7 @@ function eventLine(ev: RunEvent, gated: boolean): { text: string; color: string 
 }
 
 export function ValidatorConsole() {
+  const sheet = useGameStore((s) => s.sheet);
   const phase = useGameStore((s) => s.phase);
   const tick = useGameStore((s) => s.tick);
   const seedId = useGameStore((s) => s.seedId);
@@ -193,7 +192,7 @@ export function ValidatorConsole() {
         <Badge text="0 ERRORS · READY" bg={STATUS.pass} />
       );
   } else {
-    badge = <Badge text={`RUNNING · SEED ${CIRCLED[seedId - 1] ?? seedId}`} bg={SURFACE.ink} />;
+    badge = <Badge text={`RUNNING · SEED ${circled(seedId)}`} bg={SURFACE.ink} />;
   }
 
   const seedPass = all?.results.find((r) => r.seedId === seedId)?.pass;
@@ -268,7 +267,7 @@ export function ValidatorConsole() {
         {phase === "run" && (
           <>
             <div>
-              ▸ tick {tick} · bus policy: <b>{busPolicy(seedId)}</b>
+              ▸ tick {tick} · bus policy: <b>{busPolicy(sheet, seedId)}</b>
               {seedPass !== undefined && (
                 <span style={{ color: seedPass ? STATUS.pass : STATUS.fail }}>
                   {" "}

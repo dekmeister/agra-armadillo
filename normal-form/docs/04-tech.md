@@ -84,6 +84,17 @@ Codegen emits TS types + runtime metadata (inspector field trees, validator
 tables). `tools/check-fidelity.ts` greps every name and number against
 `docs/References/` — CI fails on inventions, from day one.
 
+**The sheet registry is the progression source of truth (WS-C).**
+`@normal-form/levels` exports an id-ordered `SHEET_LIST` (+ `getSheet`,
+`nextSheetId`, `FIRST_SHEET_ID`); a sheet unlocks when its predecessor is
+certified. Progress persists to localStorage under `normal-form/save/v1` as
+`{ version, certified: Record<id,true>, scripts: Record<id, PlayerAction[]>,
+lastSheet }`. Because a solve *is* its recorded action script, restore-on-load is
+just `replayScript(sheet, scripts[id])` back into a `Session` — no serialized
+runtime state, nothing to drift, and the same object is the JSON export/import
+file (a shared solve replays byte-identically). The save is coerced leniently on
+read so a partial or older blob degrades rather than wiping progress.
+
 ## Risks and mitigations
 
 | Risk | Mitigation |
