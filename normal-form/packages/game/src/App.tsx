@@ -7,6 +7,7 @@
 import { useEffect } from "react";
 import { Board } from "./Board.tsx";
 import { Header } from "./Header.tsx";
+import { HowToPlay } from "./HowToPlay.tsx";
 import { Inspector } from "./Inspector.tsx";
 import { Palette } from "./Palette.tsx";
 import { SheetSelect } from "./SheetSelect.tsx";
@@ -14,9 +15,11 @@ import { SubBar } from "./SubBar.tsx";
 import { useGameStore } from "./store.ts";
 import { TitleBlock } from "./TitleBlock.tsx";
 import { FONT, LAYOUT, SURFACE } from "./tokens.ts";
+import { UciReference } from "./UciReference.tsx";
 import { usePlayback } from "./usePlayback.ts";
 import { useRun } from "./useRun.ts";
 import { ValidatorConsole } from "./ValidatorConsole.tsx";
+import { WelcomeCard } from "./WelcomeCard.tsx";
 
 /** Certify the current sheet the moment all its seeds pass on the RUN screen —
  *  this is what unlocks the next sheet + persists progress. */
@@ -70,5 +73,13 @@ function PlayScreen() {
 
 export function App() {
   const screen = useGameStore((s) => s.screen);
-  return screen === "select" ? <SheetSelect /> : <PlayScreen />;
+  const overlay = useGameStore((s) => s.overlay);
+  return (
+    <>
+      {screen === "select" ? <SheetSelect /> : <PlayScreen />}
+      {overlay === "reference" && <UciReference />}
+      {overlay === "howto" && <HowToPlay />}
+      {overlay === "welcome" && <WelcomeCard />}
+    </>
+  );
 }

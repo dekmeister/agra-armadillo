@@ -111,7 +111,21 @@ de-hardcoded (`sheet.ts` derives per-sheet bits). Save schema documented in
 **Done when:** two registered sheets (1-1 + a stub) can be played in sequence
 with unlock + reload-restore, all goldens green.
 
-## WS-D — Meta screens: welcome card, How to Play, UCI Reference
+## WS-D — Meta screens: welcome card, How to Play, UCI Reference *(LANDED)*
+
+**Done:** the three player-facing surfaces ship as store-driven overlays
+(`overlay` field on the Zustand store; `WelcomeCard`/`HowToPlay`/`UciReference`
+rendered in `App.tsx` after the screen ternary). The welcome card shows first
+visit only (`persist.hasSave`, never over a deep-linked view). The UCI Reference
+is the full 8-section codex: curated prose (overview, six patterns w/ SVG
+mini-diagrams, A-GRA bridge) authored in a new `reference:` section of
+`catalog/uci.yaml` and **fidelity-policed** (its CERT numbers, `names:` XSD
+identifiers, and verbatim quotes now grep-check in `tools/fidelity.ts`; a fake
+number/name/misquote fails `check:fidelity` — verified); catalog-bound tables
+(envelope, enums, concrete messages) render straight from `generated.ts`.
+Entry points: header `▤ UCI REFERENCE` / `? HOW TO PLAY`, the same two on the
+drawing index, locked+active palette chips deep-link to `pat-<name>`, and the
+inspector enum popover gains a `→ full entry` link to `enum-<name>`.
 
 *Docs `06-how-to-play.md` and `07-uci-reference.md` are the specs — copy lives
 there; port, don't rewrite. Depends on WS-C (header/nav + save detection);

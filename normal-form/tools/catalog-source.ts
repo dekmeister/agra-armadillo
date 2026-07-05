@@ -48,6 +48,54 @@ export interface CatalogFinding {
   quote?: string;
 }
 
+/** A verbatim quote in the reference codex, policed against `source` like a
+ *  finding quote (WS-D). */
+export interface CatalogReferenceQuote {
+  id: string;
+  source: string;
+  cite: string;
+  text: string;
+}
+
+/** One interaction-pattern block in the reference codex. Prose is unpoliced;
+ *  `cite` CERT numbers and any `names` (concrete XSD identifiers) are policed. */
+export interface CatalogReferencePattern {
+  name: string;
+  roles: string;
+  naming: string;
+  unlocksAt: string;
+  summary: string;
+  cite: string;
+  /** concrete XSD element/field names this block asserts (grep-checked) */
+  names: string[];
+}
+
+export interface CatalogReferenceDocument {
+  key: string;
+  title: string;
+  owns: string;
+}
+
+export interface CatalogReferenceBridgeRow {
+  primitive: string;
+  brainSwap: string;
+  serviceBus: string;
+}
+
+/** The curated prose layer of the in-game UCI REFERENCE screen (WS-D). Authored
+ *  in the YAML so its CERT numbers, XSD names, and quotes run through the same
+ *  fidelity gate as the mechanical catalog. */
+export interface CatalogReference {
+  overview: {
+    blurb: string[];
+    quote: CatalogReferenceQuote;
+    documents: CatalogReferenceDocument[];
+  };
+  patterns: CatalogReferencePattern[];
+  quotes: CatalogReferenceQuote[];
+  bridge: CatalogReferenceBridgeRow[];
+}
+
 export interface Catalog {
   version: number;
   xsd: string;
@@ -58,6 +106,7 @@ export interface Catalog {
   messages: CatalogMessage[];
   types: CatalogComplexType[];
   findings: CatalogFinding[];
+  reference: CatalogReference;
 }
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -105,6 +154,110 @@ function parseComplexType(raw: unknown, i: number, names: Set<string>): CatalogC
   const seen = new Set<string>();
   const fields = t.fields.map((f, j) => parseField(f, `${name}.fields[${j}]`, seen));
   return { name, ...(typeof t.cite === "string" ? { cite: t.cite } : {}), fields };
+}
+
+/** Parse the curated `reference:` codex (WS-D). Validates that every quote-bearing
+ *  entry names a real source key (like findings), so the fidelity gate can then
+ *  police its CERT numbers, XSD names, and verbatim quotes. */
+function parseReference(raw: unknown, sources: Record<string, string>): CatalogReference {
+  const r = asRecord(raw, "`reference`");
+
+  const strAt = (rec: Record<string, unknown>, ctx: string, k: string): string => {
+    const v = rec[k];
+    if (typeof v !== "string" || v.length === 0) fail(`${ctx}.${k} missing`);
+    return v;
+  };
+
+  const parseQuote = (rawQ: unknown, ctx: string): CatalogReferenceQuote => {
+    const q = asRecord(rawQ, ctx);
+    const source = strAt(q, ctx, "source");
+    if (source !== "xsd" && !(source in sources)) fail(`${ctx}: unknown source "${source}"`);
+    return {
+      id: strAt(q, ctx, "id"),
+      source,
+      cite: strAt(q, ctx, "cite"),
+      text: strAt(q, ctx, "text"),
+    };
+  };
+
+  const overviewRaw = asRecord(r.overview, "reference.overview");
+  const blurb = (
+    Array.isArray(overviewRaw.blurb)
+      ? overviewRaw.blurb
+      : fail("reference.overview.blurb must be a list")
+  ).map((b, i) => {
+    if (typeof b !== "string" || b.length === 0)
+      fail(`reference.overview.blurb[${i}] must be a string`);
+    return b;
+  });
+  // The overview self-description quote carries no `id`; give it a stable one.
+  const overviewQuoteRaw = asRecord(overviewRaw.quote, "reference.overview.quote");
+  const overviewQuote = parseQuote(
+    { id: "overview", ...overviewQuoteRaw },
+    "reference.overview.quote",
+  );
+  const documents = (
+    Array.isArray(overviewRaw.documents)
+      ? overviewRaw.documents
+      : fail("reference.overview.documents must be a list")
+  ).map((d, i) => {
+    const ctx = `reference.overview.documents[${i}]`;
+    const rec = asRecord(d, ctx);
+    return {
+      key: strAt(rec, ctx, "key"),
+      title: strAt(rec, ctx, "title"),
+      owns: strAt(rec, ctx, "owns"),
+    };
+  });
+
+  const patternNames = new Set<string>();
+  const patterns = (
+    Array.isArray(r.patterns) ? r.patterns : fail("reference.patterns must be a list")
+  ).map((p, i) => {
+    const ctx = `reference.patterns[${i}]`;
+    const rec = asRecord(p, ctx);
+    const name = strAt(rec, ctx, "name");
+    if (patternNames.has(name)) fail(`${ctx}: duplicate pattern ${name}`);
+    patternNames.add(name);
+    const names = rec.names === undefined ? [] : rec.names;
+    if (!Array.isArray(names)) fail(`${ctx}.names must be a list`);
+    return {
+      name,
+      roles: strAt(rec, ctx, "roles"),
+      naming: strAt(rec, ctx, "naming"),
+      unlocksAt: strAt(rec, ctx, "unlocksAt"),
+      summary: strAt(rec, ctx, "summary"),
+      cite: strAt(rec, ctx, "cite"),
+      names: names.map((n, j) => {
+        if (typeof n !== "string" || n.length === 0) fail(`${ctx}.names[${j}] must be a string`);
+        return n;
+      }),
+    };
+  });
+
+  const quoteIds = new Set<string>();
+  const quotes = (Array.isArray(r.quotes) ? r.quotes : fail("reference.quotes must be a list")).map(
+    (q, i) => {
+      const parsed = parseQuote(q, `reference.quotes[${i}]`);
+      if (quoteIds.has(parsed.id)) fail(`reference.quotes: duplicate id ${parsed.id}`);
+      quoteIds.add(parsed.id);
+      return parsed;
+    },
+  );
+
+  const bridge = (Array.isArray(r.bridge) ? r.bridge : fail("reference.bridge must be a list")).map(
+    (b, i) => {
+      const ctx = `reference.bridge[${i}]`;
+      const rec = asRecord(b, ctx);
+      return {
+        primitive: strAt(rec, ctx, "primitive"),
+        brainSwap: strAt(rec, ctx, "brainSwap"),
+        serviceBus: strAt(rec, ctx, "serviceBus"),
+      };
+    },
+  );
+
+  return { overview: { blurb, quote: overviewQuote, documents }, patterns, quotes, bridge };
 }
 
 export function loadCatalog(path: string = CATALOG_PATH): Catalog {
@@ -192,5 +345,7 @@ export function loadCatalog(path: string = CATALOG_PATH): Catalog {
     };
   });
 
-  return { version, xsd, sources, enums, envelope, messages, types, findings };
+  const reference = parseReference(raw.reference, sources);
+
+  return { version, xsd, sources, enums, envelope, messages, types, findings, reference };
 }

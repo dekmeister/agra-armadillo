@@ -305,3 +305,157 @@ export const FINDINGS = {
 
 export type FindingId = keyof typeof FINDINGS;
 export type FindingSpec = (typeof FINDINGS)[FindingId];
+
+/* --- UCI Reference codex: curated prose layer (WS-D; names/CERTs/quotes policed) --- */
+export const REFERENCE = {
+  "overview": {
+    "blurb": [
+      "UCI — the Universal Command and Control (C2) Interface — is a messaging standard: a common grammar that lets independently built systems command, query, and inform each other without sharing code, hardware, or even a transport.",
+      "Everything the game puts on the board is real: the message names, the fields, the state enums, and every rule that fails you is quoted verbatim from the standard. The game may omit; it never renames or invents."
+    ],
+    "quote": {
+      "id": "overview",
+      "source": "std",
+      "cite": "STD-001 §1",
+      "text": "Universal Command and Control (C2) Interface (UCI) is a messaging standard"
+    },
+    "documents": [
+      {
+        "key": "std",
+        "title": "STD-001",
+        "owns": "compliance requirements (RQMT USTD-…) — who must conform to what"
+      },
+      {
+        "key": "unis",
+        "title": "UNIS / SPC-002",
+        "owns": "the interaction patterns and their CERT UNIS-… numbers — behavior on the wire"
+      },
+      {
+        "key": "spc",
+        "title": "SPC-001",
+        "owns": "schema style and structure, the CERT SCH-… numbers — how a message is shaped"
+      }
+    ]
+  },
+  "patterns": [
+    {
+      "name": "Status-1",
+      "roles": "Producer → Consumer(s)",
+      "naming": "*Status (or a name matching no other primitive)",
+      "unlocksAt": "0-1",
+      "summary": "Fire-and-forget publication to one or more consumers; terminal on send, no acknowledgement. Announces state nobody has to accept.",
+      "cite": "UNIS §4.1 CERT UNIS-000076; structure SPC-001 §5.1.6",
+      "names": []
+    },
+    {
+      "name": "Data-1",
+      "roles": "Producer → Consumer(s)",
+      "naming": "bare name (a datum, e.g. an Entity or a Plan)",
+      "unlocksAt": "0-2",
+      "summary": "Fire-and-forget publication of a datum other components reference; asynchronous and/or periodic. Like Status-1, no delivery is owed.",
+      "cite": "UNIS §4.2 CERT UNIS-000081; structure SPC-001 §5.1.5",
+      "names": []
+    },
+    {
+      "name": "DataRecord-1",
+      "roles": "Producer → Consumer(s)",
+      "naming": "bare name; optional DataRecordInstanceID keys the record",
+      "unlocksAt": "post-1.0 (World 2)",
+      "summary": "Data-1 for managed records. With no instance ID it acts in the same manner as the Data-1 pattern; with one, the record has a lifecycle.",
+      "cite": "UNIS §4.3 CERT UNIS-000087; structure SPC-001 §5.1.4 CERT SCH-002490",
+      "names": [
+        "DataRecordInstanceID"
+      ]
+    },
+    {
+      "name": "DataRequest-2",
+      "roles": "Requester → Requestee",
+      "naming": "*DataRequest / *DataRequestStatus",
+      "unlocksAt": "1-4",
+      "summary": "Ask for current data; the response is implicitly accepted by returning the requested status information. A request, not a command.",
+      "cite": "UNIS §4.4 CERT UNIS-000093; structure SPC-001 §5.1.3 CERT SCH-002462",
+      "names": []
+    },
+    {
+      "name": "ActionRequest-2",
+      "roles": "Requester → Requestee",
+      "naming": "*Request / *RequestStatus",
+      "unlocksAt": "1-4",
+      "summary": "Ask a component to run a process that may be queued and worked over time; tracked through RequestProcessingStateEnum to a terminal state.",
+      "cite": "UNIS §4.5 CERT UNIS-000099; structure SPC-001 §5.1.2 CERT SCH-002463",
+      "names": []
+    },
+    {
+      "name": "Command-2",
+      "roles": "Commander → Commandee",
+      "naming": "*Command / *CommandStatus",
+      "unlocksAt": "1-1",
+      "summary": "Demand an activity of a commandee and hold proof it happened; tracked through CommandProcessingStateEnum with a terminal state that ends the sequence.",
+      "cite": "UNIS §4.6 CERT UNIS-000105; structure SPC-001 §5.1.1 CERT SCH-002461",
+      "names": [
+        "TaskCommand",
+        "TaskCommandStatus"
+      ]
+    }
+  ],
+  "quotes": [
+    {
+      "id": "bus-no-ordering",
+      "source": "unis",
+      "cite": "UNIS §4",
+      "text": "there can be no assumption that messages come in any order or that there is guaranteed delivery"
+    },
+    {
+      "id": "terminal-end",
+      "source": "unis",
+      "cite": "UNIS §4.6.2",
+      "text": "once a terminal state is reported, the sequence should end"
+    },
+    {
+      "id": "received-optional",
+      "source": "spc",
+      "cite": "SPC-001 §5.1.1",
+      "text": "that state may not be reported if the Commandee immediately transitions to one of the terminal states"
+    },
+    {
+      "id": "terminal-ignore-cancel",
+      "source": "xsd",
+      "cite": "XSD CommandProcessingStateEnum (ACCEPTED / REJECTED annotations)",
+      "text": "This is a terminal state and the Subsystem or Service will ignore all subsequent updates to the Command, including CANCEL."
+    }
+  ],
+  "bridge": [
+    {
+      "primitive": "Command-2",
+      "brainSwap": "MA_FlightCommandMT / MA_FlightCommandStatusMT",
+      "serviceBus": "MA_TaskCommandMT / MA_TaskStatusMT round trip"
+    },
+    {
+      "primitive": "ActionRequest-2",
+      "brainSwap": "MA_ControlRequestMT / MA_ControlRequestStatusMT (the handshake)",
+      "serviceBus": "MA_ApprovalRequestMT / MA_ApprovalRequestStatusMT (the QB approval gate)"
+    },
+    {
+      "primitive": "DataRequest-2",
+      "brainSwap": "SubsystemStatusDataRequestMT (on-demand status)",
+      "serviceBus": "same demand class inside status interactions"
+    },
+    {
+      "primitive": "Status-1",
+      "brainSwap": "ControlStatusMT; SubsystemStatusMT / ServiceStatusMT heartbeats; TaskStatusMT",
+      "serviceBus": "heartbeats and link-health reports (MA_CommTeamReportMT)"
+    },
+    {
+      "primitive": "Data-1",
+      "brainSwap": "MA_FlightCapabilityMT; MA_TaskMT; EntityMT tracks; MA_RoutePlanMT",
+      "serviceBus": "COP distribution / sensor-track fan-out"
+    },
+    {
+      "primitive": "DataRecord-1",
+      "brainSwap": "MA_FaultMT; FileMetadataMT",
+      "serviceBus": "Mission Data Package artifacts (MP class pre-load)"
+    }
+  ]
+} as const;
+
+export type Reference = typeof REFERENCE;

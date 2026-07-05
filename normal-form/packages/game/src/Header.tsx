@@ -5,9 +5,28 @@
 import { useGameStore } from "./store.ts";
 import { FONT, LAYOUT, RADIUS, SURFACE } from "./tokens.ts";
 
+/** Shared style for the header's ghost nav buttons (INDEX / reference / help). */
+function navBtn(): React.CSSProperties {
+  return {
+    alignSelf: "center",
+    background: "transparent",
+    color: SURFACE.vellum,
+    border: "1px solid rgba(243,239,228,.4)",
+    borderRadius: RADIUS.chip,
+    padding: "3px 9px",
+    fontFamily: FONT.mono,
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: ".04em",
+    cursor: "pointer",
+  };
+}
+
 export function Header() {
   const sheet = useGameStore((s) => s.sheet);
   const backToSelect = useGameStore((s) => s.backToSelect);
+  const openReference = useGameStore((s) => s.openReference);
+  const openHowTo = useGameStore((s) => s.openHowTo);
   return (
     <header
       style={{
@@ -27,19 +46,7 @@ export function Header() {
           type="button"
           onClick={backToSelect}
           title="back to the drawing index"
-          style={{
-            alignSelf: "center",
-            background: "transparent",
-            color: SURFACE.vellum,
-            border: "1px solid rgba(243,239,228,.4)",
-            borderRadius: RADIUS.chip,
-            padding: "3px 9px",
-            fontFamily: FONT.mono,
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: ".04em",
-            cursor: "pointer",
-          }}
+          style={navBtn()}
         >
           ◂ INDEX
         </button>
@@ -49,17 +56,30 @@ export function Header() {
         </span>
       </div>
 
-      <span
-        style={{
-          fontSize: 11,
-          fontWeight: 700,
-          border: "1px solid rgba(243,239,228,.4)",
-          padding: "2px 9px",
-          borderRadius: RADIUS.chip,
-        }}
-      >
-        SHEET {sheet.id} · {sheet.title}
-      </span>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <button
+          type="button"
+          onClick={() => openReference()}
+          title="the UCI codex — patterns, enums, messages, citations"
+          style={navBtn()}
+        >
+          ▤ UCI REFERENCE
+        </button>
+        <button type="button" onClick={openHowTo} title="how to play" style={navBtn()}>
+          ? HOW TO PLAY
+        </button>
+        <span
+          style={{
+            fontSize: 11,
+            fontWeight: 700,
+            border: "1px solid rgba(243,239,228,.4)",
+            padding: "2px 9px",
+            borderRadius: RADIUS.chip,
+          }}
+        >
+          SHEET {sheet.id} · {sheet.title}
+        </span>
+      </div>
     </header>
   );
 }

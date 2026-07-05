@@ -30,57 +30,104 @@ function paletteState(sheet: Sheet) {
 }
 
 function LockedChip({ pattern, color, index }: { pattern: string; color: string; index: number }) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-        border: "1px dashed rgba(36,67,95,.4)",
-        borderLeft: `3px solid ${color}`,
-        padding: "6px 8px",
-        borderRadius: RADIUS.chip,
-        opacity: 0.55,
-        fontFamily: FONT.mono,
-      }}
-    >
-      <span style={{ fontSize: 13, color }}>{index >= 0 ? circled(index + 1) : "○"}</span>
-      <span style={{ fontSize: 12, fontWeight: 500, flex: 1 }}>{pattern}</span>
-      <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: ".08em" }}>LOCK</span>
-    </div>
-  );
-}
-
-function ActiveChip({ pattern }: { pattern: string }) {
-  const placed = useGameStore((s) => s.session.placed);
-  const place = useGameStore((s) => s.place);
+  // Locked chips still teach: clicking one opens the pattern's reference entry.
+  const openReference = useGameStore((s) => s.openReference);
   return (
     <button
       type="button"
-      onClick={() => !placed && place()}
-      title={placed ? "placed on the board" : "click to place its arrow pair"}
+      onClick={() => openReference(`pat-${pattern}`)}
+      title="locked — read what this pattern is for"
       style={{
         display: "flex",
         alignItems: "center",
         gap: 8,
         width: "100%",
         textAlign: "left",
+        background: "transparent",
+        border: "1px dashed rgba(36,67,95,.4)",
+        borderLeft: `3px solid ${color}`,
+        padding: "6px 8px",
+        borderRadius: RADIUS.chip,
+        opacity: 0.7,
+        fontFamily: FONT.mono,
+        color: SURFACE.ink,
+        cursor: "pointer",
+      }}
+    >
+      <span style={{ fontSize: 13, color }}>{index >= 0 ? circled(index + 1) : "○"}</span>
+      <span style={{ fontSize: 12, fontWeight: 500, flex: 1 }}>{pattern}</span>
+      <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: ".08em" }}>LOCK ▸</span>
+    </button>
+  );
+}
+
+function ActiveChip({ pattern }: { pattern: string }) {
+  const placed = useGameStore((s) => s.session.placed);
+  const place = useGameStore((s) => s.place);
+  const openReference = useGameStore((s) => s.openReference);
+  // A wrapper (not a button) holds two sibling buttons: the primary place() chip
+  // and a separate ⓘ that deep-links to the reference — nesting a button inside a
+  // button is invalid HTML.
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        width: "100%",
         background: ZONE.accentFill,
         border: `2px solid ${ZONE.accent}`,
         borderLeft: `5px solid ${ZONE.accent}`,
         boxShadow: SHADOW.amber2,
-        padding: "7px 8px",
         borderRadius: RADIUS.chip,
-        fontFamily: FONT.mono,
-        cursor: placed ? "default" : "pointer",
       }}
     >
-      <span style={{ width: 7, height: 7, borderRadius: "50%", background: ZONE.accent }} />
-      <span style={{ fontSize: 13, fontWeight: 800, flex: 1 }}>{pattern}</span>
-      <span style={{ fontSize: 8, fontWeight: 700, color: ZONE.accent, letterSpacing: ".08em" }}>
-        {placed ? "PLACED ✓" : "PLACE ▸"}
-      </span>
-    </button>
+      <button
+        type="button"
+        onClick={() => !placed && place()}
+        title={placed ? "placed on the board" : "click to place its arrow pair"}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          flex: 1,
+          minWidth: 0,
+          textAlign: "left",
+          background: "transparent",
+          border: "none",
+          padding: "7px 8px",
+          fontFamily: FONT.mono,
+          cursor: placed ? "default" : "pointer",
+          color: SURFACE.ink,
+        }}
+      >
+        <span style={{ width: 7, height: 7, borderRadius: "50%", background: ZONE.accent }} />
+        <span style={{ fontSize: 13, fontWeight: 800, flex: 1 }}>{pattern}</span>
+        <span style={{ fontSize: 8, fontWeight: 700, color: ZONE.accent, letterSpacing: ".08em" }}>
+          {placed ? "PLACED ✓" : "PLACE ▸"}
+        </span>
+      </button>
+      <button
+        type="button"
+        aria-label={`${pattern} reference`}
+        title="read this pattern in the UCI Reference"
+        onClick={() => openReference(`pat-${pattern}`)}
+        style={{
+          background: "transparent",
+          border: "none",
+          borderLeft: "1px solid rgba(192,125,31,.4)",
+          padding: "6px 8px",
+          fontFamily: FONT.mono,
+          fontSize: 13,
+          fontWeight: 800,
+          color: ZONE.accent,
+          cursor: "pointer",
+          alignSelf: "stretch",
+        }}
+      >
+        ⓘ
+      </button>
+    </div>
   );
 }
 

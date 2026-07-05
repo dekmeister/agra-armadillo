@@ -135,6 +135,8 @@ function toolbarBtn(): React.CSSProperties {
 
 export function SheetSelect() {
   const importState = useGameStore((s) => s.importState);
+  const openReference = useGameStore((s) => s.openReference);
+  const openHowTo = useGameStore((s) => s.openHowTo);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const onExport = () => {
@@ -184,6 +186,12 @@ export function SheetSelect() {
             </div>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
+            <button type="button" onClick={() => openReference()} style={toolbarBtn()}>
+              ▤ UCI REFERENCE
+            </button>
+            <button type="button" onClick={openHowTo} style={toolbarBtn()}>
+              ? HOW TO PLAY
+            </button>
             <button type="button" onClick={onExport} style={toolbarBtn()}>
               ⭳ EXPORT
             </button>

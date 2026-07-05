@@ -22,7 +22,7 @@ import {
 } from "@normal-form/core";
 import { FIRST_SHEET_ID, getSheet, nextSheetId } from "@normal-form/levels";
 import { create } from "zustand";
-import { loadSave, parseSave, type SaveState, writeSave } from "./persist.ts";
+import { hasSave, loadSave, parseSave, type SaveState, writeSave } from "./persist.ts";
 
 /** RUN is unblocked when the arrow is placed and the composition validates clean. */
 function isReady(sheet: Sheet, session: Session): boolean {
@@ -31,6 +31,9 @@ function isReady(sheet: Sheet, session: Session): boolean {
 
 export type Phase = "compose" | "handlers" | "run";
 type Screen = "select" | "play";
+/** The three player-facing meta surfaces (WS-D), rendered as full-viewport
+ *  overlays over the current screen; `null` when none is open. */
+type Overlay = "welcome" | "howto" | "reference" | null;
 
 /** Handoff run speed: default 750ms, clamp 250–1500ms. */
 export const RUN_SPEED_DEFAULT = 750;
@@ -48,6 +51,11 @@ export interface GameState {
    *  ✔/✖ reveal so verdicts don't leak before the player asks for them. Reset
    *  on any edit that changes the machine/composition. */
   ranAll: boolean;
+
+  /** the open meta overlay (welcome / how-to / reference), or null (WS-D) */
+  overlay: Overlay;
+  /** deep-link target within the UCI Reference (e.g. "pat-Command-2"), or null */
+  referenceAnchor: string | null;
 
   /** the sheet currently being played */
   sheet: Sheet;
@@ -70,6 +78,16 @@ export interface GameState {
   goNextSheet: () => void;
   /** replace all progress from an imported save file (JSON export/import) */
   importState: (json: string) => void;
+
+  // Meta overlays (WS-D).
+  /** open the HOW TO PLAY overlay */
+  openHowTo: () => void;
+  /** open the UCI REFERENCE overlay, optionally scrolled to a deep-link anchor */
+  openReference: (anchor?: string) => void;
+  /** close whichever meta overlay is open */
+  closeOverlay: () => void;
+  /** dismiss the welcome card and open the first sheet */
+  startFromWelcome: () => void;
 
   setPhase: (phase: Phase) => void;
   /** Run every seed headless and reveal the seed strip verdicts. */
@@ -155,6 +173,12 @@ export const useGameStore = create<GameState>((set, get) => {
     runSpeed: RUN_SPEED_DEFAULT,
     ranAll: false,
 
+    // First visit (no save) opens the welcome card — but never over a deep-linked
+    // view (headless screenshots load straight into play; `screen === "play"`
+    // there flags the deep link, per readInitialView).
+    overlay: view.screen === "select" && !hasSave(save) ? "welcome" : null,
+    referenceAnchor: null,
+
     sheet: startSheet,
     certified: save.certified,
     scripts: save.scripts,
@@ -209,6 +233,14 @@ export const useGameStore = create<GameState>((set, get) => {
         screen: "select",
         playing: false,
       });
+    },
+
+    openHowTo: () => set({ overlay: "howto" }),
+    openReference: (anchor) => set({ overlay: "reference", referenceAnchor: anchor ?? null }),
+    closeOverlay: () => set({ overlay: null, referenceAnchor: null }),
+    startFromWelcome: () => {
+      set({ overlay: null, referenceAnchor: null });
+      get().selectSheet(FIRST_SHEET_ID);
     },
 
     // Switching phases resets tick and stops playback (handoff § Interactions).

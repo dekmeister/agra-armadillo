@@ -64,7 +64,41 @@ export function collectTokens(): Token[] {
     if (f.quote) tokens.push({ value: f.quote, kind: "quote", owner: `${f.id} (${f.source})` });
   }
 
+  // The curated reference codex (WS-D) is policed exactly like the rest: CERT
+  // numbers in every `cite:`, concrete XSD names in every `names:` list, and each
+  // verbatim quote against its `source`. Prose (blurb, summaries, bridge rows) is
+  // not policed — see packages/levels/catalog/uci.yaml `reference:` header.
+  const ref = catalog.reference;
+  const refQuote = (q: (typeof ref.quotes)[number], owner: string) => {
+    for (const c of q.cite.match(CERT_RE) ?? []) tokens.push({ value: c, kind: "cert", owner });
+    tokens.push({ value: q.text, kind: "quote", owner: `${owner} (${q.source})` });
+  };
+  refQuote(ref.overview.quote, "reference.overview");
+  for (const q of ref.quotes) refQuote(q, `reference.quotes.${q.id}`);
+  for (const p of ref.patterns) {
+    for (const c of p.cite.match(CERT_RE) ?? [])
+      tokens.push({ value: c, kind: "cert", owner: `reference.patterns.${p.name}` });
+    for (const n of p.names)
+      tokens.push({ value: n, kind: "name", owner: `reference.patterns.${p.name}` });
+  }
+
   return tokens;
+}
+
+/** The verbatim quotes the reference codex asserts, paired with their source key
+ *  — checked in findOffenders alongside the finding quotes. */
+export function referenceQuotes(): { text: string; source: string; owner: string }[] {
+  const ref = loadCatalog().reference;
+  const out = [
+    {
+      text: ref.overview.quote.text,
+      source: ref.overview.quote.source,
+      owner: "reference.overview",
+    },
+  ];
+  for (const q of ref.quotes)
+    out.push({ text: q.text, source: q.source, owner: `reference.quotes.${q.id}` });
+  return out;
 }
 
 /**
@@ -119,6 +153,12 @@ export function findOffenders(refsDir: string = REFS_DIR): FidelityResult {
     if (!f.quote) continue;
     if (!sourceText(f.source).includes(normalizeWhitespace(f.quote))) {
       offenders.push({ value: f.quote, kind: "quote", owner: `${f.id} (${f.source})` });
+    }
+  }
+  // Reference-codex quotes follow the same separate-loop split as findings.
+  for (const q of referenceQuotes()) {
+    if (!sourceText(q.source).includes(normalizeWhitespace(q.text))) {
+      offenders.push({ value: q.text, kind: "quote", owner: `${q.owner} (${q.source})` });
     }
   }
 

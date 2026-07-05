@@ -352,6 +352,7 @@ const CODEX: Record<(typeof ENUMS)[number], string> = {
 
 function EnumLegend() {
   const [open, setOpen] = useState<(typeof ENUMS)[number] | null>(null);
+  const openReference = useGameStore((s) => s.openReference);
   return (
     <div
       style={{
@@ -411,6 +412,25 @@ function EnumLegend() {
         >
           <b style={{ color: ENUM_COLOR[open] }}>{open}</b> — {CODEX[open]}{" "}
           <span style={{ opacity: 0.6 }}>(CommandProcessingStateEnum · SPC-001 §5.1.1)</span>
+          <div style={{ marginTop: 5 }}>
+            <button
+              type="button"
+              onClick={() => openReference("enum-CommandProcessingStateEnum")}
+              style={{
+                background: "transparent",
+                border: "none",
+                padding: 0,
+                fontFamily: FONT.mono,
+                fontSize: 10,
+                fontWeight: 800,
+                color: ENUM_COLOR[open],
+                cursor: "pointer",
+                textDecoration: "underline",
+              }}
+            >
+              → full entry in UCI Reference
+            </button>
+          </div>
         </div>
       )}
     </div>

@@ -45,4 +45,22 @@ describe("fidelity: catalog is fully traceable to the UCI sources", () => {
       ).toBe(true);
     }
   });
+
+  it("the fidelity gate walks the reference codex (WS-D): its CERTs, names, and quotes are policed", () => {
+    // A future refactor that silently stops walking `reference:` must fail here.
+    const tokens = collectTokens();
+    const fromRef = tokens.filter((t) => t.owner.startsWith("reference."));
+    expect(
+      fromRef.some((t) => t.kind === "cert"),
+      "reference cert token",
+    ).toBe(true);
+    expect(
+      fromRef.some((t) => t.kind === "name"),
+      "reference name token",
+    ).toBe(true);
+    expect(
+      fromRef.some((t) => t.kind === "quote"),
+      "reference quote token",
+    ).toBe(true);
+  });
 });

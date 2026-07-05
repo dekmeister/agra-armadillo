@@ -72,6 +72,17 @@ export function writeSave(save: SaveState): void {
   }
 }
 
+/** Whether the player has any prior progress — drives the first-visit welcome
+ *  card (WS-D): shown only when no save exists (no last sheet, nothing certified,
+ *  no recorded work). */
+export function hasSave(save: SaveState): boolean {
+  return (
+    save.lastSheet !== undefined ||
+    Object.keys(save.certified).length > 0 ||
+    Object.keys(save.scripts).length > 0
+  );
+}
+
 /** Pretty-printed save for the JSON export (download). */
 export function exportSave(save: SaveState): string {
   return JSON.stringify(save, null, 2);
