@@ -184,7 +184,7 @@ function HandlersBody() {
   // unset is the player's call — and NOT flagging RECEIVED keeps the seed-② gate
   // lesson intact).
   const requiredTerminals = new Set(
-    sheet.requestee.onCommand.map((r) => r.report).filter(isTerminalState),
+    (sheet.requestee?.onCommand ?? []).map((r) => r.report).filter(isTerminalState),
   );
 
   return (

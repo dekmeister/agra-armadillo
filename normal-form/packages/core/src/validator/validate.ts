@@ -81,7 +81,7 @@ export function validate(sheet: Sheet, c: Composition): Finding[] {
     findings.push(makeFinding("V9-roles"));
 
   // V10 — a handler is wired for every reachable terminal state (READY gate).
-  const reachableTerminals = sheet.requestee.onCommand
+  const reachableTerminals = (sheet.requestee?.onCommand ?? [])
     .map((r) => r.report)
     .filter((s) => isTerminalState(s));
   const hasTerminalHandler = reachableTerminals.every(

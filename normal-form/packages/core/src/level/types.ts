@@ -5,12 +5,9 @@
 import type { CommandStateEnum } from "../messages/index.ts";
 import type { RequesteeConfig } from "../requestee/index.ts";
 import type { Seed } from "../seeds.ts";
+import type { WinClause } from "./goal.ts";
 
-export interface WinClause {
-  readonly worldState?: "activityExecuted";
-  readonly machineState?: "terminal";
-  readonly party: string;
-}
+export type { WinClause };
 
 export interface Goal {
   readonly text: string;
@@ -41,6 +38,17 @@ export interface ComposeSpec {
   readonly editable: readonly string[];
 }
 
+/** Marks a one-way (`-1`) sheet and carries its sim knobs. Presence selects the
+ *  producer sim path (`runSeedOneWay`) over the Command-2 path. The producer is the
+ *  player lifeline; every other lifeline is a consumer. */
+export interface OneWaySpec {
+  /** ticks a consumer holds a datum after a received publication before it goes
+   *  stale (Data-1 hold goals). Irrelevant to deadline goals (Status-1). */
+  readonly staleAfter?: number;
+  /** ticks between a publish and its receipt at a consumer (defaults to 1). */
+  readonly latency?: number;
+}
+
 export interface Sheet {
   readonly id: string;
   readonly world: string;
@@ -49,8 +57,12 @@ export interface Sheet {
   readonly palette: readonly PaletteEntry[];
   readonly lifelines: readonly Lifeline[];
   readonly compose: ComposeSpec;
-  readonly opening: OpeningCommand;
-  readonly requestee: RequesteeConfig;
+  /** the opening command (Command-2 / request sheets only; absent on `-1`). */
+  readonly opening?: OpeningCommand;
+  /** the scripted respondent (Command-2 / request sheets only; absent on `-1`). */
+  readonly requestee?: RequesteeConfig;
+  /** present on `-1` sheets — selects the one-way producer sim path. */
+  readonly oneway?: OneWaySpec;
   readonly seeds: readonly Seed[];
   /** the one-line lesson shown on the CERTIFIED stamp (docs/03-levels). */
   readonly recap: string;

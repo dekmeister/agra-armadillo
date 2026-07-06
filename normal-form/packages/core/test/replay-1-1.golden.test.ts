@@ -13,7 +13,7 @@ import { describe, expect, it } from "vitest";
 const SOLVE: PlayerAction[] = [
   { do: "place" },
   { do: "setField", name: "SystemID", value: "sys-alpha-01" },
-  { do: "setField", name: "CommandID", value: sheet_1_1.opening.commandId },
+  { do: "setField", name: "CommandID", value: sheet_1_1.opening!.commandId },
   { do: "setHandler", on: "RECEIVED", action: "wait" },
   { do: "setHandler", on: "ACCEPTED", action: "terminal" },
   { do: "setHandler", on: "REJECTED", action: "retry" },

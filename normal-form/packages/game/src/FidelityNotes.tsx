@@ -15,6 +15,18 @@ const NOTES: Record<string, { title: string; body: string }> = {
     title: "#2 · The bus is visible",
     body: "Real UCI prescribes no transport at all — that absence is exactly why the spec forbids ordering and delivery assumptions. We render the adversary so you can reason about it.",
   },
+  "lie-3-mode-exercise": {
+    title: "#3 · EXERCISE mode is a teaching rule",
+    body: "This envelope sheet runs as EXERCISE; the “Mode must match the sheet” check is a game rule for envelope literacy, not a spec CERT. The standard defines the MessageModeEnum values (LIVE / EXERCISE / SIMULATION / NONEXERCISE_SIMULATION), not a consumer filtering behavior.",
+  },
+  "lie-4-drops-oneway": {
+    title: "#4 · Drops are scoped to -1 patterns",
+    body: "The spec permits loss anywhere; we only ever drop fire-and-forget (Status-1/Data-1) arrows, for teachability. A dropped -2 request would just be a timeout-retry lesson, and retry-on-silence is not normalized behaviour we can cite.",
+  },
+  "lie-staleafter": {
+    title: "Datum staleness is game apparatus",
+    body: "A -1 datum “goes stale” a fixed number of ticks after each publication (staleAfter). The standard prescribes no freshness rule and leaves periodicity to the producer (SPC-001 §5.1.6). What is real: with no ack, republication is your only recourse — the staleness window just forces you to feel it.",
+  },
   "lie-5-retry-budget": {
     title: "#5 · Retry budgets are a game rule",
     body: "UNIS normalizes what happens after a response arrives (the terminal-state rule); it does not prescribe requester timeout/retry policy. The REJECTED-path retry — a NEW command with a fresh UUID, never an UPDATE — is our reading of the enum’s annotations.",

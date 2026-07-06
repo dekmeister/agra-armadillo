@@ -9,6 +9,7 @@ import type { Machine } from "../machine/schema.ts";
 import { respond } from "../requestee/index.ts";
 import type { Seed } from "../seeds.ts";
 import type { CommandMessage } from "../types.ts";
+import { goalHoldsAt, type WinSnapshot } from "./goal.ts";
 import type { Sheet } from "./types.ts";
 
 /** Ticks between the Commander sending the command and SystemB receiving it. */
@@ -22,9 +23,17 @@ export interface RunEvent {
     | "status-delivered"
     | "status-dropped"
     | "goal-reached"
-    | "fault";
+    | "fault"
+    // one-way (`-1`) producer path (see producer/):
+    | "published"
+    | "datum-delivered"
+    | "datum-stale"
+    | "datum-dropped"
+    | "status-shown";
   readonly detail: string;
 }
+
+const EMPTY: ReadonlySet<string> = new Set();
 
 export interface RunResult {
   readonly seedId: number;
@@ -38,6 +47,9 @@ export interface RunResult {
 }
 
 export function runSeed(sheet: Sheet, machine: Machine, seed: Seed): RunResult {
+  if (!sheet.opening || !sheet.requestee) {
+    throw new Error(`runSeed: sheet ${sheet.id} is not a Command-2 sheet (use runSeedOneWay)`);
+  }
   const log: RunEvent[] = [];
   const commandId = sheet.opening.commandId;
   const command: CommandMessage = {
@@ -54,11 +66,16 @@ export function runSeed(sheet: Sheet, machine: Machine, seed: Seed): RunResult {
   const lastDelivery = deliveries.reduce((m, d) => Math.max(m, d.tick), 0);
   const runEnd = sheet.maxTicks ?? Math.max(lastDelivery, activityTick ?? 0);
 
+  // World-state clauses name parties by lifeline id: the requestee owns the
+  // activity, the player-Commander owns the proof.
+  const commanderId = sheet.lifelines.find((l) => l.player)?.id ?? "commander";
+  const commandeeId = sheet.lifelines.find((l) => !l.player)?.id ?? "systemB";
+  const winAll = sheet.goal.win.all;
+
   let ms = initialMachineState(machine);
   let activityExecuted = false;
   let goalTick: number | null = null;
-
-  const goalHolds = () => activityExecuted && ms.proofCount >= 1;
+  const timeline: WinSnapshot[] = [];
 
   for (let tick = 0; tick <= runEnd; tick++) {
     if (activityTick !== null && tick === activityTick && !activityExecuted) {
@@ -84,7 +101,14 @@ export function runSeed(sheet: Sheet, machine: Machine, seed: Seed): RunResult {
       if (ms.fault && !prevFault) log.push({ tick, kind: "fault", detail: ms.fault });
     }
 
-    if (goalTick === null && goalHolds()) {
+    // Record this tick's world-state, then judge the declarative goal.
+    timeline.push({
+      activityExecuted: activityExecuted ? new Set([commandeeId]) : EMPTY,
+      proofHeld: ms.proofCount >= 1 ? new Set([commanderId]) : EMPTY,
+      statusShown: EMPTY,
+      datumHeld: EMPTY,
+    });
+    if (goalTick === null && goalHoldsAt(winAll, timeline, tick)) {
       goalTick = tick;
       log.push({ tick, kind: "goal-reached", detail: sheet.goal.text });
     }

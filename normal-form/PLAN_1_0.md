@@ -147,14 +147,21 @@ and the fidelity gate fails on an invented name in the reference YAML.
 ## WS-E — World 0 (sheets 0-1, 0-2, 0-3)
 
 *New engine capabilities + three sheets, per `docs/03-levels.md` W0. `core` +
-`levels` + `game`. Depends on WS-C.*
+`levels` + `game`. Depends on WS-C. **Sized as three sub-stages — see
+`PLAN_WS_1_E.md`: E1 (engine foundation, goldens-only) → E2 (0-1 & 0-2 playable) →
+E3 (0-3 + filed-finding). E1 is a shippable, no-player-visible-change increment.***
 
-- **Engine:** `drop` seed op (schema slot exists in `seeds.ts` vocabulary,
-  unimplemented); multi-consumer fan-out for -1 patterns (0-2 has three
-  consumer lifelines — board must render 2–4 lifelines from sheet data);
-  Status-1/Data-1 pattern semantics (terminal-on-send, periodic republish as a
-  compose-time choice); world-state goals "console shows status by tick N" /
-  "datum held continuously t6–t12".
+- **Engine:** `drop` seed op — **net-new** (the `SeedOp` union is the closed set
+  `reorder | dup | delay`; `drop` was only a header comment, so this adds a
+  `DropOp` arm + an exhaustive `applyOp` case — the first op that *removes* a
+  pending); a generalized seeded bus + goal evaluator (`Goal.win` was dead data —
+  `runSeed` hardcoded the goal); a **parallel one-way producer sim path** (Status-1/
+  Data-1 have no response enum and are terminal-on-send — the artifact is a publish
+  plan, not a reactive machine); multi-consumer fan-out for -1 patterns (0-2 has
+  three consumer lifelines — board must render 2–4 lifelines from sheet data);
+  world-state goals "console shows status by tick N" (deadline) / "datum held
+  continuously t6–t12" (continuous interval, with a `staleAfter` staleness rule —
+  see `docs/03-levels.md` 0-2 and `docs/02-fidelity.md` §2).
 - **Catalog:** concrete Status-1/Data-1 message bindings + citations (pick real
   XSD global elements; verify with the fidelity gate before building on them).
 - **The "wrong palette" finding (0-3):** the one novel UI affordance in 1.0 —

@@ -1,0 +1,57 @@
+{
+  "id": "0-2",
+  "world": "w0",
+  "title": "Fire and Forget",
+  "goal": {
+    "text": "All three consumers hold the datum continuously from tick 6 to tick 12.",
+    "win": {
+      "all": [
+        { "heldContinuously": { "party": "consumer1", "fromTick": 6, "toTick": 12 } },
+        { "heldContinuously": { "party": "consumer2", "fromTick": 6, "toTick": 12 } },
+        { "heldContinuously": { "party": "consumer3", "fromTick": 6, "toTick": 12 } }
+      ]
+    }
+  },
+  "palette": [
+    { "pattern": "Data-1", "unlocked": true, "cite": "UNIS §4.2, CERT UNIS-000081" },
+    { "pattern": "Status-1", "unlocked": false },
+    { "pattern": "Command-2", "unlocked": false }
+  ],
+  "lifelines": [
+    { "id": "you", "label": "Producer (you)", "player": true },
+    { "id": "consumer1", "label": "Consumer A" },
+    { "id": "consumer2", "label": "Consumer B" },
+    { "id": "consumer3", "label": "Consumer C" }
+  ],
+  "oneway": { "staleAfter": 2, "latency": 1 },
+  "compose": {
+    "initialFields": {
+      "SystemID": "SYS-A",
+      "Timestamp": "",
+      "SchemaVersion": "002.5",
+      "Mode": "EXERCISE"
+    },
+    "editable": ["Timestamp"]
+  },
+  "seeds": [
+    { "id": 1, "label": "in-order", "schedule": [] },
+    {
+      "id": 2,
+      "label": "drop first send to Consumer B",
+      "schedule": [{ "op": "drop", "msg": "s0:consumer2" }]
+    },
+    {
+      "id": 3,
+      "label": "drop every odd send",
+      "schedule": [
+        { "op": "drop", "msg": "s0" },
+        { "op": "drop", "msg": "s2" },
+        { "op": "drop", "msg": "s4" },
+        { "op": "drop", "msg": "s6" }
+      ]
+    }
+  ],
+  "recap": "Fire-and-forget has no ack — republication is the only tool.",
+  "fidelityNotes": ["lie-2-visible-bus", "lie-4-drops-oneway", "lie-staleafter"],
+  "cites": ["CERT UNIS-000081", "UNIS §4", "UNIS §4.2", "SPC-001 §5.1.6"]
+}

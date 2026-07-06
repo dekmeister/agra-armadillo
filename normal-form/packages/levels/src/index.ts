@@ -8,8 +8,16 @@
 // and looks sheets up by id via `getSheet`. De-hardcoding the game off a direct
 // `sheet_1_1` import onto this registry is WS-C.
 import type { Sheet } from "@normal-form/core";
+import sheet01 from "../sheets/w0/sheet-0-1.json" with { type: "json" };
+import sheet02 from "../sheets/w0/sheet-0-2.json" with { type: "json" };
 import sheet11 from "../sheets/w1/sheet-1-1.json" with { type: "json" };
 import sheet12 from "../sheets/w1/sheet-1-2.json" with { type: "json" };
+
+// World 0 (WS-E). Authored + goldens-proven in E1, but NOT yet in SHEET_LIST — the
+// shipped game must never show an unplayable sheet. E2 registers 0-1/0-2 once the
+// one-way UI (publish-plan editor + board fan-out) lands; E3 registers 0-3.
+export const sheet_0_1: Sheet = sheet01 as unknown as Sheet;
+export const sheet_0_2: Sheet = sheet02 as unknown as Sheet;
 
 export const sheet_1_1: Sheet = sheet11 as unknown as Sheet;
 // WS-C infrastructure stub: a second solvable Command-2 sheet that proves the

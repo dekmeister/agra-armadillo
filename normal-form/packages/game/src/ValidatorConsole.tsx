@@ -154,6 +154,17 @@ function eventLine(ev: RunEvent, gated: boolean): { text: string; color: string 
       return { text: "✔ goal reached", color: STATUS.pass };
     case "fault":
       return { text: `✖ ${ev.detail}`, color: STATUS.fail };
+    // one-way (`-1`) producer path (World 0; wired into the UI in WS-E E2):
+    case "published":
+      return { text: `▲ ${ev.detail}`, color: dim };
+    case "datum-delivered":
+      return { text: ev.detail, color: SURFACE.ink };
+    case "status-shown":
+      return { text: ev.detail, color: ENUM_COLOR.ACCEPTED };
+    case "datum-stale":
+      return { text: `${ev.detail} — stale`, color: dim };
+    case "datum-dropped":
+      return { text: `${ev.detail} — dropped`, color: STATUS.fail };
   }
 }
 

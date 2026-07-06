@@ -34,15 +34,23 @@ Seed vocabulary (the whole adversary, each move cited to UNIS §4):
   *Recap:* "Every UCI message rides the same envelope — the validator is the
   gate." *Citation:* XSD `MessageType`/`HeaderType`; CERT UNIS-000076.
 - **0-2 Fire and Forget.** *(~4 min)* *Goal:* all three consumers hold the datum
-  continuously from tick 6 to tick 12. *Palette:* Data-1. *Seeds (3):* in-order;
-  drop(first send to consumer 2); drop(every odd send). A single send passes
-  seed ① and fails ② — there is **no ack and no recourse**; the pass is periodic
-  republication (Status-1/Data-1 messages are "asynchronous and/or periodic",
-  SPC-001 §5.1.6 — periodicity is the producer's choice, and here it's the only
-  tool you have). *Lesson:* -1 patterns give you no proof of delivery; terminal
-  state is *on send*. *Recap:* "Fire-and-forget has no ack — republication is
-  the only tool." *Citation:* UNIS §4.2, §4.2.2, CERT UNIS-000081; UNIS §4 (no
-  guaranteed delivery).
+  continuously from tick 6 to tick 12. *Palette:* Data-1. **Staleness rule (game
+  apparatus — disclosed in `02-fidelity.md` §2 and the sheet's Fidelity Notes):** a
+  consumer *holds* the datum for `staleAfter = 2` ticks after each received
+  publication; a later publication refreshes the hold. Continuous coverage of the
+  7-tick window therefore demands *periodic republication* — a single send goes
+  stale and cannot cover it. *Seeds (3):* in-order; drop(first send → consumer 2);
+  drop(every odd send). The reference publish plan republishes every tick (first
+  send at tick 4, eight sends) so that losing the first send to one consumer, or
+  every other send, still leaves each consumer refreshed within `staleAfter`. A
+  single send fails even the polite seed ①; a too-slow cadence (every 2 ticks)
+  survives ① but the odd-drop seed ③ opens a stale gap. There is **no ack and no
+  recourse** — republication is the only tool (Status-1/Data-1 messages are
+  "asynchronous and/or periodic", SPC-001 §5.1.6 — periodicity is the producer's
+  choice, and here it is the only one you have). *Lesson:* -1 patterns give you no
+  proof of delivery; terminal state is *on send*. *Recap:* "Fire-and-forget has no
+  ack — republication is the only tool." *Citation:* UNIS §4.2, §4.2.2, CERT
+  UNIS-000081; UNIS §4 (no guaranteed delivery); SPC-001 §5.1.6 (periodicity).
 - **0-3 Pattern Choice Is Semantics.** *(~4 min)* *Goal:* three jobs (announce
   untracked status; publish a datum other components will reference; answer
   "give me your current X" — a trap) each reach their world-state. *Palette:*

@@ -4,11 +4,13 @@
 // is pass/fail — scoring was cut at the MVP review (WS-B).
 
 export * from "./bus.ts";
+export * from "./level/goal.ts";
 export * from "./level/runtime.ts";
 export * from "./level/types.ts";
 export * from "./machine/interpreter.ts";
 export * from "./machine/schema.ts";
 export * from "./messages/index.ts";
+export * from "./producer/index.ts";
 export * from "./requestee/index.ts";
 export * from "./seeds.ts";
 export * from "./session/index.ts";

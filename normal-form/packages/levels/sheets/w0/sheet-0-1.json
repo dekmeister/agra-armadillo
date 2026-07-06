@@ -1,0 +1,41 @@
+{
+  "id": "0-1",
+  "world": "w0",
+  "title": "Hello, Bus",
+  "goal": {
+    "text": "SystemB's console shows your status by tick 4.",
+    "win": {
+      "all": [{ "statusShownBy": { "party": "systemB", "byTick": 4 } }]
+    }
+  },
+  "palette": [
+    { "pattern": "Status-1", "unlocked": true, "cite": "UNIS §4.1, CERT UNIS-000076" },
+    { "pattern": "Data-1", "unlocked": false },
+    { "pattern": "Command-2", "unlocked": false }
+  ],
+  "lifelines": [
+    { "id": "you", "label": "Producer (you)", "player": true },
+    { "id": "systemB", "label": "SystemB console" }
+  ],
+  "oneway": { "latency": 1 },
+  "compose": {
+    "initialFields": {
+      "SystemID": null,
+      "Timestamp": "",
+      "SchemaVersion": "002.5",
+      "Mode": "LIVE"
+    },
+    "editable": ["SystemID", "Timestamp", "Mode"]
+  },
+  "seeds": [
+    { "id": 1, "label": "in-order", "schedule": [] },
+    {
+      "id": 2,
+      "label": "delayed status",
+      "schedule": [{ "op": "delay", "msg": "s0:systemB", "by": 2 }]
+    }
+  ],
+  "recap": "Every UCI message rides the same envelope — the validator is the gate.",
+  "fidelityNotes": ["lie-2-visible-bus", "lie-3-mode-exercise"],
+  "cites": ["CERT UNIS-000076", "UNIS §4"]
+}

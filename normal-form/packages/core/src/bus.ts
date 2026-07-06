@@ -1,40 +1,52 @@
-// The seeded bus: turns a requestee's status *emissions* into a deterministic
-// ordered list of *deliveries* to the Commander, after applying a seed's
-// disruption schedule. Pure and total: same emissions + same schedule ⇒
-// byte-identical deliveries, every run (determinism rule).
+// The seeded bus: turns scheduled items into a deterministic, totally-ordered list
+// of deliveries after applying a seed's disruption schedule. Pure and total: same
+// items + same schedule ⇒ byte-identical deliveries, every run (determinism rule).
+//
+// The bus is generic over an opaque `payload` and keyed by an abstract `key` the
+// seed ops target (WS-E). Both sim paths share it: the Command-2 path keys items by
+// response state (`scheduleDeliveries` below), the one-way path keys them by
+// publication link (`producer/`).
 import type { CommandProcessingStateEnum } from "./messages/index.ts";
 import type { Seed, SeedOp } from "./seeds.ts";
 
-/** SystemB generates a status of `state` for `commandId` at `emitTick`. */
-export interface Emission {
-  readonly state: CommandProcessingStateEnum;
-  readonly commandId: string;
-  readonly emitTick: number;
+/** An item to schedule: an abstract `key` (what seed ops target) + a delivery
+ *  `tick` + an opaque `payload` the caller recovers on the other side. */
+export interface BusItem<P> {
+  readonly key: string;
+  readonly tick: number;
+  readonly payload: P;
 }
 
-/** A concrete delivery to the Commander, with a total order (`seq`) within the run. */
-export interface Delivery {
-  readonly state: CommandProcessingStateEnum;
-  readonly commandId: string;
+/** A scheduled item with a total order (`seq`) within the run. */
+export interface BusDelivery<P> {
+  readonly key: string;
   readonly tick: number;
   readonly seq: number;
   readonly duplicate: boolean;
+  readonly payload: P;
 }
 
-interface Pending {
-  state: CommandProcessingStateEnum;
-  commandId: string;
+interface Pending<P> {
+  key: string;
   tick: number;
   duplicate: boolean;
-  order: number; // stable tiebreak: authored emission order, duplicates after
+  order: number; // stable tiebreak: authored order, duplicates after
+  payload: P;
 }
 
-/** First non-duplicate pending for `state` (the "real" delivery an op targets). */
-function findPrimary(list: Pending[], state: CommandProcessingStateEnum): Pending | undefined {
-  return list.find((p) => p.state === state && !p.duplicate);
+/** A pending matches a target key exactly, or by broadcast prefix: a bare send key
+ *  `s0` names every `s0:<consumer>` link. (Command keys carry no `:`, so they only
+ *  ever match exactly.) */
+function matches(key: string, target: string): boolean {
+  return key === target || key.startsWith(`${target}:`);
 }
 
-function applyOp(list: Pending[], op: SeedOp, nextOrder: () => number): void {
+/** First non-duplicate pending matching `target` (the "real" item an op re-times). */
+function findPrimary<P>(list: Pending<P>[], target: string): Pending<P> | undefined {
+  return list.find((p) => !p.duplicate && matches(p.key, target));
+}
+
+function applyOp<P>(list: Pending<P>[], op: SeedOp, nextOrder: () => number): void {
   switch (op.op) {
     case "reorder": {
       // Deliver `after` before `before`: push `before` to just after `after`'s slot.
@@ -53,29 +65,30 @@ function applyOp(list: Pending[], op: SeedOp, nextOrder: () => number): void {
     case "dup": {
       const orig = findPrimary(list, op.msg);
       if (orig) {
-        list.push({
-          state: orig.state,
-          commandId: orig.commandId,
-          tick: orig.tick + op.delay,
-          duplicate: true,
-          order: nextOrder(),
-        });
+        list.push({ ...orig, tick: orig.tick + op.delay, duplicate: true, order: nextOrder() });
+      }
+      return;
+    }
+    case "drop": {
+      // Remove every pending the key names (a link, or a whole broadcast).
+      for (let i = list.length - 1; i >= 0; i--) {
+        if (matches(list[i]!.key, op.msg)) list.splice(i, 1);
       }
       return;
     }
   }
 }
 
-/** Apply a seed's schedule to emissions and produce the ordered delivery list. */
-export function scheduleDeliveries(emissions: readonly Emission[], seed: Seed): Delivery[] {
+/** Apply a seed's schedule to `items` and produce the ordered delivery list. */
+export function scheduleGeneric<P>(items: readonly BusItem<P>[], seed: Seed): BusDelivery<P>[] {
   let order = 0;
   const nextOrder = () => order++;
-  const pending: Pending[] = emissions.map((e) => ({
-    state: e.state,
-    commandId: e.commandId,
-    tick: e.emitTick,
+  const pending: Pending<P>[] = items.map((it) => ({
+    key: it.key,
+    tick: it.tick,
     duplicate: false,
     order: nextOrder(),
+    payload: it.payload,
   }));
 
   for (const op of seed.schedule) applyOp(pending, op, nextOrder);
@@ -83,10 +96,55 @@ export function scheduleDeliveries(emissions: readonly Emission[], seed: Seed): 
   // Total order: by delivery tick, then authored order (stable across runs).
   pending.sort((a, b) => a.tick - b.tick || a.order - b.order);
   return pending.map((p, i) => ({
-    state: p.state,
-    commandId: p.commandId,
+    key: p.key,
     tick: p.tick,
     seq: i,
     duplicate: p.duplicate,
+    payload: p.payload,
+  }));
+}
+
+// ---------------------------------------------------------------------------
+// Command-2 adapter (the response-status stream to the Commander).
+// ---------------------------------------------------------------------------
+
+/** SystemB generates a status of `state` for `commandId` at `emitTick`. */
+export interface Emission {
+  readonly state: CommandProcessingStateEnum;
+  readonly commandId: string;
+  readonly emitTick: number;
+}
+
+/** A concrete status delivery to the Commander, with a total order (`seq`). */
+export interface Delivery {
+  readonly state: CommandProcessingStateEnum;
+  readonly commandId: string;
+  readonly tick: number;
+  readonly seq: number;
+  readonly duplicate: boolean;
+}
+
+interface CommandPayload {
+  readonly state: CommandProcessingStateEnum;
+  readonly commandId: string;
+}
+
+/** Apply a seed's schedule to status emissions and produce the ordered deliveries.
+ *  Keys are the response states, so `reorder(RECEIVED, ACCEPTED)` etc. name them. */
+export function scheduleDeliveries(emissions: readonly Emission[], seed: Seed): Delivery[] {
+  const delivered = scheduleGeneric<CommandPayload>(
+    emissions.map((e) => ({
+      key: e.state,
+      tick: e.emitTick,
+      payload: { state: e.state, commandId: e.commandId },
+    })),
+    seed,
+  );
+  return delivered.map((d) => ({
+    state: d.payload.state,
+    commandId: d.payload.commandId,
+    tick: d.tick,
+    seq: d.seq,
+    duplicate: d.duplicate,
   }));
 }

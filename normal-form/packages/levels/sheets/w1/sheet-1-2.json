@@ -7,7 +7,7 @@
     "win": {
       "all": [
         { "worldState": "activityExecuted", "party": "systemB" },
-        { "machineState": "terminal", "party": "commander" }
+        { "holdsProof": true, "party": "commander" }
       ]
     }
   },
