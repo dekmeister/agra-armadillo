@@ -25,6 +25,37 @@ function genUuid(): string {
   });
 }
 
+/** The browser clock as an ISO-8601 UTC timestamp — passes V2. Game-layer only:
+ *  the concrete string is recorded via `setField`, so the replay stays deterministic
+ *  (it re-applies the stored value, never re-reads the clock). */
+function nowIso(): string {
+  return new Date().toISOString();
+}
+
+/** Placeholder hint per editable envelope field (what shape the value takes). */
+function placeholderFor(name: string): string {
+  switch (name) {
+    case "SystemID":
+      return "⟨required⟩";
+    case "Timestamp":
+      return "ISO-8601, e.g. 2026-01-01T00:00:00Z";
+    case "CommandID":
+      return "canonical UUID";
+    case "Mode":
+      return "LIVE / EXERCISE / SIMULATION / NONEXERCISE_SIMULATION";
+    default:
+      return "";
+  }
+}
+
+/** One-click value generators for the fields that have a canonical machine source —
+ *  a UUID (crypto) or the current time (browser clock). Fields absent here are typed
+ *  by hand. */
+const FIELD_GENERATORS: Record<string, { label: string; title: string; gen: () => string }> = {
+  CommandID: { label: "⟳ generate UUID", title: "insert a fresh canonical UUID", gen: genUuid },
+  Timestamp: { label: "⟳ now", title: "insert the current time (ISO-8601)", gen: nowIso },
+};
+
 function ZoneHeader() {
   const sheet = useGameStore((s) => s.sheet);
   const { request, publication } = primaryBinding(sheet);
@@ -114,7 +145,7 @@ function ComposeBody() {
                 <input
                   aria-label={name}
                   value={value ?? ""}
-                  placeholder={name === "SystemID" ? "⟨required⟩" : "canonical UUID"}
+                  placeholder={placeholderFor(name)}
                   onChange={(e) => setField(name, e.target.value === "" ? null : e.target.value)}
                   style={{
                     width: "100%",
@@ -130,11 +161,11 @@ function ComposeBody() {
                     borderRadius: 2,
                   }}
                 />
-                {name === "CommandID" && (
+                {FIELD_GENERATORS[name] && (
                   <button
                     type="button"
-                    onClick={() => setField("CommandID", genUuid())}
-                    title="insert a fresh canonical UUID"
+                    onClick={() => setField(name, FIELD_GENERATORS[name]!.gen())}
+                    title={FIELD_GENERATORS[name]!.title}
                     style={{
                       marginTop: 4,
                       padding: "2px 8px",
@@ -149,7 +180,7 @@ function ComposeBody() {
                       cursor: "pointer",
                     }}
                   >
-                    ⟳ generate UUID
+                    {FIELD_GENERATORS[name]!.label}
                   </button>
                 )}
               </>
