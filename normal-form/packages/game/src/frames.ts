@@ -82,6 +82,16 @@ export function runFrames(result: RunResult): BoardModel {
           color: ZONE.oneWay,
         });
         break;
+      case "command-retried":
+        // The machine's fresh NEW command after a REJECTED (sheet 1-3).
+        arrows.push({
+          key: `req-${i}`,
+          dir: "request",
+          tick: ev.tick,
+          label: "TaskCommand ↻ →",
+          color: ENUM_COLOR.REJECTED,
+        });
+        break;
       case "status-delivered":
       case "status-dropped": {
         const state = stateOf(ev.detail);

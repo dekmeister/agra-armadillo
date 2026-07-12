@@ -1,9 +1,9 @@
 {
-  "id": "1-2",
+  "id": "1-3",
   "world": "w1",
-  "title": "Skipping the Pleasantries",
+  "title": "Rejection Letter",
   "goal": {
-    "text": "SystemB performs the tasked activity; you hold proof — even when it never says RECEIVED.",
+    "text": "SystemB performs the tasked activity — after rejecting your first command; you hold proof.",
     "win": {
       "all": [
         { "worldState": "activityExecuted", "party": "systemB" },
@@ -31,16 +31,16 @@
   "compose": {
     "initialFields": {
       "SystemID": null,
-      "Timestamp": "2026-07-05T11:20:41Z",
+      "Timestamp": "2026-07-08T14:02:19Z",
       "SchemaVersion": "002.5",
       "Mode": "LIVE",
-      "CommandID": "3f2504e0-4f89-41d3-9a0c-0305e82c3301",
+      "CommandID": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
       "CommandState": "NEW"
     },
     "editable": ["SystemID"]
   },
   "opening": {
-    "commandId": "3f2504e0-4f89-41d3-9a0c-0305e82c3301",
+    "commandId": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
     "commandState": "NEW"
   },
   "requestee": {
@@ -48,30 +48,27 @@
       { "report": "RECEIVED", "at": 2 },
       { "report": "ACCEPTED", "at": 4, "thenExecuteActivity": true }
     ],
-    "rejects": []
+    "rejects": [{ "report": "REJECTED", "at": 2, "reason": "INVALID_INPUT_PARAMETER" }]
   },
   "seeds": [
     { "id": 1, "label": "in-order", "schedule": [] },
     {
       "id": 2,
-      "label": "terse — no RECEIVED",
-      "schedule": [],
-      "requestee": {
-        "onCommand": [{ "report": "ACCEPTED", "at": 2, "thenExecuteActivity": true }],
-        "rejects": []
-      }
+      "label": "retry path reordered",
+      "schedule": [{ "op": "reorder", "before": "RECEIVED", "after": "ACCEPTED" }]
     },
     {
       "id": 3,
-      "label": "terse + duplicate ACCEPTED",
-      "schedule": [{ "op": "dup", "msg": "ACCEPTED", "delay": 2 }],
-      "requestee": {
-        "onCommand": [{ "report": "ACCEPTED", "at": 2, "thenExecuteActivity": true }],
-        "rejects": []
-      }
+      "label": "straggler REJECTED",
+      "schedule": [{ "op": "dup", "msg": "REJECTED", "delay": 6 }]
     }
   ],
-  "recap": "RECEIVED is a courtesy, not a contract.",
-  "fidelityNotes": ["lie-1-bounded-seeds", "lie-2-visible-bus", "commandee-variant-per-seed"],
-  "cites": ["CERT UNIS-000105", "SPC-001 §5.1.1", "UNIS §4"]
+  "recap": "REJECTED kills the CommandID — a retry is a new command.",
+  "fidelityNotes": [
+    "lie-1-bounded-seeds",
+    "lie-2-visible-bus",
+    "lie-5-retry-budget",
+    "reject-by-attempt"
+  ],
+  "cites": ["CERT UNIS-000105", "UNIS §4", "SPC-001 §5.1.1"]
 }

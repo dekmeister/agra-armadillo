@@ -33,10 +33,18 @@ describe("sheet registry", () => {
   });
 
   it("registers World 0 then World 1 in order", () => {
-    expect(SHEET_LIST.map((s) => s.id).slice(0, 5)).toEqual(["0-1", "0-2", "0-3", "1-1", "1-2"]);
+    expect(SHEET_LIST.map((s) => s.id).slice(0, 6)).toEqual([
+      "0-1",
+      "0-2",
+      "0-3",
+      "1-1",
+      "1-2",
+      "1-3",
+    ]);
     expect(nextSheetId("0-1")).toBe("0-2");
     expect(nextSheetId("0-2")).toBe("0-3");
     expect(nextSheetId("0-3")).toBe("1-1");
     expect(nextSheetId("1-1")).toBe("1-2");
+    expect(nextSheetId("1-2")).toBe("1-3");
   });
 });

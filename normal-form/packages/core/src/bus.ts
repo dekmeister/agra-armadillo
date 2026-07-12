@@ -108,11 +108,13 @@ export function scheduleGeneric<P>(items: readonly BusItem<P>[], seed: Seed): Bu
 // Command-2 adapter (the response-status stream to the Commander).
 // ---------------------------------------------------------------------------
 
-/** SystemB generates a status of `state` for `commandId` at `emitTick`. */
+/** SystemB generates a status of `state` for `commandId` at `emitTick`. A REJECTED
+ *  status may carry a `reason` (a `CannotComplyEnum` value; sheet 1-3). */
 export interface Emission {
   readonly state: CommandProcessingStateEnum;
   readonly commandId: string;
   readonly emitTick: number;
+  readonly reason?: string;
 }
 
 /** A concrete status delivery to the Commander, with a total order (`seq`). */
@@ -122,11 +124,13 @@ export interface Delivery {
   readonly tick: number;
   readonly seq: number;
   readonly duplicate: boolean;
+  readonly reason?: string;
 }
 
 interface CommandPayload {
   readonly state: CommandProcessingStateEnum;
   readonly commandId: string;
+  readonly reason?: string;
 }
 
 /** Apply a seed's schedule to status emissions and produce the ordered deliveries.
@@ -136,7 +140,7 @@ export function scheduleDeliveries(emissions: readonly Emission[], seed: Seed): 
     emissions.map((e) => ({
       key: e.state,
       tick: e.emitTick,
-      payload: { state: e.state, commandId: e.commandId },
+      payload: { state: e.state, commandId: e.commandId, reason: e.reason },
     })),
     seed,
   );
@@ -146,5 +150,6 @@ export function scheduleDeliveries(emissions: readonly Emission[], seed: Seed): 
     tick: d.tick,
     seq: d.seq,
     duplicate: d.duplicate,
+    ...(d.payload.reason !== undefined ? { reason: d.payload.reason } : {}),
   }));
 }

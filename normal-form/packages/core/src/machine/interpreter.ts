@@ -77,9 +77,10 @@ export function react(
 
   if (rule.action === "terminal") {
     terminal = true;
-  } else if (rule.action === "retry" && (rule.budget ?? 0) > 0) {
+  } else if (rule.action === "retry" && ms.commandsSent - 1 < (rule.budget ?? 0)) {
     // A retry is a NEW command with a fresh UUID (terminal states ignore UPDATEs).
-    // Deterministic id derivation — no RNG.
+    // Bounded by the rule's budget (retries used = commandsSent - 1); deterministic
+    // id derivation — no RNG. The runtime retires `myCommandId` once this fires.
     commandsSent += 1;
     outbound.push({
       type: "TaskCommand",

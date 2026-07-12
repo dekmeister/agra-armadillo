@@ -35,6 +35,13 @@ enums:
     cite: "XSD MessageModeEnum"
     values: [LIVE, EXERCISE, SIMULATION, NONEXERCISE_SIMULATION]
 
+  # The reason a command can't be complied with (rides on the REJECTED status via
+  # CommandProcessingStateReason). Full enum is large; the game surfaces the one
+  # value it teaches (under-specified command → 1-3). Omit, never invent.
+  - name: CannotComplyEnum
+    cite: "XSD CannotComplyEnum; CannotComplyType.Reason on CommandStatusBaseType (SPC-001 §5.1.1)"
+    values: [INVALID_INPUT_PARAMETER]
+
 # --- Envelope (wraps every placed message) ---------------------------------
 # uci:MessageType = SecurityInformation + MessageHeader (uci:HeaderType).
 envelope:
@@ -73,6 +80,7 @@ messages:
     fields:
       - { name: CommandID, ref: ID_Type, required: true, cite: "correlation key back to the TaskCommand" }
       - { name: CommandProcessingState, enum: CommandProcessingStateEnum, required: true }
+      - { name: CommandProcessingStateReason, required: false, cite: "CannotComplyType.Reason (CannotComplyEnum); populated on REJECTED — sheet 1-3" }
 
   # One-way (-1) publications (WS-E). No response message, terminal-on-send; the
   # producer fans them out to one or more consumers. Concrete real global elements.

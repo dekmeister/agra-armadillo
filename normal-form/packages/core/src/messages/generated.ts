@@ -19,6 +19,9 @@ export type MessageModeEnum =
   | "SIMULATION"
   | "NONEXERCISE_SIMULATION";
 
+export type CannotComplyEnum =
+  | "INVALID_INPUT_PARAMETER";
+
 /* --- Message & type interfaces --- */
 export interface MessageType {
   SecurityInformation: string;
@@ -47,6 +50,7 @@ export interface TaskCommand {
 export interface TaskCommandStatus {
   CommandID: ID_Type;
   CommandProcessingState: CommandProcessingStateEnum;
+  CommandProcessingStateReason?: string;
 }
 
 export interface SubsystemStatus {
@@ -87,6 +91,13 @@ export const MESSAGE_CATALOG = {
         "NONEXERCISE_SIMULATION"
       ],
       "cite": "XSD MessageModeEnum"
+    },
+    "CannotComplyEnum": {
+      "name": "CannotComplyEnum",
+      "values": [
+        "INVALID_INPUT_PARAMETER"
+      ],
+      "cite": "XSD CannotComplyEnum; CannotComplyType.Reason on CommandStatusBaseType (SPC-001 §5.1.1)"
     }
   },
   "envelope": {
@@ -177,6 +188,11 @@ export const MESSAGE_CATALOG = {
           "name": "CommandProcessingState",
           "required": true,
           "enum": "CommandProcessingStateEnum"
+        },
+        {
+          "name": "CommandProcessingStateReason",
+          "required": false,
+          "cite": "CannotComplyType.Reason (CannotComplyEnum); populated on REJECTED — sheet 1-3"
         }
       ],
       "mt": "TaskCommandStatusMT",

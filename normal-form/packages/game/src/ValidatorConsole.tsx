@@ -127,6 +127,9 @@ function eventLine(ev: RunEvent, gated: boolean): { text: string; color: string 
   switch (ev.kind) {
     case "command-sent":
       return { text: `${ev.detail} sent →`, color: dim };
+    case "command-retried":
+      // The machine retried after a REJECTED: a fresh NEW command (sheet 1-3).
+      return { text: `↻ retry — ${ev.detail} sent →`, color: ENUM_COLOR.REJECTED };
     case "status-delivered":
       // detail is `${state} → ${terminal|wait}`.
       return { text: `${ev.detail}`, color: SURFACE.ink };

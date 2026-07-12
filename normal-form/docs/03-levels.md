@@ -87,25 +87,36 @@ Seed vocabulary (the whole adversary, each move cited to UNIS §4):
   `05-mvp.md` + post-review amendments.
 - **1-2 Skipping the Pleasantries.** *(~3 min)* *Goal:* activity performed on a
   commandee that acknowledges tersely. *Palette:* Command-2. *Seeds (3):*
-  in-order with RECEIVED; **no RECEIVED at all** (straight to ACCEPTED);
-  straight to REJECTED. A machine that *waits for* RECEIVED before arming its
-  ACCEPTED handler hangs on seed ②. *Lesson:* RECEIVED is not guaranteed —
-  "that state may not be reported if the Commandee immediately transitions to
-  one of the terminal states." *Recap:* "RECEIVED is a courtesy, not a
-  contract." *Citation:* SPC-001 §5.1.1 (Fig 5.1-3 state diagram + quoted
-  note); CERT UNIS-000105.
+  in-order with RECEIVED; **no RECEIVED at all** (the terse commandee goes
+  straight to ACCEPTED); terse **plus** a duplicate ACCEPTED after the terminal
+  state. A machine that *waits for* RECEIVED before arming its ACCEPTED handler
+  hangs on seed ② (the pre-checked gate); seed ③ additionally re-checks the
+  terminal-state rule under the terse condition. Each seed is a distinct
+  **commandee variant** (a legal behavior choice per SPC-001 §5.1.1, not a
+  transport drop — `drop` is scoped to `-1` patterns, fidelity lie #4). *Lesson:*
+  RECEIVED is not guaranteed — "that state may not be reported if the Commandee
+  immediately transitions to one of the terminal states." *Recap:* "RECEIVED is a
+  courtesy, not a contract." *Citation:* SPC-001 §5.1.1 (Fig 5.1-3 state diagram +
+  quoted note); CERT UNIS-000105. *(Design note: the earlier draft's seed ③
+  "straight to REJECTED" moved to 1-3 — rejection is that sheet's whole subject;
+  1-2 stays one lesson.)*
 - **1-3 Rejection Letter.** *(~5 min · was 1-4)* *Goal:* activity performed
-  despite the commandee REJECTING under-specified commands (the level's
-  commandee rejects any command missing a field the sheet flags, with a real
-  `CannotComplyType` reason). *Palette:* Command-2, retry budget 1. *Seeds (3):*
-  in-order; REJECTED then retry path reordered; straggle(REJECTED dup). Key rule
-  enforced by the commandee: REJECTED is **terminal for that CommandID** — the
-  retry must be a NEW command with a fresh UUID; an UPDATE to the dead command
-  is ignored (and the machine times out). *Lesson:* terminal states ignore all
-  subsequent updates, including CANCEL; a retry is a new sequence. *Recap:*
+  despite the commandee REJECTING an under-specified command. The commandee
+  rejects the **first attempt** with a real `CommandProcessingStateReason`
+  (`CannotComplyType`, `Reason = INVALID_INPUT_PARAMETER`) and accepts the
+  retry — modeled by attempt number (the requestee engine is field-agnostic), so
+  no compose beat is needed; the retry, as a fresh well-formed command, succeeds.
+  *Palette:* Command-2, retry budget 1. *Seeds (3):* in-order; REJECTED then the
+  retry path reordered (ACCEPTED-before-RECEIVED on the retry); a **straggler**
+  REJECTED — `dup` of the first REJECTED after the retry succeeds (there is no
+  `straggle` op; a straggler is `dup` naming the now-retired CommandID). Key rule
+  enforced by the engine: REJECTED is **terminal for that CommandID** — the retry
+  is a NEW command with a fresh id, the old id is retired, and any later delivery
+  naming it (a dup, or a hypothetical UPDATE) is ignored. *Lesson:* terminal
+  states ignore all subsequent updates; a retry is a new sequence. *Recap:*
   "REJECTED kills the CommandID — a retry is a new command." *Citation:* XSD
-  `CommandProcessingStateEnum` annotations; SPC-001 Table 5.1-2; retry *budget*
-  is a game rule (fidelity lie #5).
+  `CommandProcessingStateEnum` / `CannotComplyEnum` annotations; SPC-001 Table
+  5.1-2; retry *budget* is a game rule (fidelity lie #5).
 - **1-4 Request Is Not Command.** *(~5 min · was 1-5)* *Goal:* two jobs on one
   sheet — obtain existing data (win: you hold the data) and cause an analysis
   to run (win: requestee's activity executed). *Palette:* DataRequest-2,

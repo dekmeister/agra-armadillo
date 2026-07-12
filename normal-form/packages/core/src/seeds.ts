@@ -8,6 +8,13 @@
 // the one-way (`-1`) path it names a publication link, `s<send>:<consumer>` (or a
 // bare `s<send>` to name the whole broadcast — see `bus.ts` key matching). A key
 // is a plain string so both paths share one op vocabulary and one bus.
+//
+// A seed may *also* carry a per-seed `requestee` (WS-F): the transport schedule and
+// the commandee's behaviour are both what a machine is certified against. A commandee
+// legitimately may skip RECEIVED or reject the first attempt (SPC-001 §5.1.1) — that
+// is a behaviour variant, distinct from a transport drop (which stays scoped to `-1`,
+// fidelity lie #4). Ignored on the one-way / classification paths.
+import type { RequesteeConfig } from "./requestee/index.ts";
 
 /** Deliver `after` before `before` (no ordering assumption). */
 export interface ReorderOp {
@@ -44,4 +51,8 @@ export interface Seed {
   readonly id: number;
   readonly label: string;
   readonly schedule: readonly SeedOp[];
+  /** Command-2 only: the commandee behaviour for this seed, overriding the sheet's
+   *  default `requestee`. Lets one seed certify against a terse commandee (skips
+   *  RECEIVED) or a rejecting one without abusing a transport `drop`. */
+  readonly requestee?: RequesteeConfig;
 }

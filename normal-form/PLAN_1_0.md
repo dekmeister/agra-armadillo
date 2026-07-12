@@ -175,11 +175,31 @@ label readability at 3–4 lifelines is the deferred item for WS-G (REVIEW_MVP Q
 **Done:** 0-1→0-3 registered and playable, each arriving broken per the
 "lesson guaranteed" rule; goldens + fidelity green; standing exit checks green.
 
-## WS-F — World 1 remainder (1-2, 1-3, 1-4, bonus 1-5)
+## WS-F — World 1 remainder (1-2, 1-3, 1-4, bonus 1-5) *(STAGED: 1-2 + 1-3 landed; 1-4/1-5 → `PROMPT.md`)*
+
+**Staged (2026-07-12).** WS-F is really four sub-stages of escalating engine work.
+**1-2 and 1-3 are built, green, and registered** this session (`core` + `levels`
+only); **1-4 and bonus 1-5** — which add the request-pattern enums, the enum-driven
+handler machine + game UI, a two-job runtime, and the mid-run CANCEL surface — are
+handed off with a full design + file map in **`PROMPT.md`** at repo root.
+
+Landed this session:
+- **1-2 "Skipping the Pleasantries"** (replaces the WS-C stub) — RECEIVED is a
+  courtesy; the pre-checked gate + **per-seed commandee variants** (`Seed.requestee`,
+  a spec-legal behaviour variant, not a `-1` drop) guarantee the seed-② lesson.
+- **1-3 "Rejection Letter"** — REJECTED kills the CommandID; the new **reactive
+  retry loop** (`runSeed` now consumes the interpreter's `outbound`, has the
+  commandee respond to the fresh NEW command, retires the old id, budget-bounded) +
+  the **reject engine** (`RequesteeConfig.rejects` with a real `CannotComplyEnum`
+  reason) recover it.
+- Catalog gains `CannotComplyEnum` + the real `CommandProcessingStateReason` field;
+  `docs/03-levels.md` 1-2/1-3 and `docs/02-fidelity.md` §2 updated (docs-first).
+- Proofs: `sheet-1-2`/`sheet-1-3` goldens + `packages/game/test/w1-play.test.ts`
+  (player-path certification). Standing exit checks green; `vite build` clean.
 
 *Per rescoped `docs/03-levels.md` W1 (note renumbering: old 1-4/1-5/1-6 → new
-1-3/1-4/1-5; old 1-3 folded into 1-1). `core` + `levels`. Depends on WS-C;
-parallel with WS-E.*
+1-3/1-4/1-5; old 1-3 folded into 1-1). `core` + `levels` (+ `game` for 1-4/1-5).
+Depends on WS-C; parallel with WS-E.*
 
 - **1-2 Skipping the Pleasantries:** needs nothing new beyond requestee configs
   that skip RECEIVED / go straight to REJECTED — and the per-rule "only after

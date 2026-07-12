@@ -14,10 +14,20 @@ export interface RequesteeReport {
   readonly thenExecuteActivity?: boolean;
 }
 
+/** A rejection the commandee issues on the *first* attempt (sheet 1-3). REJECTED is
+ *  terminal for that CommandID, so recovery is only a NEW command — the retry
+ *  (attempt ≥ 1) is judged on `onCommand`. `reason` is a real `CannotComplyEnum`
+ *  value surfaced on the REJECTED status's `CommandProcessingStateReason`. */
+export interface RequesteeReject {
+  readonly report: "REJECTED";
+  readonly at: number;
+  readonly reason: string;
+}
+
 export interface RequesteeConfig {
   readonly onCommand: readonly RequesteeReport[];
-  /** rejection rules (empty for 1-1: SystemB accepts anything well-formed) */
-  readonly rejects: readonly unknown[];
+  /** first-attempt rejections; empty ⇒ the commandee accepts every attempt (1-1). */
+  readonly rejects: readonly RequesteeReject[];
 }
 
 export interface RequesteeResponse {
@@ -26,12 +36,26 @@ export interface RequesteeResponse {
   readonly activityTick: number | null;
 }
 
-/** React to one received command: schedule status emissions relative to receipt. */
+/** React to one received command: schedule status emissions relative to receipt.
+ *  `attempt` is 0 for the sheet's opening command and increments per retry — the
+ *  commandee rejects the first attempt (when configured) and judges the fresh retry
+ *  on `onCommand`. Deterministic: no RNG, no clock. */
 export function respond(
   config: RequesteeConfig,
   command: CommandMessage,
   receiptTick: number,
+  attempt = 0,
 ): RequesteeResponse {
+  if (attempt === 0 && config.rejects.length > 0) {
+    const emissions: Emission[] = config.rejects.map((r) => ({
+      state: r.report,
+      commandId: command.commandId,
+      emitTick: receiptTick + r.at,
+      reason: r.reason,
+    }));
+    return { emissions, activityTick: null };
+  }
+
   const emissions: Emission[] = [];
   let activityTick: number | null = null;
   for (const r of config.onCommand) {
