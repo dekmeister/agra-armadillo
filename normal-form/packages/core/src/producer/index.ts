@@ -35,6 +35,26 @@ export function publishTicks(plan: PublishPlan): number[] {
   return ticks;
 }
 
+/** Safety cap on derived publish count (keeps the pure sim bounded). */
+const MAX_PUBLISH_COUNT = 64;
+
+/** Turn the two player knobs — first-publish tick + republish cadence — into a
+ *  full plan, auto-filling `count` to cover the sheet's goal horizon. `everyN <= 0`
+ *  means a single fire-and-forget (the default that leaves `-1` hold sheets broken).
+ */
+export function derivePublishPlan(sheet: Sheet, startTick: number, everyN: number): PublishPlan {
+  const start = Math.max(0, Math.floor(startTick));
+  if (everyN <= 0) return { startTick: start, everyN: 0, count: 1 };
+  const step = Math.floor(everyN);
+  const latency = sheet.oneway?.latency ?? PUBLISH_LATENCY;
+  const horizon = goalHorizon(sheet);
+  const count = Math.min(
+    MAX_PUBLISH_COUNT,
+    Math.max(1, Math.ceil((horizon + latency - start) / step) + 1),
+  );
+  return { startTick: start, everyN: step, count };
+}
+
 export interface OneWayRunResult {
   readonly seedId: number;
   readonly pass: boolean;

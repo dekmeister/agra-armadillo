@@ -6,13 +6,21 @@
 import type { Machine } from "@normal-form/core";
 import { nextSheetId } from "@normal-form/levels";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import type { ArrowFrame } from "./frames.ts";
-import { circled, type PrimaryBinding, primaryBinding } from "./sheet.ts";
+import type { ArrowFrame, OneWayFrame } from "./frames.ts";
+import { circled, isOneWay, type PrimaryBinding, primaryBinding } from "./sheet.ts";
 import type { Phase } from "./store.ts";
 import { useGameStore } from "./store.ts";
-import { ENUM_COLOR, FONT, LAYOUT, SURFACE, ZONE } from "./tokens.ts";
+import { ENUM_COLOR, FONT, LAYOUT, STATUS, SURFACE, ZONE } from "./tokens.ts";
 import { useFindings } from "./useFindings.ts";
 import { useRun } from "./useRun.ts";
+
+/** The board is a sequence diagram; its shape follows the pattern. Command-2 sheets
+ *  get the two-party request/response board; one-way (`-1`) sheets get the producer
+ *  → N-consumer fan-out (WS-E). */
+export function Board() {
+  const oneWay = useGameStore((s) => isOneWay(s.sheet));
+  return oneWay ? <OneWayBoard /> : <CommandBoard />;
+}
 
 /** Split a lifeline label like "Commander (you)" into its name and "(tag)". */
 function splitLabel(label: string): { name: string; tag: string } {
@@ -41,7 +49,7 @@ const GRID_BG =
   "repeating-linear-gradient(0deg, transparent 0 31px, rgba(36,67,95,.05) 31px 32px)," +
   "repeating-linear-gradient(90deg, transparent 0 31px, rgba(36,67,95,.05) 31px 32px)";
 
-export function Board() {
+function CommandBoard() {
   const [ref, { w, h }] = useSize();
   const sheet = useGameStore((s) => s.sheet);
   const phase = useGameStore((s) => s.phase);
@@ -651,6 +659,336 @@ function CertifiedOverlay() {
         {hasNext ? "NEXT SHEET ▸" : "◂ BACK TO INDEX"}
       </button>
     </div>
+  );
+}
+
+// --- One-way (`-1`) fan-out board (WS-E) -----------------------------------
+
+/** Producer → N-consumer fan-out board. Publications ride from the producer to
+ *  each consumer at their delivery tick; a Data-1 consumer's freshness shows as a
+ *  green band that decays after `staleAfter` ticks (a gap = stale). */
+function OneWayBoard() {
+  const [ref, { w, h }] = useSize();
+  const sheet = useGameStore((s) => s.sheet);
+  const phase = useGameStore((s) => s.phase);
+  const tick = useGameStore((s) => s.tick);
+  const runSpeed = useGameStore((s) => s.runSpeed);
+  const placed = useGameStore((s) => s.session.placed);
+  const { oneWayBoard: model, allPass } = useRun();
+  const { publication, pattern } = primaryBinding(sheet);
+  const producer = sheet.lifelines.find((l) => l.player) ?? sheet.lifelines[0];
+  const consumers = sheet.lifelines.filter((l) => !l.player);
+  const errorCount = useFindings().length;
+
+  const producerX = w * 0.15;
+  const n = Math.max(1, consumers.length);
+  const consumerX = (i: number) => w * (n === 1 ? 0.65 : 0.45 + (0.45 * i) / (n - 1));
+  const xById = new Map(consumers.map((c, i) => [c.id, consumerX(i)]));
+
+  const yTop = 78;
+  const yBottom = Math.max(yTop + 40, h - 26);
+  const rulerMax = Math.max(6, model?.endTick ?? 0);
+  const yOf = (t: number) => yTop + (Math.min(t, rulerMax) / rulerMax) * (yBottom - yTop);
+  const drawMs = Math.min(runSpeed * 0.6, 480);
+
+  const stale = model?.staleAfter ?? null;
+  const revealed = (model?.frames ?? []).filter((f) => f.tick <= tick);
+
+  return (
+    <div
+      ref={ref}
+      style={{
+        flex: 1,
+        position: "relative",
+        background: SURFACE.board,
+        backgroundImage: GRID_BG,
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          top: 10,
+          left: 12,
+          display: "flex",
+          alignItems: "center",
+          gap: 7,
+          fontFamily: FONT.mono,
+          zIndex: 2,
+        }}
+      >
+        <span style={{ width: 9, height: 9, background: SURFACE.ink }} />
+        <span style={{ fontSize: 12, fontWeight: 800 }}>DIAGRAM</span>
+        <span style={{ fontFamily: FONT.hand, fontSize: 12, color: "rgba(36,67,95,.55)" }}>
+          fan-out · {pattern} → {consumers.length} consumer{consumers.length === 1 ? "" : "s"}
+        </span>
+      </div>
+
+      {w > 0 && (
+        <svg
+          width={w}
+          height={h}
+          viewBox={`0 0 ${w} ${h}`}
+          style={{ position: "absolute", inset: 0 }}
+          role="img"
+          aria-label="fan-out sequence diagram"
+        >
+          <title>Fan-out — producer to consumers</title>
+
+          {/* time ruler */}
+          {Array.from({ length: rulerMax + 1 }, (_, i) => i).map((t) => (
+            <text
+              key={`ruler-${t}`}
+              x={14}
+              y={yOf(t) + 3}
+              fontFamily={FONT.mono}
+              fontSize={10}
+              fontWeight={700}
+              fill="rgba(36,67,95,.5)"
+              textAnchor="middle"
+            >
+              t{t}
+            </text>
+          ))}
+
+          {/* goal window bracket (hold sheets) / deadline line (status sheets) */}
+          {model?.window && (
+            <rect
+              x={producerX + 8}
+              y={yOf(model.window.from)}
+              width={w - producerX - 16}
+              height={yOf(model.window.to) - yOf(model.window.from)}
+              fill="rgba(47,143,91,.05)"
+              stroke="rgba(47,143,91,.4)"
+              strokeWidth={1}
+              strokeDasharray="4 4"
+            />
+          )}
+          {model?.deadline != null && (
+            <line
+              x1={producerX}
+              y1={yOf(model.deadline)}
+              x2={w - 10}
+              y2={yOf(model.deadline)}
+              stroke={STATUS.fail}
+              strokeWidth={1}
+              strokeDasharray="3 4"
+              opacity={0.6}
+            />
+          )}
+
+          {/* producer + consumer lifelines */}
+          <LifelineHeader
+            x={producerX}
+            label={splitLabel(producer?.label ?? "Producer").name}
+            tag={splitLabel(producer?.label ?? "Producer").tag}
+            tagColor={ZONE.accent}
+          />
+          <line
+            x1={producerX}
+            y1={54}
+            x2={producerX}
+            y2={yBottom + 12}
+            stroke="rgba(36,67,95,.55)"
+            strokeWidth={2}
+            strokeDasharray="5 5"
+          />
+          {consumers.map((c, i) => (
+            <g key={c.id}>
+              <LifelineHeader
+                x={consumerX(i)}
+                label={splitLabel(c.label).name}
+                tag={splitLabel(c.label).tag}
+                tagColor="rgba(36,67,95,.6)"
+              />
+              <line
+                x1={consumerX(i)}
+                y1={54}
+                x2={consumerX(i)}
+                y2={yBottom + 12}
+                stroke="rgba(36,67,95,.55)"
+                strokeWidth={2}
+                strokeDasharray="5 5"
+              />
+            </g>
+          ))}
+
+          {/* freshness bands (RUN, Data-1 hold): each receipt keeps the consumer
+              fresh for `staleAfter` ticks; a gap between bands is a stale window */}
+          {phase === "run" &&
+            stale != null &&
+            revealed
+              .filter((f) => !f.dropped)
+              .map((f) => {
+                const x = xById.get(f.consumer);
+                if (x == null) return null;
+                return (
+                  <rect
+                    key={`hold-${f.key}`}
+                    x={x - 5}
+                    y={yOf(f.tick)}
+                    width={10}
+                    height={yOf(f.tick + stale) - yOf(f.tick)}
+                    fill="rgba(47,143,91,.22)"
+                  />
+                );
+              })}
+
+          {/* playhead */}
+          {phase === "run" && <Playhead y={yOf(tick)} width={w} durMs={runSpeed} />}
+
+          {/* publications */}
+          {phase === "run"
+            ? revealed.map((f) => {
+                const x = xById.get(f.consumer);
+                if (x == null) return null;
+                return (
+                  <PublicationArrow
+                    key={f.key}
+                    frame={f}
+                    fromX={producerX}
+                    toX={x}
+                    y={yOf(f.tick)}
+                    drawMs={drawMs}
+                  />
+                );
+              })
+            : placed
+              ? consumers.map((c, i) => (
+                  <PublicationArrow
+                    key={`shell-${c.id}`}
+                    frame={{
+                      key: `shell-${c.id}`,
+                      tick: 1,
+                      consumer: c.id,
+                      send: 0,
+                      dropped: false,
+                      dup: false,
+                    }}
+                    fromX={producerX}
+                    toX={consumerX(i)}
+                    y={yOf(1)}
+                    label={i === 0 ? `${publication} ▶` : undefined}
+                    shell
+                  />
+                ))
+              : null}
+
+          {!placed && phase !== "run" && (
+            <text
+              x={(producerX + w) / 2}
+              y={yOf(2)}
+              fontFamily={FONT.hand}
+              fontSize={15}
+              fill="rgba(36,67,95,.5)"
+              textAnchor="middle"
+            >
+              ◂ click {pattern} in the palette to place its publication
+            </text>
+          )}
+
+          {/* stamps */}
+          {phase === "compose" && placed && errorCount > 0 && (
+            <RejectStamp w={w} count={errorCount} />
+          )}
+          {phase === "run" && model?.goalTick != null && tick >= model.goalTick && (
+            <GoalStamp w={w} h={h} seedId={useGameStore.getState().seedId} />
+          )}
+          {phase === "run" &&
+            model != null &&
+            model.goalTick === null &&
+            tick >= model.endTick &&
+            model.endTick > 0 && <NoGoalStamp w={w} h={h} />}
+        </svg>
+      )}
+
+      {phase === "run" && allPass && <CertifiedOverlay />}
+    </div>
+  );
+}
+
+/** One producer→consumer publication arrow (delivered, dropped, or a static shell). */
+function PublicationArrow({
+  frame,
+  fromX,
+  toX,
+  y,
+  drawMs = 480,
+  label,
+  shell = false,
+}: {
+  frame: OneWayFrame;
+  fromX: number;
+  toX: number;
+  y: number;
+  drawMs?: number;
+  label?: string;
+  shell?: boolean;
+}) {
+  const color = frame.dropped ? STATUS.fail : ZONE.oneWay;
+  const len = Math.abs(toX - fromX);
+  const doDraw = !shell && !frame.dropped;
+  const [drawn, setDrawn] = useState(!doDraw);
+  useEffect(() => {
+    if (!doDraw) return;
+    const id = requestAnimationFrame(() => setDrawn(true));
+    return () => cancelAnimationFrame(id);
+  }, [doDraw]);
+  // A dropped publication never reaches the consumer — draw it fading out partway.
+  const endX = frame.dropped ? fromX + (toX - fromX) * 0.5 : toX;
+  return (
+    <g opacity={frame.dropped ? 0.5 : 1}>
+      <line
+        x1={fromX}
+        y1={y}
+        x2={endX}
+        y2={y}
+        stroke={color}
+        strokeWidth={2.5}
+        strokeDasharray={frame.dropped || shell ? "6 5" : doDraw ? `${len}` : undefined}
+        strokeDashoffset={doDraw ? (drawn ? 0 : len) : undefined}
+        style={doDraw ? { transition: `stroke-dashoffset ${drawMs}ms ease-out` } : undefined}
+      />
+      {!frame.dropped && (
+        <text
+          x={toX}
+          y={y + 4}
+          fontFamily={FONT.mono}
+          fontSize={12}
+          fontWeight={800}
+          fill={color}
+          textAnchor="middle"
+        >
+          ▶
+        </text>
+      )}
+      {frame.dropped && (
+        <text
+          x={endX + 10}
+          y={y + 4}
+          fontFamily={FONT.mono}
+          fontSize={11}
+          fontWeight={800}
+          fill={STATUS.fail}
+          textAnchor="middle"
+        >
+          ✖ dropped
+        </text>
+      )}
+      {label && (
+        <text
+          x={(fromX + toX) / 2}
+          y={y - 6}
+          fontFamily={FONT.mono}
+          fontSize={11}
+          fontWeight={700}
+          fill={color}
+          textAnchor="middle"
+        >
+          {label}
+        </text>
+      )}
+    </g>
   );
 }
 

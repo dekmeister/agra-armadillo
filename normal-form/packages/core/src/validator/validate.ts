@@ -31,9 +31,16 @@ function makeFinding(id: FindingId, field?: string): Finding {
 const present = (v: string | null | undefined): v is string =>
   typeof v === "string" && v.trim() !== "";
 
-export function validate(sheet: Sheet, c: Composition): Finding[] {
+/** The Mode the sheet certifies against: its explicit `expectedMode`, else the
+ *  initial Mode (1-1/1-2 have no separate expected mode). */
+function expectedMode(sheet: Sheet): string | null {
+  return sheet.compose.expectedMode ?? sheet.compose.initialFields.Mode ?? null;
+}
+
+/** V1–V4: the envelope-literacy checks, shared by the Command-2 and one-way gates
+ *  (every UCI message rides the same `MessageHeader`). */
+function envelopeFindings(sheet: Sheet, f: Composition["fields"]): Finding[] {
   const findings: Finding[] = [];
-  const f = c.fields;
 
   // V1 — SystemID present (required in uci:HeaderType).
   if (!present(f.SystemID)) findings.push(makeFinding("V1-systemid", "SystemID"));
@@ -48,14 +55,29 @@ export function validate(sheet: Sheet, c: Composition): Finding[] {
     findings.push(makeFinding("V3-schemaversion", "SchemaVersion"));
   }
 
-  // V4 — Mode ∈ MessageModeEnum, then matches the sheet's declared mode (game rule).
+  // V4 — Mode ∈ MessageModeEnum, then matches the sheet's expected mode (game rule).
   if (!present(f.Mode) || !modeValues.includes(f.Mode)) {
     findings.push(makeFinding("V4-mode-enum", "Mode"));
   } else {
-    const declared = sheet.compose.initialFields.Mode;
+    const declared = expectedMode(sheet);
     if (present(declared) && f.Mode !== declared)
       findings.push(makeFinding("V4-mode-mismatch", "Mode"));
   }
+
+  return findings;
+}
+
+/** One-way (`-1`) compose gate: envelope literacy only — no CommandID, no
+ *  request/response binding, no handler machine (Status-1/Data-1 have none). */
+export function validateOneWay(sheet: Sheet, c: Composition): Finding[] {
+  return envelopeFindings(sheet, c.fields);
+}
+
+export function validate(sheet: Sheet, c: Composition): Finding[] {
+  if (sheet.oneway) return validateOneWay(sheet, c);
+
+  const findings: Finding[] = envelopeFindings(sheet, c.fields);
+  const f = c.fields;
 
   // V5/V6 — CommandID is a valid Leach-Salz/nil UUID (V5) in canonical form (V6).
   const verdict = classifyUuid(f.CommandID);

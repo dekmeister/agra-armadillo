@@ -5,7 +5,7 @@
 // (05-mvp amendment 3); RUN streams the per-tick event log for the selected seed.
 
 import { FINDINGS, type Finding, type RunEvent, type Sheet } from "@normal-form/core";
-import { circled } from "./sheet.ts";
+import { circled, isOneWay } from "./sheet.ts";
 import { useGameStore } from "./store.ts";
 import { ENUM_COLOR, FONT, RADIUS, STATUS, SURFACE, ZONE } from "./tokens.ts";
 import { useFindings } from "./useFindings.ts";
@@ -175,8 +175,10 @@ export function ValidatorConsole() {
   const seedId = useGameStore((s) => s.seedId);
   const setTick = useGameStore((s) => s.setTick);
   const gated = useGameStore((s) => s.session.gateAccepted);
+  const oneWay = useGameStore((s) => isOneWay(s.sheet));
   const findings = useFindings();
-  const { all, machine, board, result } = useRun();
+  const { seedResults, machine, board, oneWayBoard, result } = useRun();
+  const failure = board?.failure ?? oneWayBoard?.failure ?? null;
 
   // Split the field findings (V1–V9, the compose gate) from the terminal-handler
   // readiness gate (V10). Compose reads clean once the fields are fixed; a missing
@@ -206,7 +208,7 @@ export function ValidatorConsole() {
     badge = <Badge text={`RUNNING · SEED ${circled(seedId)}`} bg={SURFACE.ink} />;
   }
 
-  const seedPass = all?.results.find((r) => r.seedId === seedId)?.pass;
+  const seedPass = seedResults.find((r) => r.seedId === seedId)?.pass;
 
   return (
     <section
@@ -256,7 +258,20 @@ export function ValidatorConsole() {
           </>
         )}
 
-        {phase === "handlers" && (
+        {phase === "handlers" && oneWay && (
+          <>
+            <div style={{ color: errorCount > 0 ? STATUS.fail : STATUS.pass }}>
+              {errorCount > 0
+                ? `✖ ${errorCount} blocking field errors · fix COMPOSE first`
+                : "✔ READY · set the publish plan, then RUN the seeds"}
+            </div>
+            <div style={{ color: "rgba(36,67,95,.55)" }}>
+              ▸ a -1 datum owes no delivery — republish faster than it goes stale.
+            </div>
+          </>
+        )}
+
+        {phase === "handlers" && !oneWay && (
           <>
             <div
               style={{
@@ -302,10 +317,10 @@ export function ValidatorConsole() {
                   </div>
                 );
               })}
-            {seedPass === false && board?.failure && (
+            {seedPass === false && failure && (
               <FailureReplay
-                lesson={FINDINGS[board.failure.lessonId]}
-                onScrub={() => setTick(board.failure!.tick)}
+                lesson={FINDINGS[failure.lessonId]}
+                onScrub={() => setTick(failure.tick)}
               />
             )}
           </>

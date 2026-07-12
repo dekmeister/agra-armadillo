@@ -13,7 +13,12 @@
     }
   },
   "palette": [
-    { "pattern": "Data-1", "unlocked": true, "cite": "UNIS §4.2, CERT UNIS-000081" },
+    {
+      "pattern": "Data-1",
+      "unlocked": true,
+      "publication": "Entity",
+      "cite": "UNIS §4.2, CERT UNIS-000081"
+    },
     { "pattern": "Status-1", "unlocked": false },
     { "pattern": "Command-2", "unlocked": false }
   ],

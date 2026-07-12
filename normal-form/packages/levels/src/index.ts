@@ -13,9 +13,8 @@ import sheet02 from "../sheets/w0/sheet-0-2.json" with { type: "json" };
 import sheet11 from "../sheets/w1/sheet-1-1.json" with { type: "json" };
 import sheet12 from "../sheets/w1/sheet-1-2.json" with { type: "json" };
 
-// World 0 (WS-E). Authored + goldens-proven in E1, but NOT yet in SHEET_LIST — the
-// shipped game must never show an unplayable sheet. E2 registers 0-1/0-2 once the
-// one-way UI (publish-plan editor + board fan-out) lands; E3 registers 0-3.
+// World 0 (WS-E). One-way (`-1`) sheets — the publish-plan editor + fan-out board
+// landed in E2, so they now lead the lineup. 0-3 (the filed-finding sheet) is E3.
 export const sheet_0_1: Sheet = sheet01 as unknown as Sheet;
 export const sheet_0_2: Sheet = sheet02 as unknown as Sheet;
 
@@ -26,7 +25,7 @@ export const sheet_1_1: Sheet = sheet11 as unknown as Sheet;
 export const sheet_1_2: Sheet = sheet12 as unknown as Sheet;
 
 /** The sheet lineup in play order — the progression / drawing-index source. */
-export const SHEET_LIST: readonly Sheet[] = [sheet_1_1, sheet_1_2];
+export const SHEET_LIST: readonly Sheet[] = [sheet_0_1, sheet_0_2, sheet_1_1, sheet_1_2];
 
 export const SHEETS: Readonly<Record<string, Sheet>> = Object.fromEntries(
   SHEET_LIST.map((s) => [s.id, s]),

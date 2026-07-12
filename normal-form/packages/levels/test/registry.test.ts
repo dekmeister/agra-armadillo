@@ -32,8 +32,10 @@ describe("sheet registry", () => {
     expect(nextSheetId("no-such-sheet")).toBeUndefined();
   });
 
-  it("registers 1-1 and 1-2 in order", () => {
-    expect(SHEET_LIST.map((s) => s.id).slice(0, 2)).toEqual(["1-1", "1-2"]);
+  it("registers World 0 then World 1 in order", () => {
+    expect(SHEET_LIST.map((s) => s.id).slice(0, 4)).toEqual(["0-1", "0-2", "1-1", "1-2"]);
+    expect(nextSheetId("0-1")).toBe("0-2");
+    expect(nextSheetId("0-2")).toBe("1-1");
     expect(nextSheetId("1-1")).toBe("1-2");
   });
 });

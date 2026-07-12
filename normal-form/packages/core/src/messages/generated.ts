@@ -49,6 +49,12 @@ export interface TaskCommandStatus {
   CommandProcessingState: CommandProcessingStateEnum;
 }
 
+export interface SubsystemStatus {
+}
+
+export interface Entity {
+}
+
 /* --- Runtime catalog metadata (citations, field trees) --- */
 export const MESSAGE_CATALOG = {
   "version": 1,
@@ -175,6 +181,20 @@ export const MESSAGE_CATALOG = {
       ],
       "mt": "TaskCommandStatusMT",
       "role": "response"
+    },
+    "SubsystemStatus": {
+      "name": "SubsystemStatus",
+      "cite": "UNIS §4.1 CERT UNIS-000076; structure SPC-001 §5.1.6; XSD SubsystemStatus / SubsystemStatusMT",
+      "fields": [],
+      "mt": "SubsystemStatusMT",
+      "role": "publication"
+    },
+    "Entity": {
+      "name": "Entity",
+      "cite": "UNIS §4.2 CERT UNIS-000081; structure SPC-001 §5.1.5; XSD Entity / EntityMT",
+      "fields": [],
+      "mt": "EntityMT",
+      "role": "publication"
     }
   },
   "types": {
@@ -300,6 +320,22 @@ export const FINDINGS = {
     "source": "unis",
     "docRef": "UNIS §4.6.2 (Command-2 Terminal State Behavior)",
     "quote": "once a terminal state is reported, the sequence should end"
+  },
+  "RUN-stale": {
+    "id": "RUN-stale",
+    "code": "UNIS §4.2",
+    "message": "a consumer went stale — a -1 datum owes no delivery; republish to keep it fresh",
+    "source": "unis",
+    "docRef": "UNIS §4 (no guaranteed delivery)",
+    "quote": "there can be no assumption that messages come in any order or that there is guaranteed delivery"
+  },
+  "RUN-deadline": {
+    "id": "RUN-deadline",
+    "code": "UNIS §4.1",
+    "message": "your status was not shown by the deadline — publish earlier, and again",
+    "source": "unis",
+    "docRef": "UNIS §4 (no guaranteed delivery)",
+    "quote": "there can be no assumption that messages come in any order or that there is guaranteed delivery"
   }
 } as const;
 

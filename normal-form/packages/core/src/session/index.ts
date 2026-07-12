@@ -11,6 +11,14 @@ import type { CommandProcessingStateEnum } from "../types.ts";
 import { initialComposition } from "../validator/index.ts";
 import type { Composition } from "../validator/types.ts";
 
+/** The player's publish-plan knobs on a `-1` sheet: first-publish tick + republish
+ *  cadence (`everyN <= 0` ⇒ a single fire-and-forget). `count` is derived from the
+ *  sheet's goal horizon at run time (see core `derivePublishPlan`). */
+export interface PublishKnobs {
+  readonly startTick: number;
+  readonly everyN: number;
+}
+
 /** One recorded player edit. The ordered list is the replayable solve script. */
 export type PlayerAction =
   | { readonly do: "place" }
@@ -21,7 +29,8 @@ export type PlayerAction =
       /** null clears the rule for `on` (the editor's "unset") */
       readonly action: MachineAction | null;
     }
-  | { readonly do: "gateAccepted"; readonly value: boolean };
+  | { readonly do: "gateAccepted"; readonly value: boolean }
+  | { readonly do: "setPublish"; readonly startTick: number; readonly everyN: number };
 
 export interface Session {
   readonly placed: boolean;
@@ -29,7 +38,13 @@ export interface Session {
   readonly handlers: Readonly<Partial<Record<CommandProcessingStateEnum, MachineAction>>>;
   /** ACCEPTED is armed only after RECEIVED (2-state hard-sequence) when true */
   readonly gateAccepted: boolean;
+  /** one-way (`-1`) publish-plan knobs (ignored on Command-2 sheets) */
+  readonly publish: PublishKnobs;
 }
+
+/** The starting publish plan: a single fire-and-forget. On a `-1` hold sheet this
+ *  is deliberately too weak (it goes stale), so the sheet "arrives broken". */
+export const DEFAULT_PUBLISH: PublishKnobs = { startTick: 1, everyN: 0 };
 
 export function initialSession(sheet: Sheet): Session {
   return {
@@ -41,6 +56,7 @@ export function initialSession(sheet: Sheet): Session {
     // Generalizing this one global flag into a per-rule "only after X" qualifier
     // is deferred to WS-F.
     gateAccepted: true,
+    publish: DEFAULT_PUBLISH,
   };
 }
 
@@ -59,6 +75,8 @@ export function applyAction(session: Session, action: PlayerAction): Session {
     }
     case "gateAccepted":
       return { ...session, gateAccepted: action.value };
+    case "setPublish":
+      return { ...session, publish: { startTick: action.startTick, everyN: action.everyN } };
   }
 }
 

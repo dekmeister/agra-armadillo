@@ -24,6 +24,8 @@ export interface PaletteEntry {
   readonly pattern: string;
   readonly unlocked: boolean;
   readonly binding?: { readonly request: string; readonly response: string };
+  /** one-way (`-1`) publication message name (Status-1/Data-1) — no response leg. */
+  readonly publication?: string;
   readonly cite?: string;
 }
 
@@ -36,6 +38,10 @@ export interface OpeningCommand {
 export interface ComposeSpec {
   readonly initialFields: Readonly<Record<string, string | null>>;
   readonly editable: readonly string[];
+  /** the Mode the sheet certifies against, when it differs from the (deliberately
+   *  wrong) initial `Mode` — drives the "arrives broken" Mode beat (W0's EXERCISE
+   *  sheet). Absent ⇒ the initial Mode is the expected one (1-1/1-2). */
+  readonly expectedMode?: string;
 }
 
 /** Marks a one-way (`-1`) sheet and carries its sim knobs. Presence selects the

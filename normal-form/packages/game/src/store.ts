@@ -105,6 +105,8 @@ export interface GameState {
   setField: (name: string, value: string | null) => void;
   setHandler: (on: CommandProcessingStateEnum, action: MachineAction | null) => void;
   setGate: (value: boolean) => void;
+  /** set the one-way publish-plan knobs (first-publish tick + republish cadence) */
+  setPublish: (startTick: number, everyN: number) => void;
 }
 
 /** The first seed id declared on a sheet (no assumption seeds start at 1). */
@@ -274,5 +276,6 @@ export const useGameStore = create<GameState>((set, get) => {
     setField: (name, value) => dispatch({ do: "setField", name, value }),
     setHandler: (on, action) => dispatch({ do: "setHandler", on, action }),
     setGate: (value) => dispatch({ do: "gateAccepted", value }),
+    setPublish: (startTick, everyN) => dispatch({ do: "setPublish", startTick, everyN }),
   };
 });

@@ -8,18 +8,27 @@ export interface PrimaryBinding {
   readonly pattern: string;
   readonly request: string;
   readonly response: string;
+  /** the one-way (`-1`) publication message name, when the sheet is one-way */
+  readonly publication: string;
 }
 
-/** The sheet's placed pattern + its request/response message names — the first
- *  unlocked palette entry (mirrors core `initialComposition`). Empty strings when
- *  the sheet has no unlocked pattern or no binding. */
+/** The sheet's placed pattern + its message names — the first unlocked palette
+ *  entry (mirrors core `initialComposition`). Empty strings when the sheet has no
+ *  unlocked pattern or no binding. */
 export function primaryBinding(sheet: Sheet): PrimaryBinding {
   const primary = sheet.palette.find((p) => p.unlocked);
   return {
     pattern: primary?.pattern ?? "",
     request: primary?.binding?.request ?? "",
     response: primary?.binding?.response ?? "",
+    publication: primary?.publication ?? "",
   };
+}
+
+/** True on a one-way (`-1`) sheet — selects the publish-plan editor + fan-out board
+ *  over the Command-2 handler machine + two-party board. */
+export function isOneWay(sheet: Sheet): boolean {
+  return sheet.oneway !== undefined;
 }
 
 /** A circled index glyph (①..⑳) for a 1-based number, falling back to the plain

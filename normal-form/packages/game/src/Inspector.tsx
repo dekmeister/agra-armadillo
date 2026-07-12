@@ -4,7 +4,7 @@
 // engine-derived; nothing is editable in S4 (editing is S5).
 import { isTerminalState, type MachineAction } from "@normal-form/core";
 import { useState } from "react";
-import { circled, primaryBinding } from "./sheet.ts";
+import { circled, isOneWay, primaryBinding } from "./sheet.ts";
 import { useGameStore } from "./store.ts";
 import { ENUM_COLOR, FONT, LAYOUT, STATUS, SURFACE, ZONE } from "./tokens.ts";
 import { useFindings } from "./useFindings.ts";
@@ -27,7 +27,8 @@ function genUuid(): string {
 
 function ZoneHeader() {
   const sheet = useGameStore((s) => s.sheet);
-  const { request } = primaryBinding(sheet);
+  const { request, publication } = primaryBinding(sheet);
+  const label = request || publication;
   return (
     <div
       style={{
@@ -48,7 +49,7 @@ function ZoneHeader() {
           color: "rgba(36,67,95,.55)",
         }}
       >
-        {request}
+        {label}
       </span>
     </div>
   );
@@ -82,7 +83,7 @@ function ComposeBody() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <SectionLabel>ENVELOPE FIELDS</SectionLabel>
-      {ORDER.map((name) => {
+      {ORDER.filter((name) => name in fields).map((name) => {
         const value = fields[name] ?? null;
         const err = errorFields.has(name);
         const canEdit = editable.has(name);
@@ -295,15 +296,128 @@ function HandlersBody() {
   );
 }
 
+/** The one-way (`-1`) analogue of the handler editor: two knobs — when to first
+ *  publish, and how often to republish. A single fire-and-forget goes stale; the
+ *  lesson is that republication is the only recourse. */
+function PublishPlanBody() {
+  const sheet = useGameStore((s) => s.sheet);
+  const publish = useGameStore((s) => s.session.publish);
+  const setPublish = useGameStore((s) => s.setPublish);
+  const { publication } = primaryBinding(sheet);
+  const periodic = publish.everyN > 0;
+  const staleAfter = sheet.oneway?.staleAfter ?? null;
+
+  const numberRow = (label: string, value: number, onChange: (n: number) => void, min: number) => (
+    <label
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 8,
+        fontSize: 12,
+        fontWeight: 700,
+        color: SURFACE.ink,
+      }}
+    >
+      {label}
+      <input
+        type="number"
+        min={min}
+        value={value}
+        onChange={(e) => onChange(Math.max(min, Math.floor(Number(e.target.value) || 0)))}
+        style={{
+          width: 68,
+          fontFamily: FONT.mono,
+          fontSize: 12,
+          fontWeight: 700,
+          padding: "3px 5px",
+          border: "1px solid rgba(36,67,95,.35)",
+          borderRadius: 2,
+          background: "#fff",
+          color: SURFACE.ink,
+        }}
+      />
+    </label>
+  );
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <SectionLabel>PUBLISH PLAN · {publication}</SectionLabel>
+      <div
+        style={{
+          border: "1px solid rgba(36,67,95,.2)",
+          borderLeft: `4px solid ${ZONE.oneWay}`,
+          padding: "8px 10px",
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
+        }}
+      >
+        {numberRow(
+          "first publish at tick",
+          publish.startTick,
+          (n) => setPublish(n, publish.everyN),
+          0,
+        )}
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            fontSize: 12,
+            fontWeight: 700,
+            color: SURFACE.ink,
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={periodic}
+            onChange={(e) => setPublish(publish.startTick, e.target.checked ? 1 : 0)}
+            aria-label="republish periodically"
+          />
+          republish periodically
+        </label>
+        {periodic &&
+          numberRow(
+            "every N ticks",
+            publish.everyN,
+            (n) => setPublish(publish.startTick, Math.max(1, n)),
+            1,
+          )}
+      </div>
+      <div
+        style={{
+          border: `1px solid ${SURFACE.ink}`,
+          background: SURFACE.chrome,
+          fontFamily: FONT.hand,
+          fontSize: 12,
+          padding: "6px 8px",
+        }}
+      >
+        {staleAfter != null ? (
+          <>
+            A consumer holds the datum for <b>{staleAfter}</b> ticks after each delivery, then it
+            goes stale. Fire-and-forget has no ack — republish faster than it can go stale.
+          </>
+        ) : (
+          <>
+            Fire-and-forget: no acknowledgement is owed. Publish early enough to beat the deadline.
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function RunBody() {
   const sheet = useGameStore((s) => s.sheet);
-  const { all } = useRun();
+  const { seedResults } = useRun();
   const activateRun = useGameStore((s) => s.activateRun);
   const seedId = useGameStore((s) => s.seedId);
   // Verdicts are computed live, but stay hidden (○) until the player runs — RUN ALL
   // or clicking a seed — so the seed strip doesn't spoil the pass/fail outcomes.
   const ranAll = useGameStore((s) => s.ranAll);
-  const statusById = new Map((all?.results ?? []).map((r) => [r.seedId, r.pass]));
+  const statusById = new Map(seedResults.map((r) => [r.seedId, r.pass]));
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -532,6 +646,7 @@ export function Inspector() {
   const phase = useGameStore((s) => s.phase);
   const setPhase = useGameStore((s) => s.setPhase);
   const activateRun = useGameStore((s) => s.activateRun);
+  const oneWay = useGameStore((s) => isOneWay(s.sheet));
   return (
     <aside
       style={{
@@ -566,11 +681,11 @@ export function Inspector() {
         </Section>
         <Section
           step={2}
-          label="HANDLERS"
+          label={oneWay ? "PUBLISH" : "HANDLERS"}
           active={phase === "handlers"}
           onActivate={() => setPhase("handlers")}
         >
-          <HandlersBody />
+          {oneWay ? <PublishPlanBody /> : <HandlersBody />}
         </Section>
         <Section step={3} label="RUN" active={phase === "run"} onActivate={() => activateRun()}>
           <RunBody />

@@ -74,6 +74,20 @@ messages:
       - { name: CommandID, ref: ID_Type, required: true, cite: "correlation key back to the TaskCommand" }
       - { name: CommandProcessingState, enum: CommandProcessingStateEnum, required: true }
 
+  # One-way (-1) publications (WS-E). No response message, terminal-on-send; the
+  # producer fans them out to one or more consumers. Concrete real global elements.
+  - name: SubsystemStatus
+    mt: SubsystemStatusMT
+    role: publication
+    cite: "UNIS §4.1 CERT UNIS-000076; structure SPC-001 §5.1.6; XSD SubsystemStatus / SubsystemStatusMT"
+    fields: []
+
+  - name: Entity
+    mt: EntityMT
+    role: publication
+    cite: "UNIS §4.2 CERT UNIS-000081; structure SPC-001 §5.1.5; XSD Entity / EntityMT"
+    fields: []
+
 # --- Shared base types referenced above ------------------------------------
 types:
   - name: ID_Type
@@ -181,6 +195,23 @@ findings:
     source: unis
     docRef: "UNIS §4.6.2 (Command-2 Terminal State Behavior)"
     quote: "once a terminal state is reported, the sequence should end"
+
+  # One-way (-1) run-failure lessons (WS-E). A -1 datum owes no delivery, so the
+  # only recourse is republication — both lessons quote the no-guaranteed-delivery
+  # rule that makes that true.
+  - id: RUN-stale
+    code: "UNIS §4.2"
+    message: "a consumer went stale — a -1 datum owes no delivery; republish to keep it fresh"
+    source: unis
+    docRef: "UNIS §4 (no guaranteed delivery)"
+    quote: "there can be no assumption that messages come in any order or that there is guaranteed delivery"
+
+  - id: RUN-deadline
+    code: "UNIS §4.1"
+    message: "your status was not shown by the deadline — publish earlier, and again"
+    source: unis
+    docRef: "UNIS §4 (no guaranteed delivery)"
+    quote: "there can be no assumption that messages come in any order or that there is guaranteed delivery"
 
 # --- UCI Reference codex (WS-D; docs/07-uci-reference.md) -------------------
 # The curated prose layer of the in-game UCI REFERENCE screen, authored here so

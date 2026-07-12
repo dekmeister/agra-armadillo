@@ -33,7 +33,9 @@ export interface CatalogComplexType {
 export interface CatalogMessage extends CatalogComplexType {
   /** the concrete message-type name, e.g. TaskCommandMT */
   mt: string;
-  role: "request" | "response";
+  /** request/response are the two `-2` legs; `publication` is a one-way `-1`
+   *  message (no response, terminal-on-send) — WS-E. */
+  role: "request" | "response" | "publication";
 }
 
 /** A validator finding: text lives in the catalog (policed), not code. */
@@ -308,8 +310,8 @@ export function loadCatalog(path: string = CATALOG_PATH): Catalog {
     if (typeof mt !== "string") fail(`${base.name}.mt missing`);
     if (typeNames.has(mt)) fail(`duplicate type name ${mt}`);
     typeNames.add(mt);
-    if (rec.role !== "request" && rec.role !== "response")
-      fail(`${base.name}.role must be request|response`);
+    if (rec.role !== "request" && rec.role !== "response" && rec.role !== "publication")
+      fail(`${base.name}.role must be request|response|publication`);
     return { ...base, mt, role: rec.role };
   });
 
