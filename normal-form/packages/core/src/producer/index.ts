@@ -213,30 +213,50 @@ function filedKeys(session: Session): Set<string> {
   return keys;
 }
 
-/** Run one job assignment against one seed on a classification sheet (0-3). */
+/** Ticks a `-2` request spends in QUEUED→PROCESSING before COMPLETED lands (1-4). */
+const REQUEST_STEPS = 2;
+
+/** A `-2` request pattern job (DataRequest-2 / ActionRequest-2) vs a `-1` publish. */
+function isRequestAsk(ask: Job["ask"]): boolean {
+  return ask === "dataRequest" || ask === "actionRequest";
+}
+
+/** Run one job assignment against one seed on a classification sheet (0-3, 1-4). */
 export function runSeedJobs(sheet: Sheet, session: Session, seed: Seed): OneWayRunResult {
   const latency = sheet.oneway?.latency ?? PUBLISH_LATENCY;
   const jobs = sheet.jobs ?? [];
 
-  // A job publishes to its party once, at `latency`, only when the correct pattern
-  // is assigned (a wrong/absent pattern — or a trap job — delivers nothing).
+  // A job serves its party once — a `-1` publish lands at `latency`, a `-2` request's
+  // COMPLETED lands at `latency + REQUEST_STEPS` (after QUEUED/PROCESSING) — only when
+  // the correct pattern is assigned (a wrong/absent pattern, or a trap job, serves
+  // nothing: this is how a mis-classified job dead-ends).
   const items: BusItem<JobPayload>[] = [];
   for (const job of jobs) {
     const correct = correctPatternFor(job.ask);
     if (correct !== null && session.jobPatterns[job.id] === correct) {
-      items.push({ key: job.id, tick: latency, payload: { job } });
+      const tick = latency + (isRequestAsk(job.ask) ? REQUEST_STEPS : 0);
+      items.push({ key: job.id, tick, payload: { job } });
     }
   }
   const delivered = scheduleGeneric<JobPayload>(items, seed);
 
-  // Per-party receipts split by kind: status → a shown deadline, datum → a hold
-  // (0-3 sets no `staleAfter`, so a received datum is held from receipt onward).
+  // Per-party receipts by world-state: `status`/`dataRequest` → shown (a deadline),
+  // `datum` → a hold, `actionRequest` → the requestee's activity executed. (0-3 sets
+  // no `staleAfter`, so a received datum is held from receipt onward.)
   const statusReceipts = new Map<string, number[]>();
   const datumReceipts = new Map<string, number[]>();
+  const activityReceipts = new Map<string, number[]>();
+  const push = (map: Map<string, number[]>, party: string, tick: number) =>
+    (map.get(party) ?? map.set(party, []).get(party)!).push(tick);
   for (const d of delivered) {
     const { job } = d.payload;
-    const map = job.ask === "datum" ? datumReceipts : statusReceipts;
-    (map.get(job.party) ?? map.set(job.party, []).get(job.party)!).push(d.tick);
+    const map =
+      job.ask === "datum"
+        ? datumReceipts
+        : job.ask === "actionRequest"
+          ? activityReceipts
+          : statusReceipts;
+    push(map, job.party, d.tick);
   }
 
   const filed = filedKeys(session);
@@ -249,8 +269,11 @@ export function runSeedJobs(sheet: Sheet, session: Session, seed: Seed): OneWayR
     for (const [party, rs] of statusReceipts) if (rs.some((r) => r <= tick)) statusShown.add(party);
     const datumHeld = new Set<string>();
     for (const [party, rs] of datumReceipts) if (rs.some((r) => r <= tick)) datumHeld.add(party);
+    const activityExecuted = new Set<string>();
+    for (const [party, rs] of activityReceipts)
+      if (rs.some((r) => r <= tick)) activityExecuted.add(party);
     timeline.push({
-      activityExecuted: EMPTY,
+      activityExecuted,
       proofHeld: EMPTY,
       statusShown,
       datumHeld,
@@ -263,7 +286,7 @@ export function runSeedJobs(sheet: Sheet, session: Session, seed: Seed): OneWayR
     seedId: seed.id,
     pass: goalTick !== null,
     goalTick,
-    log: buildJobsLog(sheet, session, delivered, goalTick),
+    log: buildJobsLog(sheet, session, delivered, goalTick, latency),
   };
 }
 
@@ -272,20 +295,38 @@ export function runAllSeedsJobs(sheet: Sheet, session: Session): AllSeedsOneWayR
   return { results, allPass: results.every((r) => r.pass) };
 }
 
-/** A deterministic, tick-ordered run log for the 0-3 replay / console. */
+/** A deterministic, tick-ordered run log for the 0-3 / 1-4 replay / console. */
 function buildJobsLog(
   sheet: Sheet,
   session: Session,
   delivered: readonly { tick: number; payload: JobPayload }[],
   goalTick: number | null,
+  latency: number,
 ): RunEvent[] {
   const events: RunEvent[] = [];
   for (const d of delivered) {
     const { job } = d.payload;
+    const assigned = session.jobPatterns[job.id] ?? "—";
+    if (isRequestAsk(job.ask)) {
+      // Show the RequestProcessingStateEnum progression (surfaced, not hand-wired):
+      // QUEUED/PROCESSING precede the delivered COMPLETED that lands the world-state.
+      events.push({
+        tick: latency,
+        kind: "request-state",
+        detail: `${job.id} QUEUED (${assigned})`,
+      });
+      events.push({ tick: latency + 1, kind: "request-state", detail: `${job.id} PROCESSING` });
+      events.push({
+        tick: d.tick,
+        kind: "request-state",
+        detail: `${job.id} COMPLETED → ${job.party}`,
+      });
+      continue;
+    }
     events.push({
       tick: d.tick,
       kind: job.ask === "datum" ? "datum-delivered" : "status-shown",
-      detail: `${job.party} ← ${job.id} (${session.jobPatterns[job.id] ?? "—"})`,
+      detail: `${job.party} ← ${job.id} (${assigned})`,
     });
   }
   for (const [job, codes] of Object.entries(session.filed)) {

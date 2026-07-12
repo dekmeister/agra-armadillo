@@ -42,6 +42,14 @@ enums:
     cite: "XSD CannotComplyEnum; CannotComplyType.Reason on CommandStatusBaseType (SPC-001 §5.1.1)"
     values: [INVALID_INPUT_PARAMETER]
 
+  # DataRequest-2 / ActionRequest-2 response state (unlocked at 1-4). Six teaching
+  # states; the real enum also carries NEW/UPDATE/CANCEL + AUTOMATIC_*/MANUAL_*
+  # variants, omitted. The four terminal states distinguish it from Command-2's own
+  # four-value CommandProcessingStateEnum — the lesson of 1-4.
+  - name: RequestProcessingStateEnum
+    cite: "SPC-001 §5.1.2/§5.1.3 (RequestStatus); XSD RequestProcessingStateEnum"
+    values: [QUEUED, PROCESSING, COMPLETED, FAILED, CANCELED, REJECTED]
+
 # --- Envelope (wraps every placed message) ---------------------------------
 # uci:MessageType = SecurityInformation + MessageHeader (uci:HeaderType).
 envelope:
@@ -95,6 +103,35 @@ messages:
     role: publication
     cite: "UNIS §4.2 CERT UNIS-000081; structure SPC-001 §5.1.5; XSD Entity / EntityMT"
     fields: []
+
+  # Request patterns (-2), unlocked at 1-4 "Request Is Not Command". DataRequest-2:
+  # obtain existing data; ActionRequest-2: run a process. Both responses carry
+  # RequestProcessingState (RequestProcessingStateEnum), vs Command-2's own enum.
+  - name: SubsystemStatusDataRequest
+    mt: SubsystemStatusDataRequestMT
+    role: request
+    cite: "UNIS §4.4 CERT UNIS-000093; structure SPC-001 §5.1.3 CERT SCH-002462; XSD SubsystemStatusDataRequest / SubsystemStatusDataRequestMT"
+    fields: []
+
+  - name: SubsystemStatusDataRequestStatus
+    mt: SubsystemStatusDataRequestStatusMT
+    role: response
+    cite: "UNIS §4.4 CERT UNIS-000093; structure SPC-001 §5.1.3 CERT SCH-002462; XSD SubsystemStatusDataRequestStatus / SubsystemStatusDataRequestStatusMT"
+    fields:
+      - { name: RequestProcessingState, enum: RequestProcessingStateEnum, required: true }
+
+  - name: AnalysisRouteRequest
+    mt: AnalysisRouteRequestMT
+    role: request
+    cite: "UNIS §4.5 CERT UNIS-000099; structure SPC-001 §5.1.2 CERT SCH-002463; XSD AnalysisRouteRequest / AnalysisRouteRequestMT"
+    fields: []
+
+  - name: AnalysisRouteRequestStatus
+    mt: AnalysisRouteRequestStatusMT
+    role: response
+    cite: "UNIS §4.5 CERT UNIS-000099; structure SPC-001 §5.1.2 CERT SCH-002463; XSD AnalysisRouteRequestStatus / AnalysisRouteRequestStatusMT"
+    fields:
+      - { name: RequestProcessingState, enum: RequestProcessingStateEnum, required: true }
 
 # --- Shared base types referenced above ------------------------------------
 types:

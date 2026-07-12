@@ -68,6 +68,7 @@ kept here so the content revives without re-research.
 | Handler language is tiny (per-enum rule: wait / terminal / retry n / abort / send X) | the spec puts **no** design implication on the requestee's state machine beyond the terminal rule (UNIS §4) | We constrain the *requester* side for puzzle tractability; flagged in-game |
 | A seed may pair its transport schedule with a **commandee-behavior variant** (W1's 1-2: one seed's commandee skips RECEIVED, going straight to ACCEPTED) | the commandee legitimately *may* skip RECEIVED — "that state may not be reported if the Commandee immediately transitions to one of the terminal states" (SPC-001 §5.1.1) | None on the behavior itself (it is spec-legal commandee variation, *not* a dropped message — `drop` stays scoped to `-1`, lie #4); the apparatus is that we author it per-seed so the player certifies against several commandee implementations |
 | A rejected command is rejected **by attempt number** (1-3: attempt 0 → REJECTED, the retry accepted), not by inspecting the command's fields | the requestee engine carries no field payload; a real commandee would reject on the message content | The *reason* is real and cited (`CannotComplyType.Reason = INVALID_INPUT_PARAMETER`); only the trigger is simplified to "first attempt". Retry budget itself is a game rule (lie #5) |
+| 1-4 models each `-2` request as a **classification job** whose served outcome sets the world-state (data returned / activity executed); the `RequestProcessingStateEnum` progression QUEUED→PROCESSING→COMPLETED is shown as run flavour, not hand-wired by the player | a real requester's machine handles the six response states (the same terminal discipline the Command-2 machine does) | The player *classifies* the pattern (the sheet's lesson) rather than wiring a request machine; the enum is still taught (run log + UCI Reference codex, both catalog-cited). Handler-wiring was already certified in 1-1…1-3 |
 | MDT payloads abstracted to a small typed field list per level | real MDTs are deep (e.g. `TaskCommandMDT` → `CapabilityCommandBaseType` chains) | Content is the Forge's subject only where the CERT rules bite; elsewhere payload is a token |
 | Validator enforces a curated subset of SPC-001 CERTs | the real SchemaChecker enforces all of them programmatically | Each enforced CERT is quoted verbatim; unenforced CERTs are out of palette, not silently passed |
 
@@ -106,8 +107,12 @@ kept here so the content revives without re-research.
    (and UNIS Table 3.0-1's parenthetical) suggest QUEUED/PROCESSING/COMPLETED/
    FAILED/REJECTED; the XSD's `ProcessingStatusEnum` actually lacks REJECTED and
    CANCELED. The game uses **`RequestProcessingStateEnum`** for
-   DataRequest-2/ActionRequest-2 responses, which SPC-001 §5.1.2/5.1.3 prescribe
-   and which carries all six values.
+   DataRequest-2/ActionRequest-2 responses, which SPC-001 §5.1.2/5.1.3 prescribe.
+   The game surfaces the six teaching states QUEUED/PROCESSING/COMPLETED/FAILED/
+   CANCELED/REJECTED; the real enum also carries NEW/UPDATE/CANCEL and
+   AUTOMATIC_*/MANUAL_* variants, which the game **omits** (omission is allowed,
+   never a rename) — the four terminal states (COMPLETED/FAILED/CANCELED/REJECTED)
+   distinguish it from Command-2's own four-value `CommandProcessingStateEnum`.
 9. **The Blueprint mock's `SCH-000164` stamp is a placeholder.** The real
    SCH-000164 is about schema-file section ordering. The shipped validator must
    cite honestly: a missing `SystemID` is an XSD validity failure against

@@ -117,12 +117,19 @@ Seed vocabulary (the whole adversary, each move cited to UNIS §4):
   "REJECTED kills the CommandID — a retry is a new command." *Citation:* XSD
   `CommandProcessingStateEnum` / `CannotComplyEnum` annotations; SPC-001 Table
   5.1-2; retry *budget* is a game rule (fidelity lie #5).
-- **1-4 Request Is Not Command.** *(~5 min · was 1-5)* *Goal:* two jobs on one
-  sheet — obtain existing data (win: you hold the data) and cause an analysis
-  to run (win: requestee's activity executed). *Palette:* DataRequest-2,
-  ActionRequest-2, Command-2 — choosing wrong on either job dead-ends that
-  job's world-state. *Seeds (3):* in-order; QUEUED→PROCESSING→COMPLETED long
-  path; skip intermediates, straight to COMPLETED. *Lesson:* `*DataRequest`
+- **1-4 Request Is Not Command.** *(~5 min · was 1-5)* Built as a **classification
+  sheet** (the 0-3 jobs mechanic, one step up: `-2` patterns). *Goal:* two jobs on
+  one sheet — obtain existing data (win: the data source returns it) and cause an
+  analysis to run (win: the requestee's activity executed). *Palette:* DataRequest-2,
+  ActionRequest-2, Command-2 — the player **assigns** a pattern per job; choosing
+  wrong (a mismatched request pattern, or Command-2) dead-ends that job's world-state.
+  A correctly-classified `-2` job runs to COMPLETED and reaches its world-state; the
+  run shows the `RequestProcessingStateEnum` progression QUEUED→PROCESSING→COMPLETED
+  (surfaced, not hand-wired — the handler-wiring skill was W1's 1-1…1-3; here the
+  lesson is *classification*, and the enum is taught by the run log + the UCI
+  Reference codex). *Seeds (3):* in-order; reorder the two job outcomes; delay one
+  outcome (still within deadline) — transport variations the correct classification
+  survives (0-3's seed philosophy). *Lesson:* `*DataRequest`
   returns existing data ("implicitly accepted by returning the requested status
   information"); `*Request` runs a process that may be queued; `*Command`
   demands an activity as soon as possible — and the two request patterns share

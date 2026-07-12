@@ -171,6 +171,11 @@ function eventLine(ev: RunEvent, gated: boolean): { text: string; color: string 
     // classification sheet (0-3):
     case "finding-filed":
       return { text: `⚑ finding filed · ${ev.detail}`, color: ZONE.stamp };
+    // request-pattern (`-2`) job progression (1-4): QUEUED / PROCESSING / COMPLETED.
+    case "request-state": {
+      const completed = ev.detail.includes("COMPLETED");
+      return { text: `▸ ${ev.detail}`, color: completed ? ENUM_COLOR.ACCEPTED : dim };
+    }
   }
 }
 

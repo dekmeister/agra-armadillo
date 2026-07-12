@@ -32,7 +32,9 @@ export interface RunEvent {
     | "datum-dropped"
     | "status-shown"
     // classification sheet (0-3):
-    | "finding-filed";
+    | "finding-filed"
+    // request-pattern (`-2`) job progression (1-4): QUEUED / PROCESSING / COMPLETED:
+    | "request-state";
   readonly detail: string;
 }
 

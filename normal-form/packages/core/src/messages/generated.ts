@@ -22,6 +22,14 @@ export type MessageModeEnum =
 export type CannotComplyEnum =
   | "INVALID_INPUT_PARAMETER";
 
+export type RequestProcessingStateEnum =
+  | "QUEUED"
+  | "PROCESSING"
+  | "COMPLETED"
+  | "FAILED"
+  | "CANCELED"
+  | "REJECTED";
+
 /* --- Message & type interfaces --- */
 export interface MessageType {
   SecurityInformation: string;
@@ -57,6 +65,20 @@ export interface SubsystemStatus {
 }
 
 export interface Entity {
+}
+
+export interface SubsystemStatusDataRequest {
+}
+
+export interface SubsystemStatusDataRequestStatus {
+  RequestProcessingState: RequestProcessingStateEnum;
+}
+
+export interface AnalysisRouteRequest {
+}
+
+export interface AnalysisRouteRequestStatus {
+  RequestProcessingState: RequestProcessingStateEnum;
 }
 
 /* --- Runtime catalog metadata (citations, field trees) --- */
@@ -98,6 +120,18 @@ export const MESSAGE_CATALOG = {
         "INVALID_INPUT_PARAMETER"
       ],
       "cite": "XSD CannotComplyEnum; CannotComplyType.Reason on CommandStatusBaseType (SPC-001 §5.1.1)"
+    },
+    "RequestProcessingStateEnum": {
+      "name": "RequestProcessingStateEnum",
+      "values": [
+        "QUEUED",
+        "PROCESSING",
+        "COMPLETED",
+        "FAILED",
+        "CANCELED",
+        "REJECTED"
+      ],
+      "cite": "SPC-001 §5.1.2/§5.1.3 (RequestStatus); XSD RequestProcessingStateEnum"
     }
   },
   "envelope": {
@@ -211,6 +245,46 @@ export const MESSAGE_CATALOG = {
       "fields": [],
       "mt": "EntityMT",
       "role": "publication"
+    },
+    "SubsystemStatusDataRequest": {
+      "name": "SubsystemStatusDataRequest",
+      "cite": "UNIS §4.4 CERT UNIS-000093; structure SPC-001 §5.1.3 CERT SCH-002462; XSD SubsystemStatusDataRequest / SubsystemStatusDataRequestMT",
+      "fields": [],
+      "mt": "SubsystemStatusDataRequestMT",
+      "role": "request"
+    },
+    "SubsystemStatusDataRequestStatus": {
+      "name": "SubsystemStatusDataRequestStatus",
+      "cite": "UNIS §4.4 CERT UNIS-000093; structure SPC-001 §5.1.3 CERT SCH-002462; XSD SubsystemStatusDataRequestStatus / SubsystemStatusDataRequestStatusMT",
+      "fields": [
+        {
+          "name": "RequestProcessingState",
+          "required": true,
+          "enum": "RequestProcessingStateEnum"
+        }
+      ],
+      "mt": "SubsystemStatusDataRequestStatusMT",
+      "role": "response"
+    },
+    "AnalysisRouteRequest": {
+      "name": "AnalysisRouteRequest",
+      "cite": "UNIS §4.5 CERT UNIS-000099; structure SPC-001 §5.1.2 CERT SCH-002463; XSD AnalysisRouteRequest / AnalysisRouteRequestMT",
+      "fields": [],
+      "mt": "AnalysisRouteRequestMT",
+      "role": "request"
+    },
+    "AnalysisRouteRequestStatus": {
+      "name": "AnalysisRouteRequestStatus",
+      "cite": "UNIS §4.5 CERT UNIS-000099; structure SPC-001 §5.1.2 CERT SCH-002463; XSD AnalysisRouteRequestStatus / AnalysisRouteRequestStatusMT",
+      "fields": [
+        {
+          "name": "RequestProcessingState",
+          "required": true,
+          "enum": "RequestProcessingStateEnum"
+        }
+      ],
+      "mt": "AnalysisRouteRequestStatusMT",
+      "role": "response"
     }
   },
   "types": {

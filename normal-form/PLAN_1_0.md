@@ -175,13 +175,20 @@ label readability at 3–4 lifelines is the deferred item for WS-G (REVIEW_MVP Q
 **Done:** 0-1→0-3 registered and playable, each arriving broken per the
 "lesson guaranteed" rule; goldens + fidelity green; standing exit checks green.
 
-## WS-F — World 1 remainder (1-2, 1-3, 1-4, bonus 1-5) *(STAGED: 1-2 + 1-3 landed; 1-4/1-5 → `PROMPT.md`)*
+## WS-F — World 1 remainder (1-2, 1-3, 1-4, bonus 1-5) *(STAGED: 1-2 + 1-3 + 1-4 landed; bonus 1-5 → `PROMPT.md`)*
 
 **Staged (2026-07-12).** WS-F is really four sub-stages of escalating engine work.
-**1-2 and 1-3 are built, green, and registered** this session (`core` + `levels`
-only); **1-4 and bonus 1-5** — which add the request-pattern enums, the enum-driven
-handler machine + game UI, a two-job runtime, and the mid-run CANCEL surface — are
-handed off with a full design + file map in **`PROMPT.md`** at repo root.
+**1-2, 1-3, and 1-4 are built, green, and registered**; only the **skippable bonus
+1-5** (mid-run CANCEL — a distinct novel run surface) is handed off with a full design
++ file map in **`PROMPT.md`** at repo root.
+
+**1-4 was built as a classification sheet** (the 0-3 jobs mechanic extended to `-2`
+patterns), not the enum-driven handler generalization — the lesson "request is not
+command" is a pattern-choice; the player classifies and `RequestProcessingStateEnum`
+is *shown* (run log + UCI Reference codex), not hand-wired. Landed: `JobAsk`
++`dataRequest`/`actionRequest`, `runSeedJobs` serves `-2` jobs (`activityExecuted`
+populated; `request-state` progression events), catalog gains
+`RequestProcessingStateEnum` + the DataRequest-2/ActionRequest-2 message bindings.
 
 Landed this session:
 - **1-2 "Skipping the Pleasantries"** (replaces the WS-C stub) — RECEIVED is a
@@ -192,9 +199,15 @@ Landed this session:
   commandee respond to the fresh NEW command, retires the old id, budget-bounded) +
   the **reject engine** (`RequesteeConfig.rejects` with a real `CannotComplyEnum`
   reason) recover it.
-- Catalog gains `CannotComplyEnum` + the real `CommandProcessingStateReason` field;
-  `docs/03-levels.md` 1-2/1-3 and `docs/02-fidelity.md` §2 updated (docs-first).
-- Proofs: `sheet-1-2`/`sheet-1-3` goldens + `packages/game/test/w1-play.test.ts`
+- **1-4 "Request Is Not Command"** — a `-2` **classification sheet** (reuses
+  `runSeedJobs`/`JobsBoard`/`assignPattern`): assign DataRequest-2 / ActionRequest-2 /
+  Command-2 per job; correct → runs to COMPLETED and reaches its world-state, wrong
+  (incl. Command-2) → dead-ends. The `RequestProcessingStateEnum` progression is shown
+  in the run log, not hand-wired.
+- Catalog gains `CannotComplyEnum` + `CommandProcessingStateReason` (1-3) and
+  `RequestProcessingStateEnum` + the two `-2` message pairs (1-4);
+  `docs/03-levels.md` 1-2/1-3/1-4 and `docs/02-fidelity.md` updated (docs-first).
+- Proofs: `sheet-1-2`/`-1-3`/`-1-4` goldens + `packages/game/test/w1-play.test.ts`
   (player-path certification). Standing exit checks green; `vite build` clean.
 
 *Per rescoped `docs/03-levels.md` W1 (note renumbering: old 1-4/1-5/1-6 → new

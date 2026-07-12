@@ -14,6 +14,7 @@ import sheet03 from "../sheets/w0/sheet-0-3.json" with { type: "json" };
 import sheet11 from "../sheets/w1/sheet-1-1.json" with { type: "json" };
 import sheet12 from "../sheets/w1/sheet-1-2.json" with { type: "json" };
 import sheet13 from "../sheets/w1/sheet-1-3.json" with { type: "json" };
+import sheet14 from "../sheets/w1/sheet-1-4.json" with { type: "json" };
 
 // World 0 (WS-E). One-way (`-1`) sheets — the publish-plan editor + fan-out board
 // landed in E2, so they lead the lineup. 0-3 is the classification sheet (E3): a
@@ -24,11 +25,13 @@ export const sheet_0_3: Sheet = sheet03 as unknown as Sheet;
 
 export const sheet_1_1: Sheet = sheet11 as unknown as Sheet;
 // WS-F World 1: 1-2 "Skipping the Pleasantries" (RECEIVED is a courtesy — per-seed
-// commandee variants) and 1-3 "Rejection Letter" (REJECTED kills the CommandID; the
-// reactive retry loop recovers with a fresh NEW command). 1-4/1-5 are handed off in
-// PROMPT.md (request patterns + enum-driven UI, and the CANCEL race — new surface).
+// commandee variants), 1-3 "Rejection Letter" (REJECTED kills the CommandID; the
+// reactive retry loop recovers with a fresh NEW command), and 1-4 "Request Is Not
+// Command" (the classification jobs mechanic for the `-2` request patterns). Bonus
+// 1-5 "Cancel Culture" (mid-run CANCEL) is handed off in PROMPT.md.
 export const sheet_1_2: Sheet = sheet12 as unknown as Sheet;
 export const sheet_1_3: Sheet = sheet13 as unknown as Sheet;
+export const sheet_1_4: Sheet = sheet14 as unknown as Sheet;
 
 /** The sheet lineup in play order — the progression / drawing-index source. */
 export const SHEET_LIST: readonly Sheet[] = [
@@ -38,6 +41,7 @@ export const SHEET_LIST: readonly Sheet[] = [
   sheet_1_1,
   sheet_1_2,
   sheet_1_3,
+  sheet_1_4,
 ];
 
 export const SHEETS: Readonly<Record<string, Sheet>> = Object.fromEntries(

@@ -1,0 +1,76 @@
+{
+  "id": "1-4",
+  "world": "w1",
+  "title": "Request Is Not Command",
+  "goal": {
+    "text": "Classify both jobs: the data source returns your data, and the analysis engine runs its process — a request is not a command.",
+    "win": {
+      "all": [
+        { "statusShownBy": { "party": "sysD", "byTick": 6 } },
+        { "worldState": "activityExecuted", "party": "sysA" }
+      ]
+    }
+  },
+  "palette": [
+    {
+      "pattern": "DataRequest-2",
+      "unlocked": true,
+      "binding": {
+        "request": "SubsystemStatusDataRequest",
+        "response": "SubsystemStatusDataRequestStatus"
+      },
+      "cite": "UNIS §4.4, CERT UNIS-000093"
+    },
+    {
+      "pattern": "ActionRequest-2",
+      "unlocked": true,
+      "binding": { "request": "AnalysisRouteRequest", "response": "AnalysisRouteRequestStatus" },
+      "cite": "UNIS §4.5, CERT UNIS-000099"
+    },
+    {
+      "pattern": "Command-2",
+      "unlocked": true,
+      "binding": { "request": "TaskCommand", "response": "TaskCommandStatus" },
+      "cite": "UNIS §4.6, CERT UNIS-000105"
+    }
+  ],
+  "lifelines": [
+    { "id": "you", "label": "Requester (you)", "player": true },
+    { "id": "sysD", "label": "Data source (SystemD)" },
+    { "id": "sysA", "label": "Analysis engine (SystemA)" }
+  ],
+  "jobs": [
+    {
+      "id": "j1",
+      "party": "sysD",
+      "ask": "dataRequest",
+      "prompt": "Obtain the data SystemD already holds — don't command it, just ask for its current status."
+    },
+    {
+      "id": "j2",
+      "party": "sysA",
+      "ask": "actionRequest",
+      "prompt": "Cause SystemA to run an analysis — a process that may be queued before it completes."
+    }
+  ],
+  "compose": {
+    "initialFields": {},
+    "editable": []
+  },
+  "seeds": [
+    { "id": 1, "label": "in-order", "schedule": [] },
+    {
+      "id": 2,
+      "label": "reordered outcomes",
+      "schedule": [{ "op": "reorder", "before": "j1", "after": "j2" }]
+    },
+    {
+      "id": 3,
+      "label": "delayed completion",
+      "schedule": [{ "op": "delay", "msg": "j1", "by": 2 }]
+    }
+  ],
+  "recap": "Request returns data or runs a process; Command demands an activity.",
+  "fidelityNotes": ["lie-1-bounded-seeds", "lie-request-classification", "lie-8-request-enum"],
+  "cites": ["CERT UNIS-000093", "CERT UNIS-000099", "CERT UNIS-000105", "UNIS §4.4", "UNIS §4.5"]
+}

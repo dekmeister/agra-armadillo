@@ -44,11 +44,13 @@ export interface ComposeSpec {
   readonly expectedMode?: string;
 }
 
-/** What a 0-3 certification job asks for — determines the one correct palette
- *  pattern (or that it is a trap). `status` → Status-1, `datum` → Data-1,
- *  `request` → a trap: no `-1` primitive can answer a request (it is a two-message
- *  `-2` pattern), so the job is passed by filing the wrong-palette finding. */
-export type JobAsk = "status" | "datum" | "request";
+/** What a certification job asks for — determines the one correct palette pattern
+ *  (or that it is a trap). 0-3 (`-1` classification): `status` → Status-1, `datum` →
+ *  Data-1, `request` → a trap (no `-1` can answer a request; passed by filing the
+ *  wrong-palette finding). 1-4 (`-2` classification): `dataRequest` → DataRequest-2
+ *  (obtain existing data), `actionRequest` → ActionRequest-2 (run a process); the
+ *  other patterns — including Command-2 — dead-end the job. */
+export type JobAsk = "status" | "datum" | "request" | "dataRequest" | "actionRequest";
 
 /** One certification job on a classification sheet (0-3). The player assigns a
  *  palette pattern to each (or files a finding); the goal judges each job's outcome. */
@@ -70,6 +72,10 @@ export function correctPatternFor(ask: JobAsk): string | null {
       return "Data-1";
     case "request":
       return null;
+    case "dataRequest":
+      return "DataRequest-2";
+    case "actionRequest":
+      return "ActionRequest-2";
   }
 }
 
