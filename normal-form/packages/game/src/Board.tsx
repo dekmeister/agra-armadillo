@@ -3,7 +3,7 @@
 // colored by state enum. In RUN the arrows reveal as the tick advances, driven by
 // the engine's frames; in COMPOSE/HANDLERS the board is a static shell of the
 // sheet's initial state (editing is S5).
-import type { Machine } from "@normal-form/core";
+import { correctPatternFor, type Job, type Machine } from "@normal-form/core";
 import { nextSheetId } from "@normal-form/levels";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { ArrowFrame, OneWayFrame } from "./frames.ts";
@@ -1042,13 +1042,38 @@ function HandlerWidget({ xLeft, machine }: { xLeft: number; machine: Machine }) 
 
 // --- Classification board (0-3) --------------------------------------------
 
-/** Producer → per-job party board. Each job is one edge, labeled by the pattern the
- *  player assigned it (or FILED, when they filed the wrong-palette finding, or
- *  "— unassigned —"). The RUN seed strip reveals whether the triage certifies; this
- *  board only shows the player's per-job choices. */
+/** The per-job delivery latency the jobs sim uses (mirrors `runSeedJobs`: a
+ *  correctly-classified job delivers to its party one tick after RUN starts). 0-3's
+ *  seeds only reorder — they don't perturb ticks or drop — so this is faithful. */
+const JOB_LATENCY = 1;
+
+/** How a job resolves, and the tick its outcome becomes visible on RUN. */
+interface JobOutcome {
+  readonly kind: "served" | "filed" | "unresolved";
+  readonly revealTick: number;
+  readonly pattern?: string;
+}
+
+function jobOutcome(ask: Job["ask"], pattern: string | undefined, isFiled: boolean): JobOutcome {
+  // Filing is instantaneous (a certification act, not a delivery) → tick 0.
+  if (isFiled) return { kind: "filed", revealTick: 0 };
+  // A correct pattern delivers at the latency tick; anything else never serves.
+  if (pattern && pattern === correctPatternFor(ask))
+    return { kind: "served", revealTick: JOB_LATENCY, pattern };
+  return { kind: "unresolved", revealTick: JOB_LATENCY, pattern };
+}
+
+/** Producer → per-job party board. In TRIAGE each job is one edge labeled by the
+ *  player's choice (assigned pattern / FILED / unassigned). On RUN the outcome
+ *  reveals as the tick advances: the filed job stamps at t0, a correctly-classified
+ *  job's arrow wipes in at its delivery tick, and an unserved job surfaces as a miss
+ *  — so PLAY/STEP animate the triage the same way the other boards animate delivery. */
 function JobsBoard() {
   const [ref, { w, h }] = useSize();
   const sheet = useGameStore((s) => s.sheet);
+  const phase = useGameStore((s) => s.phase);
+  const tick = useGameStore((s) => s.tick);
+  const runSpeed = useGameStore((s) => s.runSpeed);
   const jobPatterns = useGameStore((s) => s.session.jobPatterns);
   const filed = useGameStore((s) => s.session.filed);
   const jobs = sheet.jobs ?? [];
@@ -1056,15 +1081,52 @@ function JobsBoard() {
 
   const producerX = w * 0.15;
   const partyX = w * 0.72;
+  const len = partyX - producerX;
   const yTop = 90;
   const rowGap = 62;
+  const running = phase === "run";
+  const drawMs = Math.min(runSpeed * 0.6, 480);
 
-  const label = (jobId: string): { text: string; color: string } => {
-    if ((filed[jobId] ?? []).length > 0)
-      return { text: "⚑ FILED — wrong palette", color: ZONE.stamp };
-    const p = jobPatterns[jobId];
-    if (p) return { text: p, color: ZONE.accent };
-    return { text: "— unassigned —", color: "rgba(36,67,95,.5)" };
+  /** Resolve a job to its edge appearance for the current phase + tick. */
+  const view = (job: (typeof jobs)[number]) => {
+    const o = jobOutcome(job.ask, jobPatterns[job.id], (filed[job.id] ?? []).length > 0);
+    if (!running) {
+      // TRIAGE: show the player's current choice (right vs wrong is revealed on RUN).
+      if (o.kind === "filed")
+        return {
+          color: ZONE.stamp,
+          mid: "⚑ FILED · request needs a -2",
+          dashed: true,
+          head: false,
+        };
+      if (o.pattern) return { color: ZONE.accent, mid: o.pattern, dashed: false, head: true };
+      return { color: "rgba(36,67,95,.5)", mid: "— unassigned —", dashed: true, head: false };
+    }
+    const revealed = tick >= o.revealTick;
+    if (o.kind === "served")
+      return {
+        color: STATUS.pass,
+        mid: revealed ? `✓ served · ${o.pattern}` : "",
+        dashed: false,
+        head: revealed,
+        draw: true,
+        drawn: revealed,
+      };
+    if (o.kind === "filed")
+      return {
+        color: ZONE.stamp,
+        mid: revealed ? "✓ FILED · correctly unservable (needs a -2)" : "",
+        dashed: true,
+        head: false,
+        pending: !revealed,
+      };
+    return {
+      color: STATUS.fail,
+      mid: revealed ? (o.pattern ? `✗ ${o.pattern} — not served` : "✗ not served") : "",
+      dashed: true,
+      head: false,
+      pending: !revealed,
+    };
   };
 
   return (
@@ -1094,6 +1156,7 @@ function JobsBoard() {
         <span style={{ fontSize: 12, fontWeight: 800 }}>DIAGRAM</span>
         <span style={{ fontFamily: FONT.hand, fontSize: 12, color: "rgba(36,67,95,.55)" }}>
           triage · {jobs.length} job{jobs.length === 1 ? "" : "s"}
+          {running ? ` · t${tick}` : ""}
         </span>
       </div>
 
@@ -1124,25 +1187,44 @@ function JobsBoard() {
           />
           {jobs.map((job, i) => {
             const y = yTop + i * rowGap;
-            const l = label(job.id);
+            const v = view(job);
             const party = sheet.lifelines.find((ll) => ll.id === job.party);
+            const opacity = "pending" in v && v.pending ? 0.25 : 1;
+            const drawing = "draw" in v && v.draw;
             return (
-              <g key={job.id}>
-                <line x1={producerX} y1={y} x2={partyX} y2={y} stroke={l.color} strokeWidth={2} />
-                <polygon
-                  points={`${partyX},${y} ${partyX - 9},${y - 4} ${partyX - 9},${y + 4}`}
-                  fill={l.color}
+              <g key={job.id} opacity={opacity}>
+                <line
+                  x1={producerX}
+                  y1={y}
+                  x2={partyX}
+                  y2={y}
+                  stroke={v.color}
+                  strokeWidth={2}
+                  strokeDasharray={drawing ? `${len}` : v.dashed ? "6 5" : undefined}
+                  strokeDashoffset={drawing ? (v.drawn ? 0 : len) : undefined}
+                  style={
+                    drawing
+                      ? { transition: `stroke-dashoffset ${drawMs}ms ease ${i * 110}ms` }
+                      : undefined
+                  }
                 />
+                {v.head && (
+                  <polygon
+                    points={`${partyX},${y} ${partyX - 9},${y - 4} ${partyX - 9},${y + 4}`}
+                    fill={v.color}
+                  />
+                )}
                 <text
                   x={(producerX + partyX) / 2}
                   y={y - 7}
                   fontFamily={FONT.mono}
                   fontSize={11}
                   fontWeight={700}
-                  fill={l.color}
+                  fill={v.color}
                   textAnchor="middle"
                 >
-                  {job.id.toUpperCase()} · {l.text}
+                  {job.id.toUpperCase()}
+                  {v.mid ? ` · ${v.mid}` : ""}
                 </text>
                 <text
                   x={partyX + 12}

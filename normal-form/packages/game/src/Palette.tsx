@@ -2,7 +2,7 @@
 // primitives. The sheet's unlocked pattern(s) are active chips; the rest are
 // locked. Lock/unlock is read from the current sheet's palette data.
 import type { Sheet } from "@normal-form/core";
-import { circled } from "./sheet.ts";
+import { circled, isJobs } from "./sheet.ts";
 import { useGameStore } from "./store.ts";
 import { FONT, LAYOUT, RADIUS, SHADOW, SURFACE, ZONE } from "./tokens.ts";
 
@@ -61,10 +61,18 @@ function LockedChip({ pattern, color, index }: { pattern: string; color: string;
   );
 }
 
-function ActiveChip({ pattern }: { pattern: string }) {
+function ActiveChip({ pattern, assign }: { pattern: string; assign?: boolean }) {
   const placed = useGameStore((s) => s.session.placed);
   const place = useGameStore((s) => s.place);
   const openReference = useGameStore((s) => s.openReference);
+  // On a classification sheet (0-3) a pattern isn't "placed" on the board — the
+  // player assigns it per job in the inspector — so the chip is reference-only and
+  // the suffix points there rather than offering PLACE.
+  const suffix = assign ? "▸ per job" : placed ? "PLACED ✓" : "PLACE ▸";
+  const onPrimary = () => {
+    if (assign) openReference(`pat-${pattern}`);
+    else if (!placed) place();
+  };
   // A wrapper (not a button) holds two sibling buttons: the primary place() chip
   // and a separate ⓘ that deep-links to the reference — nesting a button inside a
   // button is invalid HTML.
@@ -84,8 +92,14 @@ function ActiveChip({ pattern }: { pattern: string }) {
     >
       <button
         type="button"
-        onClick={() => !placed && place()}
-        title={placed ? "placed on the board" : "click to place its arrow pair"}
+        onClick={onPrimary}
+        title={
+          assign
+            ? "assign this pattern to a job in the inspector"
+            : placed
+              ? "placed on the board"
+              : "click to place it on the board"
+        }
         style={{
           display: "flex",
           alignItems: "center",
@@ -104,7 +118,7 @@ function ActiveChip({ pattern }: { pattern: string }) {
         <span style={{ width: 7, height: 7, borderRadius: "50%", background: ZONE.accent }} />
         <span style={{ fontSize: 13, fontWeight: 800, flex: 1 }}>{pattern}</span>
         <span style={{ fontSize: 8, fontWeight: 700, color: ZONE.accent, letterSpacing: ".08em" }}>
-          {placed ? "PLACED ✓" : "PLACE ▸"}
+          {suffix}
         </span>
       </button>
       <button
@@ -133,6 +147,7 @@ function ActiveChip({ pattern }: { pattern: string }) {
 
 export function Palette() {
   const sheet = useGameStore((s) => s.sheet);
+  const jobs = isJobs(sheet);
   const { unlocked, lockedOrder } = paletteState(sheet);
   const unlockedNames = [...unlocked];
   const unlockedLabel =
@@ -183,7 +198,7 @@ export function Palette() {
             </div>
             {g.patterns.map((p) =>
               unlocked.has(p) ? (
-                <ActiveChip key={p} pattern={p} />
+                <ActiveChip key={p} pattern={p} assign={jobs} />
               ) : (
                 <LockedChip key={p} pattern={p} color={g.color} index={lockedOrder.indexOf(p)} />
               ),
@@ -202,7 +217,9 @@ export function Palette() {
           padding: "8px 12px",
         }}
       >
-        {unlockedLabel} unlocked this sheet. Click to place its arrow pair on the board.
+        {jobs
+          ? "Assign one of these to each job in the inspector. Locked patterns show what this palette can't answer."
+          : `${unlockedLabel} unlocked this sheet. Click to place it on the board.`}
       </p>
     </aside>
   );

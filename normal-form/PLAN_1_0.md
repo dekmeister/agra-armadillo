@@ -144,12 +144,15 @@ parallel with WS-E/F.*
 each pattern is for, and every enum/message the game uses — with citations —
 and the fidelity gate fails on an invented name in the reference YAML.
 
-## WS-E — World 0 (sheets 0-1, 0-2, 0-3)
+## WS-E — World 0 (sheets 0-1, 0-2, 0-3) ← built
 
 *New engine capabilities + three sheets, per `docs/03-levels.md` W0. `core` +
-`levels` + `game`. Depends on WS-C. **Sized as three sub-stages — see
-`PLAN_WS_1_E.md`: E1 (engine foundation, goldens-only) → E2 (0-1 & 0-2 playable) →
-E3 (0-3 + filed-finding). E1 is a shippable, no-player-visible-change increment.***
+`levels` + `game`. Depends on WS-C. Delivered in three sub-stages: E1 (engine
+foundation, goldens-only) → E2 (0-1 & 0-2 playable) → E3 (0-3 + filed-finding).
+All three W0 sheets are registered, playable, and golden-proven; the deterministic
+playtest lives in `packages/game/test/w0-play.test.ts`. The one remaining manual
+QA is the interactive browser walk-through (`npm run dev`, ≥1024px). Fan-out
+label readability at 3–4 lifelines is the deferred item for WS-G (REVIEW_MVP Q4).*
 
 - **Engine:** `drop` seed op — **net-new** (the `SeedOp` union is the closed set
   `reorder | dup | delay`; `drop` was only a header comment, so this adds a
@@ -169,8 +172,8 @@ E3 (0-3 + filed-finding). E1 is a shippable, no-player-visible-change increment.
   design note into `03-levels.md` if the interaction changes.
 - Three reference machines + goldens; per-sheet fidelity notes + recap lines.
 
-**Done when:** 0-1→0-3 playable in ~11 min total, each arriving broken per the
-"lesson guaranteed" rule, goldens + fidelity green.
+**Done:** 0-1→0-3 registered and playable, each arriving broken per the
+"lesson guaranteed" rule; goldens + fidelity green; standing exit checks green.
 
 ## WS-F — World 1 remainder (1-2, 1-3, 1-4, bonus 1-5)
 
