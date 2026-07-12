@@ -2,7 +2,7 @@
 // envelope fields (COMPOSE), handler rules (HANDLERS), seed schedule (RUN) — with
 // the STATE ENUMS legend pinned to the bottom. All values are level data or
 // engine-derived; nothing is editable in S4 (editing is S5).
-import { FINDINGS, isTerminalState, type MachineAction } from "@normal-form/core";
+import { FINDINGS, isTerminalState, type MachineAction, MESSAGE_CATALOG } from "@normal-form/core";
 import { useState } from "react";
 import { circled, isJobs, isOneWay, primaryBinding } from "./sheet.ts";
 import { useGameStore } from "./store.ts";
@@ -55,6 +55,17 @@ const FIELD_GENERATORS: Record<string, { label: string; title: string; gen: () =
   CommandID: { label: "⟳ generate UUID", title: "insert a fresh canonical UUID", gen: genUuid },
   Timestamp: { label: "⟳ now", title: "insert the current time (ISO-8601)", gen: nowIso },
 };
+
+/** Editable envelope fields whose value is a closed enum — rendered as a dropdown of
+ *  the standard's values (from the policed catalog) instead of free text. */
+const ENUM_FIELDS: Record<string, keyof typeof MESSAGE_CATALOG.enums> = {
+  Mode: "MessageModeEnum",
+  CommandState: "CommandStateEnum",
+};
+function enumOptionsFor(name: string): readonly string[] | null {
+  const key = ENUM_FIELDS[name];
+  return key ? (MESSAGE_CATALOG.enums[key].values as readonly string[]) : null;
+}
 
 function ZoneHeader() {
   const sheet = useGameStore((s) => s.sheet);
@@ -118,6 +129,7 @@ function ComposeBody() {
         const value = fields[name] ?? null;
         const err = errorFields.has(name);
         const canEdit = editable.has(name);
+        const enumOptions = canEdit ? enumOptionsFor(name) : null;
         return (
           <div
             key={name}
@@ -141,11 +153,10 @@ function ComposeBody() {
               <span style={{ fontWeight: 800 }}>{err ? "✖" : "✓"}</span>
             </div>
             {canEdit ? (
-              <>
-                <input
+              enumOptions ? (
+                <select
                   aria-label={name}
                   value={value ?? ""}
-                  placeholder={placeholderFor(name)}
                   onChange={(e) => setField(name, e.target.value === "" ? null : e.target.value)}
                   style={{
                     width: "100%",
@@ -153,37 +164,66 @@ function ComposeBody() {
                     marginTop: 4,
                     padding: "3px 5px",
                     fontFamily: FONT.mono,
-                    fontSize: name === "CommandID" ? 10 : 11,
+                    fontSize: 11,
                     fontWeight: 600,
                     color: err ? STATUS.fail : SURFACE.ink,
                     background: "#fff",
                     border: `1px solid ${err ? STATUS.fail : "rgba(36,67,95,.35)"}`,
                     borderRadius: 2,
                   }}
-                />
-                {FIELD_GENERATORS[name] && (
-                  <button
-                    type="button"
-                    onClick={() => setField(name, FIELD_GENERATORS[name]!.gen())}
-                    title={FIELD_GENERATORS[name]!.title}
+                >
+                  <option value="">— select —</option>
+                  {enumOptions.map((v) => (
+                    <option key={v} value={v}>
+                      {v}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <>
+                  <input
+                    aria-label={name}
+                    value={value ?? ""}
+                    placeholder={placeholderFor(name)}
+                    onChange={(e) => setField(name, e.target.value === "" ? null : e.target.value)}
                     style={{
+                      width: "100%",
+                      boxSizing: "border-box",
                       marginTop: 4,
-                      padding: "2px 8px",
+                      padding: "3px 5px",
                       fontFamily: FONT.mono,
-                      fontSize: 10,
-                      fontWeight: 700,
-                      letterSpacing: ".04em",
-                      color: ZONE.accent,
+                      fontSize: name === "CommandID" ? 10 : 11,
+                      fontWeight: 600,
+                      color: err ? STATUS.fail : SURFACE.ink,
                       background: "#fff",
-                      border: `1px solid ${ZONE.accent}`,
+                      border: `1px solid ${err ? STATUS.fail : "rgba(36,67,95,.35)"}`,
                       borderRadius: 2,
-                      cursor: "pointer",
                     }}
-                  >
-                    {FIELD_GENERATORS[name]!.label}
-                  </button>
-                )}
-              </>
+                  />
+                  {FIELD_GENERATORS[name] && (
+                    <button
+                      type="button"
+                      onClick={() => setField(name, FIELD_GENERATORS[name]!.gen())}
+                      title={FIELD_GENERATORS[name]!.title}
+                      style={{
+                        marginTop: 4,
+                        padding: "2px 8px",
+                        fontFamily: FONT.mono,
+                        fontSize: 10,
+                        fontWeight: 700,
+                        letterSpacing: ".04em",
+                        color: ZONE.accent,
+                        background: "#fff",
+                        border: `1px solid ${ZONE.accent}`,
+                        borderRadius: 2,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {FIELD_GENERATORS[name]!.label}
+                    </button>
+                  )}
+                </>
+              )
             ) : (
               value != null && (
                 <div style={{ fontSize: 11, fontWeight: 500, opacity: 0.75, marginTop: 2 }}>
