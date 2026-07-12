@@ -31,6 +31,12 @@ export function isOneWay(sheet: Sheet): boolean {
   return sheet.oneway !== undefined;
 }
 
+/** True on a classification sheet (0-3) — selects the per-job pattern-choice editor
+ *  + jobs board + the filed-finding mechanic over both other sim paths. */
+export function isJobs(sheet: Sheet): boolean {
+  return (sheet.jobs?.length ?? 0) > 0;
+}
+
 /** A circled index glyph (①..⑳) for a 1-based number, falling back to the plain
  *  number outside that range — no assumption about how many seeds a sheet has. */
 export function circled(n: number): string {

@@ -7,7 +7,7 @@ import type { Machine } from "@normal-form/core";
 import { nextSheetId } from "@normal-form/levels";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { ArrowFrame, OneWayFrame } from "./frames.ts";
-import { circled, isOneWay, type PrimaryBinding, primaryBinding } from "./sheet.ts";
+import { circled, isJobs, isOneWay, type PrimaryBinding, primaryBinding } from "./sheet.ts";
 import type { Phase } from "./store.ts";
 import { useGameStore } from "./store.ts";
 import { ENUM_COLOR, FONT, LAYOUT, STATUS, SURFACE, ZONE } from "./tokens.ts";
@@ -19,6 +19,8 @@ import { useRun } from "./useRun.ts";
  *  → N-consumer fan-out (WS-E). */
 export function Board() {
   const oneWay = useGameStore((s) => isOneWay(s.sheet));
+  const jobs = useGameStore((s) => isJobs(s.sheet));
+  if (jobs) return <JobsBoard />;
   return oneWay ? <OneWayBoard /> : <CommandBoard />;
 }
 
@@ -1033,6 +1035,139 @@ function HandlerWidget({ xLeft, machine }: { xLeft: number; machine: Machine }) 
         <div style={{ fontFamily: FONT.hand, fontWeight: 400, color: "rgba(36,67,95,.6)" }}>
           No rules wired yet — pick an action per enum in the inspector.
         </div>
+      )}
+    </div>
+  );
+}
+
+// --- Classification board (0-3) --------------------------------------------
+
+/** Producer → per-job party board. Each job is one edge, labeled by the pattern the
+ *  player assigned it (or FILED, when they filed the wrong-palette finding, or
+ *  "— unassigned —"). The RUN seed strip reveals whether the triage certifies; this
+ *  board only shows the player's per-job choices. */
+function JobsBoard() {
+  const [ref, { w, h }] = useSize();
+  const sheet = useGameStore((s) => s.sheet);
+  const jobPatterns = useGameStore((s) => s.session.jobPatterns);
+  const filed = useGameStore((s) => s.session.filed);
+  const jobs = sheet.jobs ?? [];
+  const producer = sheet.lifelines.find((l) => l.player) ?? sheet.lifelines[0];
+
+  const producerX = w * 0.15;
+  const partyX = w * 0.72;
+  const yTop = 90;
+  const rowGap = 62;
+
+  const label = (jobId: string): { text: string; color: string } => {
+    if ((filed[jobId] ?? []).length > 0)
+      return { text: "⚑ FILED — wrong palette", color: ZONE.stamp };
+    const p = jobPatterns[jobId];
+    if (p) return { text: p, color: ZONE.accent };
+    return { text: "— unassigned —", color: "rgba(36,67,95,.5)" };
+  };
+
+  return (
+    <div
+      ref={ref}
+      style={{
+        flex: 1,
+        position: "relative",
+        background: SURFACE.board,
+        backgroundImage: GRID_BG,
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          top: 10,
+          left: 12,
+          display: "flex",
+          alignItems: "center",
+          gap: 7,
+          fontFamily: FONT.mono,
+          zIndex: 2,
+        }}
+      >
+        <span style={{ width: 9, height: 9, background: SURFACE.ink }} />
+        <span style={{ fontSize: 12, fontWeight: 800 }}>DIAGRAM</span>
+        <span style={{ fontFamily: FONT.hand, fontSize: 12, color: "rgba(36,67,95,.55)" }}>
+          triage · {jobs.length} job{jobs.length === 1 ? "" : "s"}
+        </span>
+      </div>
+
+      {w > 0 && (
+        <svg
+          width={w}
+          height={h}
+          viewBox={`0 0 ${w} ${h}`}
+          style={{ position: "absolute", inset: 0 }}
+          role="img"
+          aria-label="classification jobs diagram"
+        >
+          <title>Classification — producer to per-job parties</title>
+          <LifelineHeader
+            x={producerX}
+            label={splitLabel(producer?.label ?? "Producer").name}
+            tag={splitLabel(producer?.label ?? "Producer").tag}
+            tagColor={ZONE.accent}
+          />
+          <line
+            x1={producerX}
+            y1={54}
+            x2={producerX}
+            y2={h - 20}
+            stroke="rgba(36,67,95,.55)"
+            strokeWidth={2}
+            strokeDasharray="5 5"
+          />
+          {jobs.map((job, i) => {
+            const y = yTop + i * rowGap;
+            const l = label(job.id);
+            const party = sheet.lifelines.find((ll) => ll.id === job.party);
+            return (
+              <g key={job.id}>
+                <line x1={producerX} y1={y} x2={partyX} y2={y} stroke={l.color} strokeWidth={2} />
+                <polygon
+                  points={`${partyX},${y} ${partyX - 9},${y - 4} ${partyX - 9},${y + 4}`}
+                  fill={l.color}
+                />
+                <text
+                  x={(producerX + partyX) / 2}
+                  y={y - 7}
+                  fontFamily={FONT.mono}
+                  fontSize={11}
+                  fontWeight={700}
+                  fill={l.color}
+                  textAnchor="middle"
+                >
+                  {job.id.toUpperCase()} · {l.text}
+                </text>
+                <text
+                  x={partyX + 12}
+                  y={y + 4}
+                  fontFamily={FONT.mono}
+                  fontSize={11}
+                  fontWeight={700}
+                  fill={SURFACE.ink}
+                >
+                  {splitLabel(party?.label ?? job.party).name}
+                </text>
+                <text
+                  x={(producerX + partyX) / 2}
+                  y={y + 15}
+                  fontFamily={FONT.hand}
+                  fontSize={11}
+                  fill="rgba(36,67,95,.6)"
+                  textAnchor="middle"
+                >
+                  {job.ask}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
       )}
     </div>
   );

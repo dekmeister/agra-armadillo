@@ -213,6 +213,17 @@ findings:
     docRef: "UNIS §4 (no guaranteed delivery)"
     quote: "there can be no assumption that messages come in any order or that there is guaranteed delivery"
 
+  # Classification finding (WS-E 0-3): the player files this on a job whose intent
+  # is a *request* — no -1 primitive can answer a request, which is inherently a
+  # two-message (-2) pattern. Quoted verbatim from the SPC-002 pattern table;
+  # `code` cites the DataRequest-2 conformance CERT (the pattern such a job needs).
+  - id: JOB-wrong-palette
+    code: "CERT UNIS-000093"
+    message: "a request needs a -2 pattern — no Status-1/Data-1 (-1) primitive can answer it"
+    source: unis
+    docRef: "SPC-002 §3 Table 3.0-1 / §4.4 (DataRequest-2)"
+    quote: "Consists of two messages where the first message requests data"
+
 # --- UCI Reference codex (WS-D; docs/07-uci-reference.md) -------------------
 # The curated prose layer of the in-game UCI REFERENCE screen, authored here so
 # it runs through the SAME fidelity gate as everything else: every CERT/RQMT

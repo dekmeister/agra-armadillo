@@ -2,9 +2,9 @@
 // envelope fields (COMPOSE), handler rules (HANDLERS), seed schedule (RUN) — with
 // the STATE ENUMS legend pinned to the bottom. All values are level data or
 // engine-derived; nothing is editable in S4 (editing is S5).
-import { isTerminalState, type MachineAction } from "@normal-form/core";
+import { FINDINGS, isTerminalState, type MachineAction } from "@normal-form/core";
 import { useState } from "react";
-import { circled, isOneWay, primaryBinding } from "./sheet.ts";
+import { circled, isJobs, isOneWay, primaryBinding } from "./sheet.ts";
 import { useGameStore } from "./store.ts";
 import { ENUM_COLOR, FONT, LAYOUT, STATUS, SURFACE, ZONE } from "./tokens.ts";
 import { useFindings } from "./useFindings.ts";
@@ -409,6 +409,115 @@ function PublishPlanBody() {
   );
 }
 
+/** The classification editor (0-3): each job is a pattern-choice. Assign a palette
+ *  pattern, or — when no pattern fits (a request is a two-message `-2`) — file the
+ *  wrong-palette finding. The honest certification verdict is a filed finding. */
+function JobsBody() {
+  const sheet = useGameStore((s) => s.sheet);
+  const jobPatterns = useGameStore((s) => s.session.jobPatterns);
+  const filed = useGameStore((s) => s.session.filed);
+  const assignPattern = useGameStore((s) => s.assignPattern);
+  const fileFinding = useGameStore((s) => s.fileFinding);
+
+  const patterns = sheet.palette.filter((p) => p.unlocked).map((p) => p.pattern);
+  const wrong = FINDINGS["JOB-wrong-palette"];
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <SectionLabel>CERTIFICATION JOBS · {sheet.jobs?.length ?? 0}</SectionLabel>
+      {(sheet.jobs ?? []).map((job) => {
+        const assigned = jobPatterns[job.id] ?? "";
+        const isFiled = (filed[job.id] ?? []).includes(wrong.code);
+        return (
+          <div
+            key={job.id}
+            style={{
+              border: "1px solid rgba(36,67,95,.25)",
+              borderLeft: `4px solid ${ZONE.oneWay}`,
+              padding: "8px 10px",
+              display: "flex",
+              flexDirection: "column",
+              gap: 6,
+            }}
+          >
+            <div style={{ fontSize: 11, fontWeight: 800 }}>
+              {job.id.toUpperCase()} → {job.party}
+            </div>
+            <div style={{ fontFamily: FONT.hand, fontSize: 13, lineHeight: 1.4 }}>{job.prompt}</div>
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 8,
+                fontSize: 11,
+                fontWeight: 700,
+              }}
+            >
+              pattern
+              <select
+                value={assigned}
+                onChange={(e) => assignPattern(job.id, e.target.value || null)}
+                aria-label={`pattern for ${job.id}`}
+                style={{
+                  fontFamily: FONT.mono,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  padding: "3px 5px",
+                  border: "1px solid rgba(36,67,95,.35)",
+                  borderRadius: 2,
+                  background: "#fff",
+                  color: SURFACE.ink,
+                }}
+              >
+                <option value="">— none —</option>
+                {patterns.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              onClick={() => fileFinding(job.id, wrong.code, !isFiled)}
+              aria-label={`file wrong-palette finding on ${job.id}`}
+              style={{
+                background: isFiled ? ZONE.stamp : "transparent",
+                color: isFiled ? "#fff" : SURFACE.ink,
+                border: `1px solid ${isFiled ? ZONE.stamp : SURFACE.ink}`,
+                borderRadius: 2,
+                padding: "4px 8px",
+                fontFamily: FONT.mono,
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: ".03em",
+                cursor: "pointer",
+                textAlign: "left",
+              }}
+            >
+              {isFiled ? "✓ FILED · " : "⚑ FILE FINDING · "}
+              {wrong.code}
+            </button>
+          </div>
+        );
+      })}
+      <div
+        style={{
+          border: `1px solid ${SURFACE.ink}`,
+          background: SURFACE.chrome,
+          fontFamily: FONT.hand,
+          fontSize: 12,
+          padding: "6px 8px",
+        }}
+      >
+        {wrong.message}. A palette holds only the patterns you were issued — filing a finding when
+        none fits is a real certification outcome, not a failure.
+      </div>
+    </div>
+  );
+}
+
 function RunBody() {
   const sheet = useGameStore((s) => s.sheet);
   const { seedResults } = useRun();
@@ -647,6 +756,7 @@ export function Inspector() {
   const setPhase = useGameStore((s) => s.setPhase);
   const activateRun = useGameStore((s) => s.activateRun);
   const oneWay = useGameStore((s) => isOneWay(s.sheet));
+  const jobs = useGameStore((s) => isJobs(s.sheet));
   return (
     <aside
       style={{
@@ -671,26 +781,46 @@ export function Inspector() {
           overflow: "auto",
         }}
       >
+        {jobs ? (
+          // Classification sheet (0-3): no envelope compose or publish step — the
+          // player's work is per-job triage, then RUN to check the verdict.
+          <Section
+            step={1}
+            label="TRIAGE"
+            active={phase === "compose"}
+            onActivate={() => setPhase("compose")}
+          >
+            <JobsBody />
+          </Section>
+        ) : (
+          <>
+            <Section
+              step={1}
+              label="COMPOSE"
+              active={phase === "compose"}
+              onActivate={() => setPhase("compose")}
+            >
+              <ComposeBody />
+            </Section>
+            <Section
+              step={2}
+              label={oneWay ? "PUBLISH" : "HANDLERS"}
+              active={phase === "handlers"}
+              onActivate={() => setPhase("handlers")}
+            >
+              {oneWay ? <PublishPlanBody /> : <HandlersBody />}
+            </Section>
+          </>
+        )}
         <Section
-          step={1}
-          label="COMPOSE"
-          active={phase === "compose"}
-          onActivate={() => setPhase("compose")}
+          step={jobs ? 2 : 3}
+          label="RUN"
+          active={phase === "run"}
+          onActivate={() => activateRun()}
         >
-          <ComposeBody />
-        </Section>
-        <Section
-          step={2}
-          label={oneWay ? "PUBLISH" : "HANDLERS"}
-          active={phase === "handlers"}
-          onActivate={() => setPhase("handlers")}
-        >
-          {oneWay ? <PublishPlanBody /> : <HandlersBody />}
-        </Section>
-        <Section step={3} label="RUN" active={phase === "run"} onActivate={() => activateRun()}>
           <RunBody />
         </Section>
-        <EnumLegend />
+        {!jobs && <EnumLegend />}
       </div>
     </aside>
   );

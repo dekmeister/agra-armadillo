@@ -44,6 +44,35 @@ export interface ComposeSpec {
   readonly expectedMode?: string;
 }
 
+/** What a 0-3 certification job asks for — determines the one correct palette
+ *  pattern (or that it is a trap). `status` → Status-1, `datum` → Data-1,
+ *  `request` → a trap: no `-1` primitive can answer a request (it is a two-message
+ *  `-2` pattern), so the job is passed by filing the wrong-palette finding. */
+export type JobAsk = "status" | "datum" | "request";
+
+/** One certification job on a classification sheet (0-3). The player assigns a
+ *  palette pattern to each (or files a finding); the goal judges each job's outcome. */
+export interface Job {
+  readonly id: string;
+  readonly prompt: string;
+  /** the consumer lifeline this job serves */
+  readonly party: string;
+  readonly ask: JobAsk;
+}
+
+/** The single palette pattern that correctly serves a job's ask, or null when the
+ *  ask is a trap that no `-1` primitive can satisfy (a request needs a `-2`). */
+export function correctPatternFor(ask: JobAsk): string | null {
+  switch (ask) {
+    case "status":
+      return "Status-1";
+    case "datum":
+      return "Data-1";
+    case "request":
+      return null;
+  }
+}
+
 /** Marks a one-way (`-1`) sheet and carries its sim knobs. Presence selects the
  *  producer sim path (`runSeedOneWay`) over the Command-2 path. The producer is the
  *  player lifeline; every other lifeline is a consumer. */
@@ -69,6 +98,9 @@ export interface Sheet {
   readonly requestee?: RequesteeConfig;
   /** present on `-1` sheets — selects the one-way producer sim path. */
   readonly oneway?: OneWaySpec;
+  /** present on a classification sheet (0-3) — the per-job pattern-choice jobs.
+   *  Selects the jobs sim path (`runSeedJobs`) over the single-composition paths. */
+  readonly jobs?: readonly Job[];
   readonly seeds: readonly Seed[];
   /** the one-line lesson shown on the CERTIFIED stamp (docs/03-levels). */
   readonly recap: string;

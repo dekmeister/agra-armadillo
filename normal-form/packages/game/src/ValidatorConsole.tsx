@@ -165,6 +165,9 @@ function eventLine(ev: RunEvent, gated: boolean): { text: string; color: string 
       return { text: `${ev.detail} — stale`, color: dim };
     case "datum-dropped":
       return { text: `${ev.detail} — dropped`, color: STATUS.fail };
+    // classification sheet (0-3):
+    case "finding-filed":
+      return { text: `⚑ finding filed · ${ev.detail}`, color: ZONE.stamp };
   }
 }
 

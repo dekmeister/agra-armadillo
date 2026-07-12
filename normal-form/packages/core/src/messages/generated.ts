@@ -336,6 +336,14 @@ export const FINDINGS = {
     "source": "unis",
     "docRef": "UNIS §4 (no guaranteed delivery)",
     "quote": "there can be no assumption that messages come in any order or that there is guaranteed delivery"
+  },
+  "JOB-wrong-palette": {
+    "id": "JOB-wrong-palette",
+    "code": "CERT UNIS-000093",
+    "message": "a request needs a -2 pattern — no Status-1/Data-1 (-1) primitive can answer it",
+    "source": "unis",
+    "docRef": "SPC-002 §3 Table 3.0-1 / §4.4 (DataRequest-2)",
+    "quote": "Consists of two messages where the first message requests data"
   }
 } as const;
 

@@ -1,0 +1,4 @@
+[
+  { "do": "assignPattern", "job": "j1", "pattern": "Status-1" },
+  { "do": "assignPattern", "job": "j2", "pattern": "Data-1" }
+]

@@ -30,7 +30,16 @@ export type PlayerAction =
       readonly action: MachineAction | null;
     }
   | { readonly do: "gateAccepted"; readonly value: boolean }
-  | { readonly do: "setPublish"; readonly startTick: number; readonly everyN: number };
+  | { readonly do: "setPublish"; readonly startTick: number; readonly everyN: number }
+  // Classification sheet (0-3): assign a palette pattern to a job (null clears it).
+  | { readonly do: "assignPattern"; readonly job: string; readonly pattern: string | null }
+  // Classification sheet (0-3): file/unfile a certification finding on a job.
+  | {
+      readonly do: "fileFinding";
+      readonly job: string;
+      readonly code: string;
+      readonly on: boolean;
+    };
 
 export interface Session {
   readonly placed: boolean;
@@ -40,6 +49,10 @@ export interface Session {
   readonly gateAccepted: boolean;
   /** one-way (`-1`) publish-plan knobs (ignored on Command-2 sheets) */
   readonly publish: PublishKnobs;
+  /** classification sheet (0-3): job id → the pattern the player assigned it */
+  readonly jobPatterns: Readonly<Record<string, string>>;
+  /** classification sheet (0-3): job id → the finding codes filed on it */
+  readonly filed: Readonly<Record<string, readonly string[]>>;
 }
 
 /** The starting publish plan: a single fire-and-forget. On a `-1` hold sheet this
@@ -57,6 +70,8 @@ export function initialSession(sheet: Sheet): Session {
     // is deferred to WS-F.
     gateAccepted: true,
     publish: DEFAULT_PUBLISH,
+    jobPatterns: {},
+    filed: {},
   };
 }
 
@@ -77,6 +92,26 @@ export function applyAction(session: Session, action: PlayerAction): Session {
       return { ...session, gateAccepted: action.value };
     case "setPublish":
       return { ...session, publish: { startTick: action.startTick, everyN: action.everyN } };
+    case "assignPattern": {
+      const jobPatterns = { ...session.jobPatterns };
+      if (action.pattern === null) delete jobPatterns[action.job];
+      else jobPatterns[action.job] = action.pattern;
+      return { ...session, jobPatterns };
+    }
+    case "fileFinding": {
+      const current = session.filed[action.job] ?? [];
+      const has = current.includes(action.code);
+      // Toggle: file adds the code (idempotent), unfile removes it.
+      const next = action.on
+        ? has
+          ? current
+          : [...current, action.code]
+        : current.filter((c) => c !== action.code);
+      const filed = { ...session.filed };
+      if (next.length === 0) delete filed[action.job];
+      else filed[action.job] = next;
+      return { ...session, filed };
+    }
   }
 }
 

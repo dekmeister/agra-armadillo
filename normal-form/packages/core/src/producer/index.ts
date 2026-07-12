@@ -9,10 +9,11 @@
 // bus (`scheduleGeneric`) and the declarative goal evaluator (`level/goal.ts`).
 // Pure and deterministic: same sheet + same plan + same seed ⇒ byte-identical log.
 import { type BusItem, scheduleGeneric } from "../bus.ts";
-import { evaluateGoal, type WinSnapshot } from "../level/goal.ts";
+import { evaluateGoal, filedKey, type WinSnapshot } from "../level/goal.ts";
 import type { RunEvent } from "../level/runtime.ts";
-import type { Sheet } from "../level/types.ts";
+import { correctPatternFor, type Job, type Sheet } from "../level/types.ts";
 import type { Seed } from "../seeds.ts";
+import type { Session } from "../session/index.ts";
 
 /** Ticks between a publish and its receipt at a consumer (default). */
 export const PUBLISH_LATENCY = 1;
@@ -124,6 +125,7 @@ export function runSeedOneWay(sheet: Sheet, plan: PublishPlan, seed: Seed): OneW
       proofHeld: EMPTY,
       statusShown: new Set(shownSoFar),
       datumHeld,
+      findingsFiled: EMPTY,
     });
   }
 
@@ -184,6 +186,116 @@ function buildLog(
   }
 
   // Stable order: by tick, then by kind, then by detail (all pure strings).
+  return events.sort(
+    (a, b) => a.tick - b.tick || a.kind.localeCompare(b.kind) || a.detail.localeCompare(b.detail),
+  );
+}
+
+// --- Classification sheet (0-3) sim path -----------------------------------
+// A jobs sheet has no single composition or publish plan; the player's artifact is
+// a per-job pattern assignment (+ filed findings). Each job whose ask is served by a
+// `-1` primitive delivers to its party *iff* the correct pattern is assigned; the
+// request job has no reachable `-1` world-state and is passed only by filing the
+// wrong-palette finding. Parallel to `runSeedOneWay`, sharing the generalized bus +
+// goal evaluator. Pure/deterministic: same sheet + same session + same seed ⇒
+// byte-identical log.
+
+interface JobPayload {
+  readonly job: Job;
+}
+
+/** All filed-finding timeline keys for a session (constant across ticks). */
+function filedKeys(session: Session): Set<string> {
+  const keys = new Set<string>();
+  for (const [job, codes] of Object.entries(session.filed)) {
+    for (const code of codes) keys.add(filedKey(job, code));
+  }
+  return keys;
+}
+
+/** Run one job assignment against one seed on a classification sheet (0-3). */
+export function runSeedJobs(sheet: Sheet, session: Session, seed: Seed): OneWayRunResult {
+  const latency = sheet.oneway?.latency ?? PUBLISH_LATENCY;
+  const jobs = sheet.jobs ?? [];
+
+  // A job publishes to its party once, at `latency`, only when the correct pattern
+  // is assigned (a wrong/absent pattern — or a trap job — delivers nothing).
+  const items: BusItem<JobPayload>[] = [];
+  for (const job of jobs) {
+    const correct = correctPatternFor(job.ask);
+    if (correct !== null && session.jobPatterns[job.id] === correct) {
+      items.push({ key: job.id, tick: latency, payload: { job } });
+    }
+  }
+  const delivered = scheduleGeneric<JobPayload>(items, seed);
+
+  // Per-party receipts split by kind: status → a shown deadline, datum → a hold
+  // (0-3 sets no `staleAfter`, so a received datum is held from receipt onward).
+  const statusReceipts = new Map<string, number[]>();
+  const datumReceipts = new Map<string, number[]>();
+  for (const d of delivered) {
+    const { job } = d.payload;
+    const map = job.ask === "datum" ? datumReceipts : statusReceipts;
+    (map.get(job.party) ?? map.set(job.party, []).get(job.party)!).push(d.tick);
+  }
+
+  const filed = filedKeys(session);
+  const lastDelivery = delivered.reduce((m, d) => Math.max(m, d.tick), 0);
+  const runEnd = sheet.maxTicks ?? Math.max(lastDelivery, goalHorizon(sheet));
+
+  const timeline: WinSnapshot[] = [];
+  for (let tick = 0; tick <= runEnd; tick++) {
+    const statusShown = new Set<string>();
+    for (const [party, rs] of statusReceipts) if (rs.some((r) => r <= tick)) statusShown.add(party);
+    const datumHeld = new Set<string>();
+    for (const [party, rs] of datumReceipts) if (rs.some((r) => r <= tick)) datumHeld.add(party);
+    timeline.push({
+      activityExecuted: EMPTY,
+      proofHeld: EMPTY,
+      statusShown,
+      datumHeld,
+      findingsFiled: filed,
+    });
+  }
+
+  const goalTick = evaluateGoal(sheet.goal.win.all, timeline);
+  return {
+    seedId: seed.id,
+    pass: goalTick !== null,
+    goalTick,
+    log: buildJobsLog(sheet, session, delivered, goalTick),
+  };
+}
+
+export function runAllSeedsJobs(sheet: Sheet, session: Session): AllSeedsOneWayResult {
+  const results = sheet.seeds.map((seed) => runSeedJobs(sheet, session, seed));
+  return { results, allPass: results.every((r) => r.pass) };
+}
+
+/** A deterministic, tick-ordered run log for the 0-3 replay / console. */
+function buildJobsLog(
+  sheet: Sheet,
+  session: Session,
+  delivered: readonly { tick: number; payload: JobPayload }[],
+  goalTick: number | null,
+): RunEvent[] {
+  const events: RunEvent[] = [];
+  for (const d of delivered) {
+    const { job } = d.payload;
+    events.push({
+      tick: d.tick,
+      kind: job.ask === "datum" ? "datum-delivered" : "status-shown",
+      detail: `${job.party} ← ${job.id} (${session.jobPatterns[job.id] ?? "—"})`,
+    });
+  }
+  for (const [job, codes] of Object.entries(session.filed)) {
+    for (const code of codes) {
+      events.push({ tick: 0, kind: "finding-filed", detail: `${job}: ${code}` });
+    }
+  }
+  if (goalTick !== null) {
+    events.push({ tick: goalTick, kind: "goal-reached", detail: sheet.goal.text });
+  }
   return events.sort(
     (a, b) => a.tick - b.tick || a.kind.localeCompare(b.kind) || a.detail.localeCompare(b.detail),
   );

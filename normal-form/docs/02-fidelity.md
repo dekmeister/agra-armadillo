@@ -124,6 +124,17 @@ kept here so the content revives without re-research.
 12. **Duplicates and reorders are seed-scripted, not emergent.** A real
     transport's misbehavior is continuous; ours is an authored schedule per seed
     so failures replay identically (determinism rule).
+13. **Pattern choice is a per-job classification, and "no valid pattern" is a
+    passing certification outcome (W0's 0-3).** A certification job whose intent
+    is a *request* cannot be served by any `-1` primitive — a request is a
+    two-message pattern (SPC-002 Table 3.0-1: DataRequest-2 "Consists of two
+    messages where the first message requests data"; conformance **CERT
+    UNIS-000093**). The honest engineering verdict is to *file that finding*, not
+    to force a wrong primitive; the game credits the filed finding as the job's
+    pass. For the other two jobs we simplify: a correctly-classified `-1` job is
+    judged solved when its consumer receives the publication by the deadline
+    (envelope literacy and republication were already certified in 0-1/0-2), so
+    0-3 exercises the *classification* judgment, not a third round of composing.
 
 ## 4. Bridge table — the same shape across the A-GRA suite
 

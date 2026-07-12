@@ -29,7 +29,9 @@ export interface RunEvent {
     | "datum-delivered"
     | "datum-stale"
     | "datum-dropped"
-    | "status-shown";
+    | "status-shown"
+    // classification sheet (0-3):
+    | "finding-filed";
   readonly detail: string;
 }
 
@@ -107,6 +109,7 @@ export function runSeed(sheet: Sheet, machine: Machine, seed: Seed): RunResult {
       proofHeld: ms.proofCount >= 1 ? new Set([commanderId]) : EMPTY,
       statusShown: EMPTY,
       datumHeld: EMPTY,
+      findingsFiled: EMPTY,
     });
     if (goalTick === null && goalHoldsAt(winAll, timeline, tick)) {
       goalTick = tick;

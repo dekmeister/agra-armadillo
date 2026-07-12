@@ -31,6 +31,10 @@ const NOTES: Record<string, { title: string; body: string }> = {
     title: "#5 · Retry budgets are a game rule",
     body: "UNIS normalizes what happens after a response arrives (the terminal-state rule); it does not prescribe requester timeout/retry policy. The REJECTED-path retry — a NEW command with a fresh UUID, never an UPDATE — is our reading of the enum’s annotations.",
   },
+  "lie-wrong-palette": {
+    title: "#13 · Filing a finding is a passing outcome",
+    body: "One job asks you to answer a request — but a request is a two-message (-2) pattern, and this palette holds only -1 primitives. No pattern fits, so the honest certification verdict is to file the wrong-palette finding (SPC-002 Table 3.0-1; CERT UNIS-000093), which passes the job. The other two jobs are judged by picking the right pattern; re-composing envelopes (already drilled in 0-1/0-2) is simplified away so the lesson is pure classification.",
+  },
   "lie-9-placeholder-stamp": {
     title: "#9 · SCH-000164 was a mock placeholder",
     body: "The Blueprint mock stamped SCH-000164; the real SCH-000164 is about schema-file section ordering. The shipped validator cites honestly: a missing SystemID is an XSD validity failure against uci:HeaderType (ENV HeaderType), and a malformed UUID cites RQMT USTD-000436/-000673.",

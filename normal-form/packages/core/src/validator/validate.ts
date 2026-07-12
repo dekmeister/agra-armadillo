@@ -74,6 +74,9 @@ export function validateOneWay(sheet: Sheet, c: Composition): Finding[] {
 }
 
 export function validate(sheet: Sheet, c: Composition): Finding[] {
+  // Classification sheet (0-3): no single-envelope compose gate — the player's work
+  // is per-job pattern choice + filed findings, judged by the jobs goal at run time.
+  if (sheet.jobs) return [];
   if (sheet.oneway) return validateOneWay(sheet, c);
 
   const findings: Finding[] = envelopeFindings(sheet, c.fields);

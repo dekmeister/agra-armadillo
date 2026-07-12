@@ -56,7 +56,12 @@ Seed vocabulary (the whole adversary, each move cited to UNIS §4):
   "give me your current X" — a trap) each reach their world-state. *Palette:*
   Status-1, Data-1 — and the third job's goal is *unreachable* with either; the
   sheet is passed by filing a "wrong palette" finding (an authentic
-  certification outcome), which unlocks W1. *Seeds (2):* in-order; reorder.
+  certification outcome), which unlocks W1. *Mechanic:* each job is a
+  pattern-choice — the player assigns a palette pattern (or files the
+  wrong-palette finding). A correctly-classified `-1` job certifies when its
+  consumer is served by the deadline (the one-way sim); the request job has no
+  reachable `-1` world-state and certifies only by the filed finding (see
+  `02-fidelity.md` §3 lie #13). *Seeds (2):* in-order; reorder.
   *Lesson:* naming *is* classification — `*Status` / bare name → Status-1 or
   Data-1; `*DataRequest` etc. belong to other patterns; a request needs a -2
   pattern. *Recap:* "Naming is classification — a request needs a -2 pattern."

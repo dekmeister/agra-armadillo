@@ -1,0 +1,5 @@
+[
+  { "do": "assignPattern", "job": "j1", "pattern": "Data-1" },
+  { "do": "assignPattern", "job": "j2", "pattern": "Status-1" },
+  { "do": "fileFinding", "job": "j3", "code": "CERT UNIS-000093", "on": true }
+]

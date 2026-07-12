@@ -1,0 +1,71 @@
+{
+  "id": "0-3",
+  "world": "w0",
+  "title": "Pattern Choice Is Semantics",
+  "goal": {
+    "text": "Triage all three jobs: status shown, datum held, and the request correctly filed as unservable.",
+    "win": {
+      "all": [
+        { "statusShownBy": { "party": "sysB", "byTick": 3 } },
+        { "heldContinuously": { "party": "store", "fromTick": 3, "toTick": 5 } },
+        { "findingFiled": { "job": "j3", "code": "CERT UNIS-000093" } }
+      ]
+    }
+  },
+  "palette": [
+    {
+      "pattern": "Status-1",
+      "unlocked": true,
+      "publication": "SubsystemStatus",
+      "cite": "UNIS §4.1, CERT UNIS-000076"
+    },
+    {
+      "pattern": "Data-1",
+      "unlocked": true,
+      "publication": "Entity",
+      "cite": "UNIS §4.2, CERT UNIS-000081"
+    },
+    { "pattern": "Command-2", "unlocked": false }
+  ],
+  "lifelines": [
+    { "id": "you", "label": "Producer (you)", "player": true },
+    { "id": "sysB", "label": "SystemB console" },
+    { "id": "store", "label": "Data store" },
+    { "id": "ops", "label": "Ops requester" }
+  ],
+  "jobs": [
+    {
+      "id": "j1",
+      "party": "sysB",
+      "ask": "status",
+      "prompt": "Announce your subsystem status — no component tracks or acknowledges it."
+    },
+    {
+      "id": "j2",
+      "party": "store",
+      "ask": "datum",
+      "prompt": "Publish a datum that other components will reference by name."
+    },
+    {
+      "id": "j3",
+      "party": "ops",
+      "ask": "request",
+      "prompt": "Answer Ops on demand: \"give me your current X\" whenever they ask."
+    }
+  ],
+  "compose": {
+    "initialFields": {},
+    "editable": []
+  },
+  "seeds": [
+    { "id": 1, "label": "in-order", "schedule": [] },
+    {
+      "id": 2,
+      "label": "reordered triage",
+      "schedule": [{ "op": "reorder", "before": "j1", "after": "j2" }]
+    }
+  ],
+  "recap": "Naming is classification — a request needs a -2 pattern.",
+  "fidelityNotes": ["lie-1-bounded-seeds", "lie-wrong-palette"],
+  "cites": ["CERT UNIS-000093", "UNIS §3", "UNIS §4.1"]
+}

@@ -14,14 +14,16 @@ import {
   type OneWayRunResult,
   type RunResult,
   runAllSeeds,
+  runAllSeedsJobs,
   runAllSeedsOneWay,
   runSeed,
+  runSeedJobs,
   runSeedOneWay,
   validate,
 } from "@normal-form/core";
 import { useMemo } from "react";
 import { type BoardModel, type OneWayBoardModel, runFrames, runFramesOneWay } from "./frames.ts";
-import { isOneWay } from "./sheet.ts";
+import { isJobs, isOneWay } from "./sheet.ts";
 import { useGameStore } from "./store.ts";
 
 export interface DerivedRun {
@@ -48,7 +50,10 @@ export function useRun(): DerivedRun {
 
   return useMemo<DerivedRun>(() => {
     const machine = buildMachine(session);
-    const ready = session.placed && validate(sheet, buildComposition(sheet, session)).length === 0;
+    // A classification sheet (0-3) has no compose gate — RUN is always available.
+    const ready =
+      isJobs(sheet) ||
+      (session.placed && validate(sheet, buildComposition(sheet, session)).length === 0);
     const seed = sheet.seeds.find((s) => s.id === seedId);
     const base = {
       machine,
@@ -61,6 +66,19 @@ export function useRun(): DerivedRun {
       ready,
     } satisfies DerivedRun;
     if (!seed) return base;
+
+    if (isJobs(sheet)) {
+      const result = runSeedJobs(sheet, session, seed);
+      const all = runAllSeedsJobs(sheet, session);
+      const endTick = result.log.reduce((m, e) => Math.max(m, e.tick), 0);
+      return {
+        ...base,
+        result,
+        endTick,
+        seedResults: all.results.map((r) => ({ seedId: r.seedId, pass: r.pass })),
+        allPass: all.allPass,
+      };
+    }
 
     if (isOneWay(sheet)) {
       const plan = derivePublishPlan(sheet, session.publish.startTick, session.publish.everyN);

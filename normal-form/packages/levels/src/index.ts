@@ -10,13 +10,16 @@
 import type { Sheet } from "@normal-form/core";
 import sheet01 from "../sheets/w0/sheet-0-1.json" with { type: "json" };
 import sheet02 from "../sheets/w0/sheet-0-2.json" with { type: "json" };
+import sheet03 from "../sheets/w0/sheet-0-3.json" with { type: "json" };
 import sheet11 from "../sheets/w1/sheet-1-1.json" with { type: "json" };
 import sheet12 from "../sheets/w1/sheet-1-2.json" with { type: "json" };
 
 // World 0 (WS-E). One-way (`-1`) sheets — the publish-plan editor + fan-out board
-// landed in E2, so they now lead the lineup. 0-3 (the filed-finding sheet) is E3.
+// landed in E2, so they lead the lineup. 0-3 is the classification sheet (E3): a
+// per-job pattern-choice + the filed-finding mechanic.
 export const sheet_0_1: Sheet = sheet01 as unknown as Sheet;
 export const sheet_0_2: Sheet = sheet02 as unknown as Sheet;
+export const sheet_0_3: Sheet = sheet03 as unknown as Sheet;
 
 export const sheet_1_1: Sheet = sheet11 as unknown as Sheet;
 // WS-C infrastructure stub: a second solvable Command-2 sheet that proves the
@@ -25,7 +28,7 @@ export const sheet_1_1: Sheet = sheet11 as unknown as Sheet;
 export const sheet_1_2: Sheet = sheet12 as unknown as Sheet;
 
 /** The sheet lineup in play order — the progression / drawing-index source. */
-export const SHEET_LIST: readonly Sheet[] = [sheet_0_1, sheet_0_2, sheet_1_1, sheet_1_2];
+export const SHEET_LIST: readonly Sheet[] = [sheet_0_1, sheet_0_2, sheet_0_3, sheet_1_1, sheet_1_2];
 
 export const SHEETS: Readonly<Record<string, Sheet>> = Object.fromEntries(
   SHEET_LIST.map((s) => [s.id, s]),
