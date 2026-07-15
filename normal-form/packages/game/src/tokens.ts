@@ -32,6 +32,16 @@ export const ENUM_COLOR: Record<CommandProcessingStateEnum, string> = {
   CANCELED: "#c9962b",
 };
 
+/** RequestProcessingStateEnum colors for the request-run board (1-5). QUEUED /
+ *  PROCESSING are the in-flight blues; COMPLETED reuses the ACCEPTED green (a
+ *  successful terminal) and CANCELED the amber (shared with the command enum). */
+export const REQUEST_ENUM_COLOR: Record<string, string> = {
+  QUEUED: "#5a7a95",
+  PROCESSING: "#3b6ea5",
+  COMPLETED: "#2f8f5b",
+  CANCELED: "#c9962b",
+};
+
 /** Status / validation (handoff § Colors — status / validation). */
 export const STATUS = {
   pass: "#2f8f5b",

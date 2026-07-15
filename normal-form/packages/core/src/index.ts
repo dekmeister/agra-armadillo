@@ -5,6 +5,7 @@
 
 export * from "./bus.ts";
 export * from "./level/goal.ts";
+export * from "./level/request-run.ts";
 export * from "./level/runtime.ts";
 export * from "./level/types.ts";
 export * from "./machine/interpreter.ts";

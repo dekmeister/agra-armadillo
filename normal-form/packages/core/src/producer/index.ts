@@ -126,6 +126,7 @@ export function runSeedOneWay(sheet: Sheet, plan: PublishPlan, seed: Seed): OneW
       statusShown: new Set(shownSoFar),
       datumHeld,
       findingsFiled: EMPTY,
+      canceled: EMPTY,
     });
   }
 
@@ -278,6 +279,7 @@ export function runSeedJobs(sheet: Sheet, session: Session, seed: Seed): OneWayR
       statusShown,
       datumHeld,
       findingsFiled: filed,
+      canceled: EMPTY,
     });
   }
 

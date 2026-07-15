@@ -1,0 +1,74 @@
+{
+  "id": "1-5",
+  "world": "w1",
+  "title": "Cancel Culture",
+  "bonus": true,
+  "goal": {
+    "text": "The mission changed — the long-running request must NOT complete: the requestee ends CANCELED, no activity run, and you hold proof of the outcome.",
+    "win": {
+      "all": [
+        { "endedCanceled": true, "party": "requestee" },
+        { "holdsProof": true, "party": "requester" }
+      ]
+    }
+  },
+  "palette": [
+    {
+      "pattern": "ActionRequest-2",
+      "unlocked": true,
+      "binding": { "request": "AnalysisRouteRequest", "response": "AnalysisRouteRequestStatus" },
+      "cite": "UNIS §4.5, CERT UNIS-000099"
+    },
+    { "pattern": "Command-2", "unlocked": false },
+    { "pattern": "Status-1", "unlocked": false },
+    { "pattern": "Data-1", "unlocked": false },
+    { "pattern": "DataRecord-1", "unlocked": false },
+    { "pattern": "DataRequest-2", "unlocked": false }
+  ],
+  "lifelines": [
+    { "id": "requester", "label": "Requester (you)", "player": true },
+    { "id": "requestee", "label": "Requestee (Analysis Engine)" }
+  ],
+  "compose": {
+    "initialFields": {
+      "SystemID": "AIRCRAFT-01",
+      "Timestamp": "2026-07-14T09:31:04Z",
+      "SchemaVersion": "002.5",
+      "Mode": "LIVE",
+      "RequestState": "NEW"
+    },
+    "editable": []
+  },
+  "request": {
+    "latency": 1,
+    "queuedAt": 0,
+    "processingAt": 2,
+    "completesAt": 4,
+    "defaultCancelAt": null
+  },
+  "seeds": [
+    { "id": 1, "label": "CANCEL during QUEUED", "schedule": [] },
+    {
+      "id": 2,
+      "label": "CANCEL during PROCESSING",
+      "schedule": [{ "op": "delay", "msg": "CANCEL", "by": 2 }]
+    },
+    {
+      "id": 3,
+      "label": "CANCEL races COMPLETED",
+      "schedule": [{ "op": "delay", "msg": "CANCEL", "by": 4 }],
+      "goalText": "You lost the race — COMPLETED landed first. Hold proof of the outcome, whichever it is.",
+      "win": {
+        "all": [{ "holdsProof": true, "party": "requester" }]
+      }
+    }
+  ],
+  "recap": "CANCEL is a request — the bus decides the race.",
+  "fidelityNotes": [
+    "lie-1-bounded-seeds",
+    "lie-2-visible-bus",
+    "lie-8-request-enum",
+    "cancel-at-tick"
+  ],
+  "cites": ["CERT UNIS-000099", "UNIS §4.5", "SPC-001 §5.1.2", "UNIS §4"]
+}

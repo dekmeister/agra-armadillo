@@ -78,6 +78,10 @@ export function validate(sheet: Sheet, c: Composition): Finding[] {
   // is per-job pattern choice + filed findings, judged by the jobs goal at run time.
   if (sheet.jobs) return [];
   if (sheet.oneway) return validateOneWay(sheet, c);
+  // Request-run sheet (bonus 1-5): envelope literacy only — the placed message is an
+  // ActionRequest-2 (RequestState, not CommandID/CommandState; no Command-2 binding),
+  // and the lesson lives in the RUN-phase cancel timing, not a compose field.
+  if (sheet.request) return envelopeFindings(sheet, c.fields);
 
   const findings: Finding[] = envelopeFindings(sheet, c.fields);
   const f = c.fields;

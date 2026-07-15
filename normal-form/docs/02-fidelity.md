@@ -142,6 +142,18 @@ kept here so the content revives without re-research.
     judged solved when its consumer receives the publication by the deadline
     (envelope literacy and republication were already certified in 0-1/0-2), so
     0-3 exercises the *classification* judgment, not a third round of composing.
+14. **The CANCEL is a plan knob, not a live mid-run action (bonus 1-5).** The
+    player sets a `cancelAtTick` before the run; the CANCEL is then folded into the
+    deterministic run and travels the seeded bus like any other message (`core`
+    stays pure — there is no live "player acts at tick N" mutation, which would
+    break the replay/determinism rule). What is real and cited: `RequestState =
+    CANCEL` is a genuine request state (XSD `RequestStateEnum`; SPC-001
+    §5.1.2/§5.1.3), a CANCEL is a *request* the requestee may honor or not, and the
+    terminal-state rule decides the race — a CANCEL that reaches the requestee after
+    it has committed COMPLETED is a straggler the terminal ignores. Simplified to a
+    game construct: the injection *timing* (a knob), the requestee's fixed
+    QUEUED→PROCESSING→COMPLETED tick schedule, and the retry-free single
+    conversation. The race is authored as a `delay(CANCEL)` seed (lie #12).
 
 ## 4. Bridge table — the same shape across the A-GRA suite
 

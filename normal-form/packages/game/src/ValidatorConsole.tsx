@@ -5,7 +5,7 @@
 // (05-mvp amendment 3); RUN streams the per-tick event log for the selected seed.
 
 import { FINDINGS, type Finding, type RunEvent, type Sheet } from "@normal-form/core";
-import { circled, isOneWay } from "./sheet.ts";
+import { circled, isOneWay, isRequestRun } from "./sheet.ts";
 import { useGameStore } from "./store.ts";
 import { ENUM_COLOR, FONT, RADIUS, STATUS, SURFACE, ZONE } from "./tokens.ts";
 import { useFindings } from "./useFindings.ts";
@@ -171,11 +171,19 @@ function eventLine(ev: RunEvent, gated: boolean): { text: string; color: string 
     // classification sheet (0-3):
     case "finding-filed":
       return { text: `⚑ finding filed · ${ev.detail}`, color: ZONE.stamp };
-    // request-pattern (`-2`) job progression (1-4): QUEUED / PROCESSING / COMPLETED.
+    // request-pattern (`-2`) job progression (1-4): QUEUED / PROCESSING / COMPLETED;
+    // the request-run sheet (1-5) adds the CANCELED terminal.
     case "request-state": {
       const completed = ev.detail.includes("COMPLETED");
-      return { text: `▸ ${ev.detail}`, color: completed ? ENUM_COLOR.ACCEPTED : dim };
+      const canceled = ev.detail.includes("CANCELED");
+      const color = completed ? ENUM_COLOR.ACCEPTED : canceled ? ENUM_COLOR.CANCELED : dim;
+      return { text: `▸ ${ev.detail}`, color };
     }
+    // request-run sheet (1-5): the opening request and the injected CANCEL.
+    case "request-sent":
+      return { text: `${ev.detail}`, color: dim };
+    case "cancel-injected":
+      return { text: `⊘ ${ev.detail}`, color: ENUM_COLOR.CANCELED };
   }
 }
 
@@ -187,6 +195,7 @@ export function ValidatorConsole() {
   const setTick = useGameStore((s) => s.setTick);
   const gated = useGameStore((s) => s.session.gateAccepted);
   const oneWay = useGameStore((s) => isOneWay(s.sheet));
+  const requestRun = useGameStore((s) => isRequestRun(s.sheet));
   const findings = useFindings();
   const { seedResults, machine, board, oneWayBoard, result } = useRun();
   const failure = board?.failure ?? oneWayBoard?.failure ?? null;
@@ -263,8 +272,21 @@ export function ValidatorConsole() {
             ))}
             <div style={{ color: errorCount === 0 ? STATUS.pass : "rgba(36,67,95,.55)" }}>
               {errorCount === 0
-                ? "✔ composition validates clean · wire handlers, then RUN."
+                ? requestRun
+                  ? "✔ request placed · set a CANCEL plan, then RUN."
+                  : "✔ composition validates clean · wire handlers, then RUN."
                 : "▸ fix the flagged fields in the inspector to unblock RUN."}
+            </div>
+          </>
+        )}
+
+        {phase === "handlers" && requestRun && (
+          <>
+            <div style={{ color: STATUS.pass }}>
+              ✔ READY · set the CANCEL tick, then RUN the seeds
+            </div>
+            <div style={{ color: "rgba(36,67,95,.55)" }}>
+              ▸ CANCEL is a request — send it before COMPLETED, but the bus may still win the race.
             </div>
           </>
         )}
@@ -282,7 +304,7 @@ export function ValidatorConsole() {
           </>
         )}
 
-        {phase === "handlers" && !oneWay && (
+        {phase === "handlers" && !oneWay && !requestRun && (
           <>
             <div
               style={{

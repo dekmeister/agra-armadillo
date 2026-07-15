@@ -30,6 +30,11 @@ export type RequestProcessingStateEnum =
   | "CANCELED"
   | "REJECTED";
 
+export type RequestStateEnum =
+  | "NEW"
+  | "UPDATE"
+  | "CANCEL";
+
 /* --- Message & type interfaces --- */
 export interface MessageType {
   SecurityInformation: string;
@@ -75,6 +80,7 @@ export interface SubsystemStatusDataRequestStatus {
 }
 
 export interface AnalysisRouteRequest {
+  RequestState: RequestStateEnum;
 }
 
 export interface AnalysisRouteRequestStatus {
@@ -132,6 +138,15 @@ export const MESSAGE_CATALOG = {
         "REJECTED"
       ],
       "cite": "SPC-001 §5.1.2/§5.1.3 (RequestStatus); XSD RequestProcessingStateEnum"
+    },
+    "RequestStateEnum": {
+      "name": "RequestStateEnum",
+      "values": [
+        "NEW",
+        "UPDATE",
+        "CANCEL"
+      ],
+      "cite": "SPC-001 §5.1.2/§5.1.3 (RequestState); XSD RequestStateEnum"
     }
   },
   "envelope": {
@@ -269,7 +284,14 @@ export const MESSAGE_CATALOG = {
     "AnalysisRouteRequest": {
       "name": "AnalysisRouteRequest",
       "cite": "UNIS §4.5 CERT UNIS-000099; structure SPC-001 §5.1.2 CERT SCH-002463; XSD AnalysisRouteRequest / AnalysisRouteRequestMT",
-      "fields": [],
+      "fields": [
+        {
+          "name": "RequestState",
+          "required": true,
+          "enum": "RequestStateEnum",
+          "cite": "RequestBaseType.RequestState (uci:RequestStateEnum); NEW to place, CANCEL to cancel — sheet 1-5"
+        }
+      ],
       "mt": "AnalysisRouteRequestMT",
       "role": "request"
     },

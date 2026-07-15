@@ -33,7 +33,7 @@ describe("sheet registry", () => {
   });
 
   it("registers World 0 then World 1 in order", () => {
-    expect(SHEET_LIST.map((s) => s.id).slice(0, 7)).toEqual([
+    expect(SHEET_LIST.map((s) => s.id).slice(0, 8)).toEqual([
       "0-1",
       "0-2",
       "0-3",
@@ -41,6 +41,7 @@ describe("sheet registry", () => {
       "1-2",
       "1-3",
       "1-4",
+      "1-5",
     ]);
     expect(nextSheetId("0-1")).toBe("0-2");
     expect(nextSheetId("0-2")).toBe("0-3");
@@ -48,5 +49,11 @@ describe("sheet registry", () => {
     expect(nextSheetId("1-1")).toBe("1-2");
     expect(nextSheetId("1-2")).toBe("1-3");
     expect(nextSheetId("1-3")).toBe("1-4");
+    expect(nextSheetId("1-4")).toBe("1-5");
+  });
+
+  it("marks 1-5 as the skippable bonus and terminal in the lineup", () => {
+    expect(getSheet("1-5")?.bonus).toBe(true);
+    expect(nextSheetId("1-5")).toBeUndefined();
   });
 });

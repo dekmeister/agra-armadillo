@@ -7,10 +7,17 @@ import { correctPatternFor, type Job, type Machine } from "@normal-form/core";
 import { nextSheetId } from "@normal-form/levels";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { ArrowFrame, OneWayFrame } from "./frames.ts";
-import { circled, isJobs, isOneWay, type PrimaryBinding, primaryBinding } from "./sheet.ts";
+import {
+  circled,
+  isJobs,
+  isOneWay,
+  isRequestRun,
+  type PrimaryBinding,
+  primaryBinding,
+} from "./sheet.ts";
 import type { Phase } from "./store.ts";
 import { useGameStore } from "./store.ts";
-import { ENUM_COLOR, FONT, LAYOUT, STATUS, SURFACE, ZONE } from "./tokens.ts";
+import { ENUM_COLOR, FONT, LAYOUT, REQUEST_ENUM_COLOR, STATUS, SURFACE, ZONE } from "./tokens.ts";
 import { useFindings } from "./useFindings.ts";
 import { useRun } from "./useRun.ts";
 
@@ -20,7 +27,9 @@ import { useRun } from "./useRun.ts";
 export function Board() {
   const oneWay = useGameStore((s) => isOneWay(s.sheet));
   const jobs = useGameStore((s) => isJobs(s.sheet));
+  const request = useGameStore((s) => isRequestRun(s.sheet));
   if (jobs) return <JobsBoard />;
+  if (request) return <RequestBoard />;
   return oneWay ? <OneWayBoard /> : <CommandBoard />;
 }
 
@@ -1251,6 +1260,244 @@ function JobsBoard() {
           })}
         </svg>
       )}
+    </div>
+  );
+}
+
+// --- Request-run board (bonus 1-5 "Cancel Culture") ------------------------
+
+/** The two-party ActionRequest-2 board: the opening request + the player's injected
+ *  CANCEL travel to the requestee; QUEUED / PROCESSING / the terminal come back. It
+ *  reuses the Command-2 board chrome (Arrow / MovingToken / stamps) off the shared
+ *  `BoardModel` that `runFramesRequest` produces. No handler widget, no reject stamp
+ *  — the compose gate is envelope-only and the run has no machine fault. */
+function RequestBoard() {
+  const [ref, { w, h }] = useSize();
+  const sheet = useGameStore((s) => s.sheet);
+  const phase = useGameStore((s) => s.phase);
+  const tick = useGameStore((s) => s.tick);
+  const runSpeed = useGameStore((s) => s.runSpeed);
+  const seedId = useGameStore((s) => s.seedId);
+  const placed = useGameStore((s) => s.session.placed);
+  const cancelAt = useGameStore((s) => s.session.cancelAt);
+  const { board, allPass } = useRun();
+  const binding = primaryBinding(sheet);
+  const requester = sheet.lifelines.find((l) => l.player) ?? sheet.lifelines[0];
+  const requestee = sheet.lifelines.find((l) => !l.player) ?? sheet.lifelines[1];
+
+  const xLeft = w * (LAYOUT.lifelineLeftPct / 100);
+  const xRight = w * (LAYOUT.lifelineRightPct / 100);
+  const yTop = 78;
+  const yBottom = Math.max(yTop + 40, h - 26);
+  const rulerMax = Math.max(6, board?.endTick ?? 0);
+  const yOf = (t: number) => yTop + (Math.min(t, rulerMax) / rulerMax) * (yBottom - yTop);
+  const drawMs = Math.min(runSpeed * 0.6, 480);
+  const tokenMs = Math.min(runSpeed * 0.7, 520);
+
+  return (
+    <div
+      ref={ref}
+      style={{
+        flex: 1,
+        position: "relative",
+        background: SURFACE.board,
+        backgroundImage: GRID_BG,
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          top: 10,
+          left: 12,
+          display: "flex",
+          alignItems: "center",
+          gap: 7,
+          fontFamily: FONT.mono,
+          zIndex: 2,
+        }}
+      >
+        <span style={{ width: 9, height: 9, background: SURFACE.ink }} />
+        <span style={{ fontSize: 12, fontWeight: 800 }}>DIAGRAM</span>
+        <span style={{ fontFamily: FONT.hand, fontSize: 12, color: "rgba(36,67,95,.55)" }}>
+          request · {splitLabel(requester?.label ?? "Requester").name} ⇄{" "}
+          {splitLabel(requestee?.label ?? "Requestee").name}
+        </span>
+      </div>
+
+      {w > 0 && (
+        <svg
+          width={w}
+          height={h}
+          viewBox={`0 0 ${w} ${h}`}
+          style={{ position: "absolute", inset: 0 }}
+          role="img"
+          aria-label="request sequence diagram"
+        >
+          <title>Sequence diagram — Requester to Requestee</title>
+
+          {Array.from({ length: rulerMax + 1 }, (_, i) => i).map((t) => (
+            <text
+              key={`ruler-${t}`}
+              x={14}
+              y={yOf(t) + 3}
+              fontFamily={FONT.mono}
+              fontSize={10}
+              fontWeight={700}
+              fill="rgba(36,67,95,.5)"
+              textAnchor="middle"
+            >
+              t{t}
+            </text>
+          ))}
+
+          <LifelineHeader
+            x={xLeft}
+            label={splitLabel(requester?.label ?? "Requester").name}
+            tag={splitLabel(requester?.label ?? "Requester").tag}
+            tagColor={ZONE.accent}
+          />
+          <LifelineHeader
+            x={xRight}
+            label={splitLabel(requestee?.label ?? "Requestee").name}
+            tag={splitLabel(requestee?.label ?? "Requestee").tag}
+            tagColor="rgba(36,67,95,.6)"
+          />
+          <line
+            x1={xLeft}
+            y1={54}
+            x2={xLeft}
+            y2={yBottom + 12}
+            stroke="rgba(36,67,95,.55)"
+            strokeWidth={2}
+            strokeDasharray="5 5"
+          />
+          <line
+            x1={xRight}
+            y1={54}
+            x2={xRight}
+            y2={yBottom + 12}
+            stroke="rgba(36,67,95,.55)"
+            strokeWidth={2}
+            strokeDasharray="5 5"
+          />
+
+          {phase === "run" && <Playhead y={yOf(tick)} width={w} durMs={runSpeed} />}
+
+          {phase === "run" ? (
+            <>
+              {board?.arrows
+                .filter((a) => a.tick <= tick)
+                .map((a) => (
+                  <Arrow
+                    key={a.key}
+                    frame={a}
+                    xLeft={xLeft}
+                    xRight={xRight}
+                    y={yOf(a.tick)}
+                    animateDraw
+                    drawMs={drawMs}
+                  />
+                ))}
+              {board?.arrows
+                .filter((a) => a.tick === tick)
+                .map((a) => (
+                  <MovingToken
+                    key={`tok-${a.key}-${tick}`}
+                    frame={a}
+                    xLeft={xLeft}
+                    xRight={xRight}
+                    y={yOf(a.tick)}
+                    durMs={tokenMs}
+                  />
+                ))}
+            </>
+          ) : placed ? (
+            <>
+              <Arrow
+                key="shell-req"
+                frame={{
+                  key: "req",
+                  dir: "request",
+                  tick: 1,
+                  label: `${binding.request} NEW →`,
+                  color: ZONE.oneWay,
+                }}
+                xLeft={xLeft}
+                xRight={xRight}
+                y={yOf(1)}
+              />
+              {cancelAt != null && (
+                <Arrow
+                  key="shell-cancel"
+                  frame={{
+                    key: "cancel",
+                    dir: "request",
+                    tick: cancelAt,
+                    label: "CANCEL →",
+                    color: REQUEST_ENUM_COLOR.CANCELED ?? ENUM_COLOR.CANCELED,
+                    dashed: true,
+                  }}
+                  xLeft={xLeft}
+                  xRight={xRight}
+                  y={yOf(cancelAt)}
+                />
+              )}
+              <text
+                x={(xLeft + xRight) / 2}
+                y={yOf(rulerMax) - 6}
+                fontFamily={FONT.hand}
+                fontSize={13}
+                fill="rgba(36,67,95,.5)"
+                textAnchor="middle"
+              >
+                {cancelAt != null
+                  ? "RUN to see whether your CANCEL beats COMPLETED"
+                  : "set a CANCEL tick, then RUN"}
+              </text>
+            </>
+          ) : (
+            <text
+              x={(xLeft + xRight) / 2}
+              y={yOf(2)}
+              fontFamily={FONT.hand}
+              fontSize={15}
+              fill="rgba(36,67,95,.5)"
+              textAnchor="middle"
+            >
+              ◂ click {binding.pattern} in the palette to place the request
+            </text>
+          )}
+
+          {/* activity mark on the requestee lifeline (only when COMPLETED won) */}
+          {phase === "run" && board?.activityTick != null && tick >= board.activityTick && (
+            <g>
+              <circle cx={xRight} cy={yOf(board.activityTick)} r={5} fill={ZONE.sendRespond} />
+              <text
+                x={xRight + 12}
+                y={yOf(board.activityTick) + 4}
+                fontFamily={FONT.mono}
+                fontSize={10}
+                fontWeight={700}
+                fill={ZONE.sendRespond}
+              >
+                activity ✔
+              </text>
+            </g>
+          )}
+
+          {phase === "run" && board?.goalTick != null && tick >= board.goalTick && (
+            <GoalStamp w={w} h={h} seedId={seedId} />
+          )}
+          {phase === "run" &&
+            board != null &&
+            board.goalTick === null &&
+            tick >= board.endTick &&
+            board.endTick > 0 && <NoGoalStamp w={w} h={h} />}
+        </svg>
+      )}
+
+      {phase === "run" && allPass && <CertifiedOverlay />}
     </div>
   );
 }

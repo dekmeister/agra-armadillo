@@ -31,6 +31,8 @@ export type PlayerAction =
     }
   | { readonly do: "gateAccepted"; readonly value: boolean }
   | { readonly do: "setPublish"; readonly startTick: number; readonly everyN: number }
+  // Request-run sheet (bonus 1-5): inject a CANCEL at `tick` (null = no cancel).
+  | { readonly do: "setCancel"; readonly tick: number | null }
   // Classification sheet (0-3): assign a palette pattern to a job (null clears it).
   | { readonly do: "assignPattern"; readonly job: string; readonly pattern: string | null }
   // Classification sheet (0-3): file/unfile a certification finding on a job.
@@ -49,6 +51,10 @@ export interface Session {
   readonly gateAccepted: boolean;
   /** one-way (`-1`) publish-plan knobs (ignored on Command-2 sheets) */
   readonly publish: PublishKnobs;
+  /** request-run sheet (bonus 1-5): the tick to inject CANCEL, or null for no cancel.
+   *  A plan knob folded into the deterministic run (core stays pure — not a live
+   *  per-tick mutation). Ignored on all other paths. */
+  readonly cancelAt: number | null;
   /** classification sheet (0-3): job id → the pattern the player assigned it */
   readonly jobPatterns: Readonly<Record<string, string>>;
   /** classification sheet (0-3): job id → the finding codes filed on it */
@@ -70,6 +76,9 @@ export function initialSession(sheet: Sheet): Session {
     // is deferred to WS-F.
     gateAccepted: true,
     publish: DEFAULT_PUBLISH,
+    // Request-run sheet ships with the sheet's (deliberately broken) default cancel —
+    // null (no cancel) lets the activity run so the sheet "arrives broken" (1-5).
+    cancelAt: sheet.request?.defaultCancelAt ?? null,
     jobPatterns: {},
     filed: {},
   };
@@ -92,6 +101,8 @@ export function applyAction(session: Session, action: PlayerAction): Session {
       return { ...session, gateAccepted: action.value };
     case "setPublish":
       return { ...session, publish: { startTick: action.startTick, everyN: action.everyN } };
+    case "setCancel":
+      return { ...session, cancelAt: action.tick };
     case "assignPattern": {
       const jobPatterns = { ...session.jobPatterns };
       if (action.pattern === null) delete jobPatterns[action.job];

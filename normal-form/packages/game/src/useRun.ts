@@ -16,20 +16,29 @@ import {
   runAllSeeds,
   runAllSeedsJobs,
   runAllSeedsOneWay,
+  runAllSeedsRequest,
   runSeed,
   runSeedJobs,
   runSeedOneWay,
+  runSeedRequest,
   validate,
 } from "@normal-form/core";
 import { useMemo } from "react";
-import { type BoardModel, type OneWayBoardModel, runFrames, runFramesOneWay } from "./frames.ts";
-import { isJobs, isOneWay } from "./sheet.ts";
+import {
+  type BoardModel,
+  type OneWayBoardModel,
+  runFrames,
+  runFramesOneWay,
+  runFramesRequest,
+} from "./frames.ts";
+import { isJobs, isOneWay, isRequestRun } from "./sheet.ts";
 import { useGameStore } from "./store.ts";
 
 export interface DerivedRun {
   readonly machine: Machine;
   readonly result: RunResult | OneWayRunResult | null;
-  /** Command-2 board model (null on one-way sheets) */
+  /** Command-2 board model (null on one-way sheets) — also carries the request-run
+   *  board (bonus 1-5), which reuses the same two-party `BoardModel` shape */
   readonly board: BoardModel | null;
   /** one-way fan-out board model (null on Command-2 sheets) */
   readonly oneWayBoard: OneWayBoardModel | null;
@@ -50,10 +59,13 @@ export function useRun(): DerivedRun {
 
   return useMemo<DerivedRun>(() => {
     const machine = buildMachine(session);
-    // A classification sheet (0-3) has no compose gate — RUN is always available.
-    const ready =
-      isJobs(sheet) ||
-      (session.placed && validate(sheet, buildComposition(sheet, session)).length === 0);
+    // A classification sheet (0-3) has no compose gate — RUN is always available; a
+    // request-run sheet (1-5) gates on placement only (validator-agnostic message).
+    const ready = isJobs(sheet)
+      ? true
+      : isRequestRun(sheet)
+        ? session.placed
+        : session.placed && validate(sheet, buildComposition(sheet, session)).length === 0;
     const seed = sheet.seeds.find((s) => s.id === seedId);
     const base = {
       machine,
@@ -75,6 +87,20 @@ export function useRun(): DerivedRun {
         ...base,
         result,
         endTick,
+        seedResults: all.results.map((r) => ({ seedId: r.seedId, pass: r.pass })),
+        allPass: all.allPass,
+      };
+    }
+
+    if (isRequestRun(sheet)) {
+      const result = runSeedRequest(sheet, session.cancelAt, seed);
+      const board = runFramesRequest(result);
+      const all = runAllSeedsRequest(sheet, session.cancelAt);
+      return {
+        ...base,
+        result,
+        board,
+        endTick: board.endTick,
         seedResults: all.results.map((r) => ({ seedId: r.seedId, pass: r.pass })),
         allPass: all.allPass,
       };

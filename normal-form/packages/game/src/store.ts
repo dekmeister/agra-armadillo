@@ -23,13 +23,16 @@ import {
 import { FIRST_SHEET_ID, getSheet, nextSheetId } from "@normal-form/levels";
 import { create } from "zustand";
 import { hasSave, loadSave, parseSave, type SaveState, writeSave } from "./persist.ts";
-import { isJobs } from "./sheet.ts";
+import { isJobs, isRequestRun } from "./sheet.ts";
 
 /** RUN is unblocked when the arrow is placed and the composition validates clean.
  *  A classification sheet (0-3) has no compose gate — the player runs to check the
- *  per-job triage — so RUN is always available there. */
+ *  per-job triage — so RUN is always available there. A request-run sheet (1-5)
+ *  gates on placement only: the request message is validator-agnostic and the lesson
+ *  lives in the RUN-phase cancel timing, not a compose field. */
 function isReady(sheet: Sheet, session: Session): boolean {
   if (isJobs(sheet)) return true;
+  if (isRequestRun(sheet)) return session.placed;
   return session.placed && compositionReady(sheet, buildComposition(sheet, session));
 }
 
@@ -111,6 +114,8 @@ export interface GameState {
   setGate: (value: boolean) => void;
   /** set the one-way publish-plan knobs (first-publish tick + republish cadence) */
   setPublish: (startTick: number, everyN: number) => void;
+  /** request-run sheet (1-5): inject a CANCEL at `tick` (null clears it — no cancel) */
+  setCancel: (tick: number | null) => void;
   /** classification sheet (0-3): assign a palette pattern to a job (null clears it) */
   assignPattern: (job: string, pattern: string | null) => void;
   /** classification sheet (0-3): file/unfile a certification finding on a job */
@@ -285,6 +290,7 @@ export const useGameStore = create<GameState>((set, get) => {
     setHandler: (on, action) => dispatch({ do: "setHandler", on, action }),
     setGate: (value) => dispatch({ do: "gateAccepted", value }),
     setPublish: (startTick, everyN) => dispatch({ do: "setPublish", startTick, everyN }),
+    setCancel: (tick) => dispatch({ do: "setCancel", tick }),
     assignPattern: (job, pattern) => dispatch({ do: "assignPattern", job, pattern }),
     fileFinding: (job, code, on) => dispatch({ do: "fileFinding", job, code, on }),
   };

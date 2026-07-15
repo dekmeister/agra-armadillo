@@ -37,6 +37,13 @@ export function isJobs(sheet: Sheet): boolean {
   return (sheet.jobs?.length ?? 0) > 0;
 }
 
+/** True on the request-run sheet (bonus 1-5) — selects the ActionRequest-2
+ *  conversation + injected-CANCEL board over both other sim paths. RUN gates on
+ *  `placed` only (the request message is validator-agnostic; the lesson is timing). */
+export function isRequestRun(sheet: Sheet): boolean {
+  return sheet.request !== undefined;
+}
+
 /** A circled index glyph (①..⑳) for a 1-based number, falling back to the plain
  *  number outside that range — no assumption about how many seeds a sheet has. */
 export function circled(n: number): string {

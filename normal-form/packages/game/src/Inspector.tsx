@@ -4,7 +4,7 @@
 // engine-derived; nothing is editable in S4 (editing is S5).
 import { FINDINGS, isTerminalState, type MachineAction, MESSAGE_CATALOG } from "@normal-form/core";
 import { useState } from "react";
-import { circled, isJobs, isOneWay, primaryBinding } from "./sheet.ts";
+import { circled, isJobs, isOneWay, isRequestRun, primaryBinding } from "./sheet.ts";
 import { useGameStore } from "./store.ts";
 import { ENUM_COLOR, FONT, LAYOUT, STATUS, SURFACE, ZONE } from "./tokens.ts";
 import { useFindings } from "./useFindings.ts";
@@ -113,7 +113,14 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-const ORDER = ["SystemID", "Timestamp", "SchemaVersion", "Mode", "CommandID"] as const;
+const ORDER = [
+  "SystemID",
+  "Timestamp",
+  "SchemaVersion",
+  "Mode",
+  "CommandID",
+  "RequestState",
+] as const;
 
 function ComposeBody() {
   const findings = useFindings();
@@ -480,6 +487,95 @@ function PublishPlanBody() {
   );
 }
 
+/** The request-run artifact (bonus 1-5): a single knob — the tick to inject a CANCEL
+ *  (or none). A CANCEL is a request, not a fact: it must reach the requestee before
+ *  it commits COMPLETED, and on an unordered bus a delayed CANCEL can lose the race. */
+function CancelPlanBody() {
+  const cancelAt = useGameStore((s) => s.session.cancelAt);
+  const setCancel = useGameStore((s) => s.setCancel);
+  const on = cancelAt != null;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <SectionLabel>CANCEL PLAN · RequestState CANCEL</SectionLabel>
+      <div
+        style={{
+          border: "1px solid rgba(36,67,95,.2)",
+          borderLeft: `4px solid ${ENUM_COLOR.CANCELED}`,
+          padding: "8px 10px",
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
+        }}
+      >
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            fontSize: 12,
+            fontWeight: 700,
+            color: SURFACE.ink,
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={on}
+            onChange={(e) => setCancel(e.target.checked ? 1 : null)}
+            aria-label="inject a CANCEL"
+          />
+          inject a CANCEL
+        </label>
+        {on && (
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 8,
+              fontSize: 12,
+              fontWeight: 700,
+              color: SURFACE.ink,
+            }}
+          >
+            at tick
+            <input
+              type="number"
+              min={0}
+              value={cancelAt ?? 0}
+              onChange={(e) => setCancel(Math.max(0, Math.floor(Number(e.target.value) || 0)))}
+              aria-label="cancel at tick"
+              style={{
+                width: 68,
+                fontFamily: FONT.mono,
+                fontSize: 12,
+                fontWeight: 700,
+                padding: "3px 5px",
+                border: "1px solid rgba(36,67,95,.35)",
+                borderRadius: 2,
+                background: "#fff",
+                color: SURFACE.ink,
+              }}
+            />
+          </label>
+        )}
+      </div>
+      <div
+        style={{
+          border: `1px solid ${SURFACE.ink}`,
+          background: SURFACE.chrome,
+          fontFamily: FONT.hand,
+          fontSize: 12,
+          padding: "6px 8px",
+        }}
+      >
+        CANCEL is a request, not a fact. Send it early enough to beat COMPLETED — but on an
+        unordered bus a delayed CANCEL can lose the race, and the response tells you who won.
+      </div>
+    </div>
+  );
+}
+
 /** The classification editor (0-3): each job is a pattern-choice. Assign a palette
  *  pattern, or — when no pattern fits (a request is a two-message `-2`) — file the
  *  wrong-palette finding. The honest certification verdict is a filed finding. */
@@ -828,6 +924,9 @@ export function Inspector() {
   const activateRun = useGameStore((s) => s.activateRun);
   const oneWay = useGameStore((s) => isOneWay(s.sheet));
   const jobs = useGameStore((s) => isJobs(s.sheet));
+  const requestRun = useGameStore((s) => isRequestRun(s.sheet));
+  // Step-2 label + body: PUBLISH plan (-1), CANCEL plan (1-5), else HANDLERS.
+  const step2Label = oneWay ? "PUBLISH" : requestRun ? "CANCEL" : "HANDLERS";
   return (
     <aside
       style={{
@@ -875,11 +974,11 @@ export function Inspector() {
             </Section>
             <Section
               step={2}
-              label={oneWay ? "PUBLISH" : "HANDLERS"}
+              label={step2Label}
               active={phase === "handlers"}
               onActivate={() => setPhase("handlers")}
             >
-              {oneWay ? <PublishPlanBody /> : <HandlersBody />}
+              {oneWay ? <PublishPlanBody /> : requestRun ? <CancelPlanBody /> : <HandlersBody />}
             </Section>
           </>
         )}
@@ -891,7 +990,9 @@ export function Inspector() {
         >
           <RunBody />
         </Section>
-        {!jobs && <EnumLegend />}
+        {/* The CommandProcessingStateEnum legend doesn't apply to the request-run
+            sheet (its states are RequestProcessingStateEnum). */}
+        {!jobs && !requestRun && <EnumLegend />}
       </div>
     </aside>
   );

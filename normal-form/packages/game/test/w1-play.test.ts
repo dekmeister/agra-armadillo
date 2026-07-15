@@ -12,6 +12,7 @@ import {
   buildMachine,
   runAllSeeds,
   runAllSeedsJobs,
+  runAllSeedsRequest,
   runSeed,
   validate,
 } from "@normal-form/core";
@@ -107,5 +108,32 @@ describe("W1 1-4 Request Is Not Command — classification of the -2 patterns", 
     // Classify both correctly → the data returns and the analysis runs on all seeds.
     s().assignPattern("j1", "DataRequest-2");
     expect(jobsCertify()).toBe(true);
+  });
+});
+
+describe("W1 1-5 Cancel Culture (bonus) — CANCEL is a request, the bus decides", () => {
+  it("no cancel lets the activity run and fails; an early CANCEL certifies", () => {
+    s().selectSheet("1-5");
+    s().place();
+
+    // The request board + CANCEL editor mount on real request-run sheet data.
+    expect(() => renderToString(createElement(Board))).not.toThrow();
+    expect(() => renderToString(createElement(Inspector))).not.toThrow();
+
+    const requestCertify = () => runAllSeedsRequest(s().sheet, s().session.cancelAt).allPass;
+
+    // Arrives broken: the sheet ships with no cancel, so the activity runs and the
+    // CANCELED goal fails on the clean seeds — the guaranteed lesson.
+    expect(s().session.cancelAt).toBeNull();
+    expect(requestCertify()).toBe(false);
+
+    // A cancel too late to beat COMPLETED still fails the clean seeds.
+    s().setCancel(5);
+    expect(requestCertify()).toBe(false);
+
+    // Injecting the CANCEL early enough → CANCELED on the clean seeds; the race seed
+    // holds whichever outcome the bus delivered. All seeds pass.
+    s().setCancel(1);
+    expect(requestCertify()).toBe(true);
   });
 });

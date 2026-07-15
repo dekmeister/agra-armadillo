@@ -90,6 +90,28 @@ export interface OneWaySpec {
   readonly latency?: number;
 }
 
+/** Marks a request-run sheet (bonus 1-5) and carries its sim knobs. Presence selects
+ *  the request-run sim path (`runSeedRequest`): one ActionRequest-2 conversation that
+ *  the requestee works QUEUED→PROCESSING→COMPLETED (activity executes at COMPLETED)
+ *  unless a player-injected CANCEL is *received before* it commits COMPLETED, in which
+ *  case it transitions to CANCELED and the activity never runs. The player lifeline is
+ *  the requester; the non-player lifeline is the requestee. All ticks are relative to
+ *  the requestee's receipt of the opening request (`latency` after send). */
+export interface RequestSpec {
+  /** ticks a request/cancel takes to travel from requester to requestee (default 1). */
+  readonly latency?: number;
+  /** ticks after receipt at which the requestee reports QUEUED. */
+  readonly queuedAt: number;
+  /** ticks after receipt at which it reports PROCESSING. */
+  readonly processingAt: number;
+  /** ticks after receipt at which it commits COMPLETED (and the activity executes),
+   *  unless a CANCEL was received strictly before this tick. */
+  readonly completesAt: number;
+  /** the cancel-injection tick the sheet ships with — `null` (no cancel) leaves the
+   *  sheet deliberately broken (the activity runs), so the fail-then-fix beat fires. */
+  readonly defaultCancelAt?: number | null;
+}
+
 export interface Sheet {
   readonly id: string;
   readonly world: string;
@@ -107,6 +129,11 @@ export interface Sheet {
   /** present on a classification sheet (0-3) — the per-job pattern-choice jobs.
    *  Selects the jobs sim path (`runSeedJobs`) over the single-composition paths. */
   readonly jobs?: readonly Job[];
+  /** present on the request-run sheet (bonus 1-5) — selects `runSeedRequest`. */
+  readonly request?: RequestSpec;
+  /** an optional, skippable bonus sheet — marked on the drawing index; it never gates
+   *  progression (it is terminal in `SHEET_LIST`, so nothing unlocks *from* it). */
+  readonly bonus?: boolean;
   readonly seeds: readonly Seed[];
   /** the one-line lesson shown on the CERTIFIED stamp (docs/03-levels). */
   readonly recap: string;

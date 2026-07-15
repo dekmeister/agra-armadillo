@@ -10,7 +10,7 @@ import type {
   RunResult,
   Sheet,
 } from "@normal-form/core";
-import { ENUM_COLOR, ZONE } from "./tokens.ts";
+import { ENUM_COLOR, REQUEST_ENUM_COLOR, ZONE } from "./tokens.ts";
 
 export interface ArrowFrame {
   readonly key: string;
@@ -245,4 +245,71 @@ export function runFramesOneWay(result: OneWayRunResult, sheet: Sheet): OneWayBo
     window,
     deadline,
   };
+}
+
+// --- Request-run board model (bonus 1-5) -----------------------------------
+
+/** Build the two-party request board for one seed's request-run. Reuses the
+ *  Command-2 `BoardModel`/`ArrowFrame` shape (so the shared Arrow/token renderers
+ *  apply): the opening ActionRequest-2 and the injected CANCEL are request arrows;
+ *  QUEUED / PROCESSING / the terminal (COMPLETED ✔ or CANCELED ⊘) are response
+ *  arrows on the time axis. No fault channel — a lost race is a legal outcome, not a
+ *  machine fault. Derived purely from the engine log. */
+export function runFramesRequest(result: OneWayRunResult): BoardModel {
+  const arrows: ArrowFrame[] = [];
+  let goalTick: number | null = null;
+  let activityTick: number | null = null;
+  let endTick = 0;
+  let i = 0;
+
+  for (const ev of result.log as readonly RunEvent[]) {
+    endTick = Math.max(endTick, ev.tick);
+    switch (ev.kind) {
+      case "request-sent":
+        arrows.push({
+          key: `req-${i}`,
+          dir: "request",
+          tick: ev.tick,
+          label: "AnalysisRouteRequest NEW →",
+          color: ZONE.oneWay,
+        });
+        break;
+      case "cancel-injected":
+        arrows.push({
+          key: `cancel-${i}`,
+          dir: "request",
+          tick: ev.tick,
+          label: "CANCEL →",
+          color: REQUEST_ENUM_COLOR.CANCELED ?? ENUM_COLOR.CANCELED,
+          dashed: true,
+        });
+        break;
+      case "request-state": {
+        const state = ev.detail.split(" ")[0] ?? ev.detail;
+        const completed = state === "COMPLETED";
+        const canceled = state === "CANCELED";
+        const glyph = completed ? " ✔" : canceled ? " ⊘" : "";
+        arrows.push({
+          key: `res-${i}`,
+          dir: "response",
+          tick: ev.tick,
+          label: `← ${state}${glyph}`,
+          color: REQUEST_ENUM_COLOR[state] ?? "rgba(36,67,95,.6)",
+          check: completed,
+        });
+        break;
+      }
+      case "activity-executed":
+        activityTick = ev.tick;
+        break;
+      case "goal-reached":
+        if (goalTick === null) goalTick = ev.tick;
+        break;
+    }
+    i++;
+  }
+
+  // A lost intended cancel (the clean seeds want CANCELED) surfaces as the no-proof
+  // stamp — there is no rule-violation lesson to replay, so `failure` stays null.
+  return { arrows, endTick, goalTick, fault: null, activityTick, failure: null };
 }

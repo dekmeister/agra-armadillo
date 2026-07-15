@@ -97,7 +97,24 @@ function SheetRow({ index }: { index: number }) {
         {sheet.id}
       </span>
       <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-        <span style={{ fontSize: 14, fontWeight: 800 }}>{sheet.title}</span>
+        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 14, fontWeight: 800 }}>{sheet.title}</span>
+          {sheet.bonus && (
+            <span
+              style={{
+                background: ZONE.accent,
+                color: "#fff",
+                fontSize: 9,
+                fontWeight: 800,
+                letterSpacing: ".06em",
+                padding: "1px 6px",
+                borderRadius: RADIUS.badge,
+              }}
+            >
+              BONUS · OPTIONAL
+            </span>
+          )}
+        </span>
         <span style={{ fontSize: 10, fontWeight: 600, color: "rgba(36,67,95,.6)" }}>
           {worldLabel(sheet.world)}
         </span>

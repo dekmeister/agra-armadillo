@@ -50,6 +50,15 @@ enums:
     cite: "SPC-001 §5.1.2/§5.1.3 (RequestStatus); XSD RequestProcessingStateEnum"
     values: [QUEUED, PROCESSING, COMPLETED, FAILED, CANCELED, REJECTED]
 
+  # The request message's own state (unlocked at bonus 1-5 "Cancel Culture"): a
+  # request instance is NEW, an UPDATE to an outstanding request, or a CANCEL of
+  # it. Distinct from RequestProcessingStateEnum (the requestee's *reply*): CANCEL
+  # is a request the player sends, CANCELED is an outcome the bus may or may not
+  # deliver — the lesson of 1-5.
+  - name: RequestStateEnum
+    cite: "SPC-001 §5.1.2/§5.1.3 (RequestState); XSD RequestStateEnum"
+    values: [NEW, UPDATE, CANCEL]
+
 # --- Envelope (wraps every placed message) ---------------------------------
 # uci:MessageType = SecurityInformation + MessageHeader (uci:HeaderType).
 envelope:
@@ -124,7 +133,8 @@ messages:
     mt: AnalysisRouteRequestMT
     role: request
     cite: "UNIS §4.5 CERT UNIS-000099; structure SPC-001 §5.1.2 CERT SCH-002463; XSD AnalysisRouteRequest / AnalysisRouteRequestMT"
-    fields: []
+    fields:
+      - { name: RequestState, enum: RequestStateEnum, required: true, cite: "RequestBaseType.RequestState (uci:RequestStateEnum); NEW to place, CANCEL to cancel — sheet 1-5" }
 
   - name: AnalysisRouteRequestStatus
     mt: AnalysisRouteRequestStatusMT

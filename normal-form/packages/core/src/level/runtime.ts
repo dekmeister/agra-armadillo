@@ -34,7 +34,11 @@ export interface RunEvent {
     // classification sheet (0-3):
     | "finding-filed"
     // request-pattern (`-2`) job progression (1-4): QUEUED / PROCESSING / COMPLETED:
-    | "request-state";
+    | "request-state"
+    // request-run sheet (bonus 1-5): the opening ActionRequest-2 and the player's
+    // injected CANCEL:
+    | "request-sent"
+    | "cancel-injected";
   readonly detail: string;
 }
 
@@ -146,6 +150,7 @@ export function runSeed(sheet: Sheet, machine: Machine, seed: Seed): RunResult {
       statusShown: EMPTY,
       datumHeld: EMPTY,
       findingsFiled: EMPTY,
+      canceled: EMPTY,
     });
     if (goalTick === null && goalHoldsAt(winAll, timeline, tick)) {
       goalTick = tick;

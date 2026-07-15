@@ -14,6 +14,7 @@
 // legitimately may skip RECEIVED or reject the first attempt (SPC-001 §5.1.1) — that
 // is a behaviour variant, distinct from a transport drop (which stays scoped to `-1`,
 // fidelity lie #4). Ignored on the one-way / classification paths.
+import type { WinClause } from "./level/goal.ts";
 import type { RequesteeConfig } from "./requestee/index.ts";
 
 /** Deliver `after` before `before` (no ordering assumption). */
@@ -55,4 +56,11 @@ export interface Seed {
    *  default `requestee`. Lets one seed certify against a terse commandee (skips
    *  RECEIVED) or a rejecting one without abusing a transport `drop`. */
   readonly requestee?: RequesteeConfig;
+  /** Per-seed goal override (request-run path, 1-5): the race seed relaxes the goal
+   *  to "hold proof of the outcome, whichever it is" because a lost CANCEL race is a
+   *  legal outcome on an unordered bus. Absent ⇒ the sheet's default goal applies. */
+  readonly win?: { readonly all: readonly WinClause[] };
+  /** Per-seed goal text override (paired with `win`) — the CERTIFIED/goal-reached
+   *  line differs on the race seed. Absent ⇒ the sheet's default goal text. */
+  readonly goalText?: string;
 }
