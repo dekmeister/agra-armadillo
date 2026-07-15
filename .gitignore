@@ -2,6 +2,9 @@
 # Essential files (XSD, PDFs) are vendored in brain-swap/docs/A-GRA References/.
 References/
 
+# Deploy config (contains credentials)
+tools/deploy.sh
+
 # Node
 node_modules/
 

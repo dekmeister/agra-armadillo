@@ -16,7 +16,6 @@ coverage/
 
 # Deploy config (contains credentials)
 .deploy.env
-tools/deploy.sh
 
 # OS
 .DS_Store
