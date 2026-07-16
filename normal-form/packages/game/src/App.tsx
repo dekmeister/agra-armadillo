@@ -6,6 +6,7 @@
 // console bodies change.
 import { useEffect } from "react";
 import { Board } from "./Board.tsx";
+import { Epilogue } from "./Epilogue.tsx";
 import { Header } from "./Header.tsx";
 import { HowToPlay } from "./HowToPlay.tsx";
 import { Inspector } from "./Inspector.tsx";
@@ -76,7 +77,13 @@ export function App() {
   const overlay = useGameStore((s) => s.overlay);
   return (
     <>
-      {screen === "select" ? <SheetSelect /> : <PlayScreen />}
+      {screen === "select" ? (
+        <SheetSelect />
+      ) : screen === "epilogue" ? (
+        <Epilogue />
+      ) : (
+        <PlayScreen />
+      )}
       {overlay === "reference" && <UciReference />}
       {overlay === "howto" && <HowToPlay />}
       {overlay === "welcome" && <WelcomeCard />}

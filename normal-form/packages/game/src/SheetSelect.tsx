@@ -6,7 +6,7 @@
 import { SHEET_LIST } from "@normal-form/levels";
 import { useRef } from "react";
 import { exportSave, loadSave } from "./persist.ts";
-import { useGameStore } from "./store.ts";
+import { allRequiredCertified, useGameStore } from "./store.ts";
 import { BORDER, FONT, RADIUS, SHADOW, STATUS, SURFACE, ZONE } from "./tokens.ts";
 
 const WORLD_LABEL: Record<string, string> = {
@@ -154,6 +154,9 @@ export function SheetSelect() {
   const importState = useGameStore((s) => s.importState);
   const openReference = useGameStore((s) => s.openReference);
   const openHowTo = useGameStore((s) => s.openHowTo);
+  const openEpilogue = useGameStore((s) => s.openEpilogue);
+  // The debrief re-entry appears on the index once every required sheet is certified.
+  const debriefReady = useGameStore((s) => allRequiredCertified(s.certified));
   const fileRef = useRef<HTMLInputElement>(null);
 
   const onExport = () => {
@@ -203,6 +206,21 @@ export function SheetSelect() {
             </div>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
+            {debriefReady && (
+              <button
+                type="button"
+                onClick={openEpilogue}
+                style={{
+                  ...toolbarBtn(),
+                  background: STATUS.pass,
+                  color: "#fff",
+                  border: "none",
+                  fontWeight: 800,
+                }}
+              >
+                ▤ VIEW DEBRIEF
+              </button>
+            )}
             <button type="button" onClick={() => openReference()} style={toolbarBtn()}>
               ▤ UCI REFERENCE
             </button>

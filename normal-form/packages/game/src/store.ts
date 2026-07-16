@@ -20,7 +20,7 @@ import {
   replayScript,
   type Session,
 } from "@normal-form/core";
-import { FIRST_SHEET_ID, getSheet, nextSheetId } from "@normal-form/levels";
+import { FIRST_SHEET_ID, getSheet, nextSheetId, SHEET_LIST } from "@normal-form/levels";
 import { create } from "zustand";
 import { hasSave, loadSave, parseSave, type SaveState, writeSave } from "./persist.ts";
 import { isJobs, isRequestRun } from "./sheet.ts";
@@ -37,7 +37,7 @@ function isReady(sheet: Sheet, session: Session): boolean {
 }
 
 export type Phase = "compose" | "handlers" | "run";
-type Screen = "select" | "play";
+type Screen = "select" | "play" | "epilogue";
 /** The three player-facing meta surfaces (WS-D), rendered as full-viewport
  *  overlays over the current screen; `null` when none is open. */
 type Overlay = "welcome" | "howto" | "reference" | null;
@@ -83,6 +83,9 @@ export interface GameState {
   certifyCurrent: () => void;
   /** open the next sheet in the lineup, if there is one */
   goNextSheet: () => void;
+  /** open the epilogue debrief screen (WS-G) — reached once every required sheet
+   *  is certified; `backToSelect` returns to the drawing index */
+  openEpilogue: () => void;
   /** replace all progress from an imported save file (JSON export/import) */
   importState: (json: string) => void;
 
@@ -131,6 +134,14 @@ function firstSeedId(sheet: Sheet): number {
  *  {1,2,3} assumption); falls back to the sheet's first seed. */
 function clampSeed(sheet: Sheet, n: number): number {
   return sheet.seeds.some((s) => s.id === n) ? n : firstSeedId(sheet);
+}
+
+/** True once every *required* sheet is certified — the bonus sheet (1-5) never
+ *  gates, so it is excluded. This is the gate for reaching the epilogue debrief
+ *  (WS-G): the debrief is offered on the final CERTIFIED overlay and re-entered
+ *  from the drawing index once this holds. */
+export function allRequiredCertified(certified: Readonly<Record<string, boolean>>): boolean {
+  return SHEET_LIST.every((s) => s.bonus || certified[s.id] === true);
 }
 
 const save = loadSave();
@@ -230,6 +241,7 @@ export const useGameStore = create<GameState>((set, get) => {
       const next = nextSheetId(get().sheet.id);
       if (next) get().selectSheet(next);
     },
+    openEpilogue: () => set({ screen: "epilogue", playing: false }),
     importState: (json) => {
       let imported: SaveState;
       try {

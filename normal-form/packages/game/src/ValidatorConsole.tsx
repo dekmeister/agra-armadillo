@@ -5,7 +5,7 @@
 // (05-mvp amendment 3); RUN streams the per-tick event log for the selected seed.
 
 import { FINDINGS, type Finding, type RunEvent, type Sheet } from "@normal-form/core";
-import { circled, isOneWay, isRequestRun } from "./sheet.ts";
+import { circled, isJobs, isOneWay, isRequestRun } from "./sheet.ts";
 import { useGameStore } from "./store.ts";
 import { ENUM_COLOR, FONT, RADIUS, STATUS, SURFACE, ZONE } from "./tokens.ts";
 import { useFindings } from "./useFindings.ts";
@@ -196,6 +196,7 @@ export function ValidatorConsole() {
   const gated = useGameStore((s) => s.session.gateAccepted);
   const oneWay = useGameStore((s) => isOneWay(s.sheet));
   const requestRun = useGameStore((s) => isRequestRun(s.sheet));
+  const jobs = useGameStore((s) => isJobs(s.sheet));
   const findings = useFindings();
   const { seedResults, machine, board, oneWayBoard, result } = useRun();
   const failure = board?.failure ?? oneWayBoard?.failure ?? null;
@@ -274,7 +275,9 @@ export function ValidatorConsole() {
               {errorCount === 0
                 ? requestRun
                   ? "✔ request placed · set a CANCEL plan, then RUN."
-                  : "✔ composition validates clean · wire handlers, then RUN."
+                  : jobs
+                    ? "✔ triage each job in the inspector — assign a pattern or file a finding, then RUN."
+                    : "✔ composition validates clean · wire handlers, then RUN."
                 : "▸ fix the flagged fields in the inspector to unblock RUN."}
             </div>
           </>

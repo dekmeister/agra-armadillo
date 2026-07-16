@@ -15,8 +15,7 @@ import {
   type PrimaryBinding,
   primaryBinding,
 } from "./sheet.ts";
-import type { Phase } from "./store.ts";
-import { useGameStore } from "./store.ts";
+import { allRequiredCertified, type Phase, useGameStore } from "./store.ts";
 import { ENUM_COLOR, FONT, LAYOUT, REQUEST_ENUM_COLOR, STATUS, SURFACE, ZONE } from "./tokens.ts";
 import { useFindings } from "./useFindings.ts";
 import { useRun } from "./useRun.ts";
@@ -163,7 +162,7 @@ function CommandBoard() {
           />
           <line
             x1={xLeft}
-            y1={54}
+            y1={58}
             x2={xLeft}
             y2={yBottom + 12}
             stroke="rgba(36,67,95,.55)"
@@ -172,7 +171,7 @@ function CommandBoard() {
           />
           <line
             x1={xRight}
-            y1={54}
+            y1={58}
             x2={xRight}
             y2={yBottom + 12}
             stroke="rgba(36,67,95,.55)"
@@ -287,11 +286,14 @@ function LifelineHeader({
   tagColor: string;
 }) {
   const boxW = 168;
+  // Boxes sit below the top-left "DIAGRAM …" zone caption (top:10). A left-hugging
+  // lifeline (the fan-out producer at 0.15w) would otherwise collide with the
+  // caption at 1024px — the smallest supported viewport (WS-G polish, REVIEW_MVP Q4).
   return (
     <g>
       <rect
         x={x - boxW / 2}
-        y={10}
+        y={28}
         width={boxW}
         height={30}
         fill={SURFACE.chrome}
@@ -300,7 +302,7 @@ function LifelineHeader({
       />
       <text
         x={x}
-        y={30}
+        y={48}
         fontFamily={FONT.mono}
         fontSize={13}
         fontWeight={800}
@@ -628,6 +630,11 @@ function CertifiedOverlay() {
   const hasNext = useGameStore((s) => nextSheetId(s.sheet.id) !== undefined);
   const goNextSheet = useGameStore((s) => s.goNextSheet);
   const backToSelect = useGameStore((s) => s.backToSelect);
+  // The epilogue debrief unlocks the moment every required sheet is certified —
+  // offered here as a second action so the milestone is reachable from the run
+  // (WS-G). It never replaces NEXT SHEET, so the bonus sheet stays reachable.
+  const openEpilogue = useGameStore((s) => s.openEpilogue);
+  const debriefReady = useGameStore((s) => allRequiredCertified(s.certified));
   return (
     <div
       style={{
@@ -669,6 +676,28 @@ function CertifiedOverlay() {
       >
         {hasNext ? "NEXT SHEET ▸" : "◂ BACK TO INDEX"}
       </button>
+      {debriefReady && (
+        <button
+          type="button"
+          onClick={openEpilogue}
+          style={{
+            marginTop: 6,
+            marginLeft: 8,
+            background: "transparent",
+            color: "#2f8f5b",
+            border: "1.5px solid #2f8f5b",
+            borderRadius: 3,
+            padding: "4px 10px",
+            fontFamily: FONT.mono,
+            fontSize: 11,
+            fontWeight: 800,
+            letterSpacing: ".04em",
+            cursor: "pointer",
+          }}
+        >
+          ▤ VIEW DEBRIEF
+        </button>
+      )}
     </div>
   );
 }
@@ -797,7 +826,7 @@ function OneWayBoard() {
           />
           <line
             x1={producerX}
-            y1={54}
+            y1={58}
             x2={producerX}
             y2={yBottom + 12}
             stroke="rgba(36,67,95,.55)"
@@ -814,7 +843,7 @@ function OneWayBoard() {
               />
               <line
                 x1={consumerX(i)}
-                y1={54}
+                y1={58}
                 x2={consumerX(i)}
                 y2={yBottom + 12}
                 stroke="rgba(36,67,95,.55)"
@@ -1187,7 +1216,7 @@ function JobsBoard() {
           />
           <line
             x1={producerX}
-            y1={54}
+            y1={58}
             x2={producerX}
             y2={h - 20}
             stroke="rgba(36,67,95,.55)"
@@ -1365,7 +1394,7 @@ function RequestBoard() {
           />
           <line
             x1={xLeft}
-            y1={54}
+            y1={58}
             x2={xLeft}
             y2={yBottom + 12}
             stroke="rgba(36,67,95,.55)"
@@ -1374,7 +1403,7 @@ function RequestBoard() {
           />
           <line
             x1={xRight}
-            y1={54}
+            y1={58}
             x2={xRight}
             y2={yBottom + 12}
             stroke="rgba(36,67,95,.55)"
