@@ -32,7 +32,10 @@ const isPhase6 = $derived(gs.scenarioId === "phase6");
     {/each}
   </div>
 
-  {#if link}
+  <!-- Queue discipline is only observable where a cap-exceeding backlog exists to reorder:
+       hide the segment on VI self-loops (on-platform, reliable, single-stream — see CLAUDE.md)
+       and on clean/idle links where queue.length <= bandwidthCap (policy changes nothing). -->
+  {#if link && link.from !== link.to && link.queue.length > link.bandwidthCap}
     <div class="seg">
       {#each policies as p (p)}
         <button class:active={link.policy === p} onclick={() => game.setPolicy(link.id, p)}>

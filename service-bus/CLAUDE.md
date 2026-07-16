@@ -72,11 +72,12 @@ Build order: deterministic sim + DMS lifecycle + headless harness **first**, the
 fan-out, then view, then param-sweep CSV.
 
 ## Dev environment
-- **Browser for screenshots:** `chromium` is NOT installed. Use `google-chrome-stable` instead.
-  Headless screenshot: `google-chrome-stable --headless --disable-gpu --screenshot=<path> --window-size=1280,720 <url>`
+- **Browser for screenshots:** `google-chrome-stable` is NOT installed. Use `/usr/bin/chromium` instead.
+  Headless screenshot: `/usr/bin/chromium --headless --disable-gpu --screenshot=<path> --window-size=1280,720 <url>`
   The `vaInitialize failed: unknown libva error` warning is harmless — ignore it.
 - **Playwright:** `npx playwright` (v1.61.1) is available globally but has no cached browser bundles.
-  If a skill or tool tries to launch `chromium` via Playwright and fails, fall back to the `google-chrome-stable` command above.
+  Point it at the system browser via `executablePath: "/usr/bin/chromium"` (`playwright-core` works),
+  or fall back to the `/usr/bin/chromium` command above.
 
 ## Working conventions
 - Keep the sim deterministic and headless-testable; no rendering coupling. Seeded RNG only.

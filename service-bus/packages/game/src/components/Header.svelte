@@ -108,9 +108,11 @@ const wezState = $derived(
     font-size: 13px; font-weight: 600; color: var(--sub);
   }
   nav button:hover { background: #fff; color: var(--ink); box-shadow: var(--shadow-chip); }
+  /* A status label, not a control — flat text so it doesn't read as clickable next to the
+     nav buttons/chips (which own the white-card + shadow treatment). */
   .phase {
-    display: inline-flex; align-items: center; gap: 7px; background: #fff; border-radius: 999px;
-    padding: 7px 14px; font-size: 13px; font-weight: 600; box-shadow: var(--shadow-chip);
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 7px 4px; font-size: 13px; font-weight: 700; color: var(--ink);
   }
   .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--amber); }
   .clock { font-size: 12px; font-weight: 600; color: var(--sub); }
