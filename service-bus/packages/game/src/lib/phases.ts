@@ -115,3 +115,19 @@ export const PHASES: Phase[] = [
     marker: [325, 455],
   },
 ];
+
+/** The phase whose scenarioId matches (the campaign spine is keyed on scenarioId). */
+export function phaseByScenario(scenarioId: string): Phase | undefined {
+  return PHASES.find((p) => p.scenarioId === scenarioId);
+}
+
+/**
+ * The next campaign phase's scenarioId, or `null` at the end (Phase 8) — the campaign is
+ * a linear OV-1 spine, so "next" is simply the following phase number. Drives the debrief's
+ * "Next mission ▸" button; `null` lands on the campaign-complete state instead.
+ */
+export function nextScenarioId(scenarioId: string): string | null {
+  const cur = phaseByScenario(scenarioId);
+  if (!cur) return null;
+  return PHASES.find((p) => p.id === cur.id + 1)?.scenarioId ?? null;
+}

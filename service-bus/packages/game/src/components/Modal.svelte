@@ -1,5 +1,6 @@
 <script lang="ts">
   import { type Phase, PHASES } from "../lib/phases.ts";
+  import { progress } from "../lib/progress.svelte.ts";
   import { game } from "../lib/store.svelte.ts";
   import type { ModalKind } from "../lib/ui.ts";
   import OV1Map from "./OV1Map.svelte";
@@ -24,6 +25,15 @@
   function play(): void {
     game.load(phase.scenarioId);
     onClose();
+  }
+
+  /** Play-button verb: "Resume" only for the loaded level while it's actually mid-mission;
+   * "Replay" once won; "Play" otherwise. (Avoids a fresh boot reading "Resume" at T+0.) */
+  function playLabel(p: Phase): string {
+    const current = p.scenarioId === game.scenarioId;
+    if (current && game.gs.outcome === "pending" && game.gs.tick > 0) return "Resume ▸";
+    if (progress.isWon(p.scenarioId)) return "Replay ▸";
+    return "Play ▸";
   }
 </script>
 
@@ -54,15 +64,16 @@
       <div class="level" class:locked={!phase.playable}>
         <span class="num">{String(phase.id).padStart(2, "0")}</span>
         <span class="ldetail">
-          <span class="ltitle">{phase.name}</span>
+          <span class="ltitle">
+            {phase.name}
+            {#if progress.isWon(phase.scenarioId)}<span class="done">✓ Completed</span>{/if}
+          </span>
           <span class="lsub">OV-1 Phase {phase.id} · {phase.interfaces}</span>
           <span class="lblurb">{phase.blurb}</span>
           <span class="teaches"><b>Teaches:</b> {phase.teaches}</span>
         </span>
         {#if phase.playable}
-          <button class="play" onclick={play}>
-            {phase.scenarioId === game.scenarioId ? "Resume ▸" : "Play ▸"}
-          </button>
+          <button class="play" onclick={play}>{playLabel(phase)}</button>
         {:else}
           <span class="lockedtag">Locked — coming soon</span>
         {/if}
@@ -158,7 +169,11 @@
   .num { font-size: 20px; font-weight: 800; color: var(--c2); min-width: 44px; }
   .level.locked .num { color: var(--sub); }
   .ldetail { display: flex; flex-direction: column; flex: 1; }
-  .ltitle { font-weight: 800; font-size: 14px; }
+  .ltitle { font-weight: 800; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+  .done {
+    font-size: 10px; font-weight: 800; color: var(--green); background: var(--tint-green);
+    padding: 2px 7px; border-radius: 999px; letter-spacing: 0.2px;
+  }
   .lsub { font-size: 11px; color: var(--sub); font-weight: 600; }
   .lblurb { font-size: 12px; color: #34383e; margin-top: 3px; }
   .teaches { font-size: 11.5px; color: var(--sub); margin-top: 5px; }

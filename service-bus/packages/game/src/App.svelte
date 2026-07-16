@@ -9,12 +9,19 @@ import Graph from "./components/Graph.svelte";
 import Header from "./components/Header.svelte";
 import Modal from "./components/Modal.svelte";
 import { game } from "./lib/store.svelte.ts";
+import { progress } from "./lib/progress.svelte.ts";
 import type { ModalKind } from "./lib/ui.ts";
 
 const outcome = $derived(game.gs.outcome);
 
 // Open on the mission picker so the player chooses a level; Play loads it and starts.
 let modal = $state<ModalKind | null>("levels");
+
+// Persist per-level completion on a win (view-layer only — keeps the core pure and
+// localStorage out of the tick hot path). Idempotent, so re-running on the same win is fine.
+$effect(() => {
+  if (game.gs.outcome === "win") progress.markWon(game.scenarioId);
+});
 
 // Deep-link: `?level=phaseN` loads that level directly and skips the picker (handy for
 // sharing a mission and for headless screenshots).
@@ -59,7 +66,7 @@ onDestroy(() => game.stop());
 {/if}
 
 {#if outcome !== "pending"}
-  <Debrief />
+  <Debrief onMissions={() => (modal = "levels")} />
 {/if}
 
 <style>

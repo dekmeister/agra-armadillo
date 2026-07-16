@@ -260,7 +260,10 @@ export const phase6: ScenarioDef = {
       copBreached: false,
       wezDeadlineTick: null,
       armed: false,
-      objective: "stalled",
+      // Derived truthfully per-tick by evaluateOutcome: `in_progress` until a reply
+      // exists and is blocked, only then `stalled`. Nothing has stalled at T+0 (the
+      // reply doesn't exist yet), so don't boot the HUD into a false STALLED alarm.
+      objective: "in_progress",
       outcome: "pending",
       failReason: null,
       pendingBeat: null,

@@ -6,10 +6,20 @@
  * the deterministic counterfactual when they lose.
  */
 import type { BeatId } from "@service-bus/core";
+import { phaseByScenario } from "../lib/phases.ts";
 import { game } from "../lib/store.svelte.ts";
+
+// The picker exit is App's to open (it owns modal state); the debrief just asks for it.
+const { onMissions }: { onMissions: () => void } = $props();
 
 const gs = $derived(game.gs);
 const won = $derived(gs.outcome === "win");
+
+// Campaign progression: on a win, offer the next OV-1 phase (Phase 8 has none → the
+// campaign-complete state; the full synthesis screen is WP6, this is its minimal stub).
+const nextId = $derived(game.nextScenarioId);
+const nextName = $derived(nextId ? (phaseByScenario(nextId)?.name ?? null) : null);
+const campaignComplete = $derived(won && nextId === null);
 
 /** One-line takeaway per decision point (the beat's lesson, distilled). */
 const LESSONS: Partial<Record<BeatId, string>> = {
@@ -102,7 +112,22 @@ const counterfactual = $derived(
     <p class="counter">↳ {counterfactual}</p>
   {/if}
 
-  <button class="replay" onclick={() => game.replay()}>↻ Replay scenario</button>
+  {#if campaignComplete}
+    <p class="complete">✓ Campaign complete — all eight OV-1 phases flown.</p>
+  {/if}
+
+  <div class="actions">
+    {#if won && nextName}
+      <!-- Win (Phases 1–7): straight into the next mission is the primary path. -->
+      <button class="btn primary" onclick={() => game.advance()}>Next mission ▸ {nextName}</button>
+      <button class="btn ghost" onclick={() => game.replay()}>↻ Replay</button>
+    {:else}
+      <!-- Loss, or the Phase 8 campaign-complete win: replay is primary; the picker is the
+           way out to another phase. -->
+      <button class="btn primary" onclick={() => game.replay()}>↻ Replay</button>
+      <button class="btn ghost" onclick={onMissions}>Missions ▸</button>
+    {/if}
+  </div>
 </div>
 
 <style>
@@ -128,8 +153,18 @@ const counterfactual = $derived(
     font-size: 13px; font-weight: 700; color: #8a5a00; background: var(--tint-amber);
     border-radius: 10px; padding: 10px 12px; margin: 14px 0 0; line-height: 1.45;
   }
-  .replay {
-    margin-top: 18px; width: 100%; border: none; background: var(--ink); color: #fff;
-    border-radius: 10px; padding: 12px; font-size: 14px; font-weight: 800;
+  .complete {
+    font-size: 13px; font-weight: 700; color: var(--green); background: var(--tint-green);
+    border-radius: 10px; padding: 10px 12px; margin: 14px 0 0; line-height: 1.45;
+  }
+  .actions { display: flex; gap: 10px; margin-top: 18px; }
+  .btn {
+    border: none; border-radius: 10px; padding: 12px; font-size: 14px; font-weight: 800;
+    cursor: pointer;
+  }
+  .btn.primary { flex: 1; background: var(--ink); color: #fff; }
+  .btn.ghost {
+    flex: none; background: var(--seg-track); color: var(--sub); padding: 12px 16px;
+    white-space: nowrap;
   }
 </style>

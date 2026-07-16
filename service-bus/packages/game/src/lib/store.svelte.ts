@@ -10,6 +10,7 @@
 
 import type { Action, ElectionMethod, GameState, QueuePolicy } from "@service-bus/core";
 import { apply, createInitialState, getScenario, tick } from "@service-bus/core";
+import { nextScenarioId } from "./phases.ts";
 import { defaultLinkId, type Selection } from "./sim-adapter.ts";
 
 /** Wall-clock length of one sim tick (ms). The core advances by integer ticks; the view
@@ -34,10 +35,15 @@ function build(scenarioId: string, seed?: number): GameState {
   return usesWez(scenarioId) ? apply(s0, { type: "arm" }) : s0;
 }
 
+/** The level shown behind the opening picker — Phase 1, the campaign's start. A fresh
+ * player must NOT boot into Phase 6's HUD (WEZ card, COP ring); Phase 1 is unarmed and
+ * non-COP, so the board behind the picker stays calm. Deep-links / Play override this. */
+const BOOT_SCENARIO = "phase1";
+
 class GameStore {
-  scenarioId = $state("phase6");
-  gs = $state<GameState>(build("phase6"));
-  sel = $state<Selection>({ type: "link", id: "bad" });
+  scenarioId = $state(BOOT_SCENARIO);
+  gs = $state<GameState>(build(BOOT_SCENARIO));
+  sel = $state<Selection>({ type: "link", id: defaultLinkId(build(BOOT_SCENARIO)) });
   /** Fraction (0..1) of wall time from the last tick toward the next. The view reads
    * `gs.tick + renderFrac` to glide in-flight messages smoothly between integer ticks. */
   renderFrac = $state(0);
@@ -115,32 +121,22 @@ class GameStore {
     this.gs = apply(this.#plain(), a);
   }
 
-  /** Arm the WEZ on the first interaction (Phase 6 only; harmless elsewhere but skipped). */
-  #armIfNeeded(): void {
-    if (usesWez(this.scenarioId) && !this.gs.armed) this.#act({ type: "arm" });
-  }
-
   select(type: "node" | "link" | "token", id: string): void {
     this.sel = { type, id };
-    this.#armIfNeeded();
   }
 
   setPolicy(linkId: string, policy: QueuePolicy): void {
-    this.#armIfNeeded();
     this.#act({ type: "setPolicy", linkId, policy });
   }
 
   // --- Phase 6 recovery affordances -----------------------------------------
   reroute(): void {
-    this.#armIfNeeded();
     this.#act({ type: "reroute" });
   }
   rerequest(): void {
-    this.#armIfNeeded();
     this.#act({ type: "rerequest" });
   }
   refreshCop(): void {
-    this.#armIfNeeded();
     this.#act({ type: "refreshCop" });
   }
 
@@ -161,9 +157,29 @@ class GameStore {
     this.#act({ type: "mergeTeam" }); // L7: heal the split on command
   }
 
-  /** Replay the current level from its opening state. */
+  /**
+   * Replay the current level from its opening state and resume ticking. The debrief
+   * calls this while `App`'s modal-keyed loop `$effect` is dormant (the modal doesn't
+   * change), so the store must restart the clock itself — otherwise the reloaded board
+   * sits frozen. `start()` is idempotent, so this never double-runs the loop.
+   */
   replay(): void {
     this.load(this.scenarioId);
+    this.start();
+  }
+
+  /** The next campaign phase's scenarioId, or `null` at Phase 8 (campaign complete). */
+  get nextScenarioId(): string | null {
+    return nextScenarioId(this.scenarioId);
+  }
+
+  /** Advance to the next OV-1 phase and start it (debrief "Next mission ▸"). No-op at the
+   * end of the campaign — the debrief shows the campaign-complete state there instead. */
+  advance(): void {
+    const next = this.nextScenarioId;
+    if (!next) return;
+    this.load(next);
+    this.start();
   }
 }
 

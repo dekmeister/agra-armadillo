@@ -1,5 +1,6 @@
 <script lang="ts">
 import { PHASES } from "../lib/phases.ts";
+import { progress } from "../lib/progress.svelte.ts";
 import OV1Scene from "./OV1Scene.svelte";
 
 let { selected, onSelect }: { selected: number; onSelect: (id: number) => void } = $props();
@@ -38,10 +39,15 @@ function key(e: KeyboardEvent, id: number): void {
         <!-- Pulsing highlight, shown on hover/active (CSS-gated). -->
         <rect class="ring" {x} {y} width={w} height={h} rx="10" fill="none" stroke-width="3" />
         <!-- Always-visible numbered chip so every phase reads as clickable. -->
-        <circle class="chip" cx={mx} cy={my} r="13" />
+        <circle class="chip" class:won={progress.isWon(p.scenarioId)} cx={mx} cy={my} r="13" />
         <text class="cnum" x={mx} y={my + 4}>{p.id}</text>
         {#if !p.playable}
           <text class="lock" x={mx + 11} y={my - 9}>🔒</text>
+        {/if}
+        <!-- Completion tick — a green seal on the chip's shoulder once the phase is won. -->
+        {#if progress.isWon(p.scenarioId)}
+          <circle class="tickbg" cx={mx + 11} cy={my - 10} r="7" />
+          <text class="tick" x={mx + 11} y={my - 6.5}>✓</text>
         {/if}
       </g>
     {/each}
@@ -91,6 +97,24 @@ function key(e: KeyboardEvent, id: number): void {
   .lock {
     text-anchor: middle;
     font-size: 12px;
+    pointer-events: none;
+  }
+  /* Completed phases: a green-rimmed chip + a green tick seal. */
+  .chip.won {
+    fill: var(--green);
+    opacity: 0.92;
+  }
+  .tickbg {
+    fill: var(--green);
+    stroke: #fff;
+    stroke-width: 1.5;
+    pointer-events: none;
+  }
+  .tick {
+    text-anchor: middle;
+    font-size: 9px;
+    font-weight: 800;
+    fill: #fff;
     pointer-events: none;
   }
   /* Highlight ring hidden by default; revealed on hover/focus/active. */

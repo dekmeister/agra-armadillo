@@ -91,7 +91,7 @@ const wezState = $derived(
         <div class="sub">deadline missed</div>
       {:else}
         <div class="big" class:pulse={wez !== null && wez <= 5}>{wez === null ? "0:18" : mmss(wez)}</div>
-        <div class="sub">{gs.armed ? "to deadline" : "standby · click to start"}</div>
+        <div class="sub">to deadline</div>
       {/if}
     </div>
     {/if}
