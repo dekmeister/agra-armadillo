@@ -31,7 +31,7 @@ new. RF sandbox is a stretch goal. Teaching correctness beats content volume.
 
 ---
 
-## WP1 — Progression spine & first impression (small, do first)
+## WP1 — Progression spine & first impression (small, do first) **DONE**
 
 **Problem.** The campaign doesn't function as a course: after a win the debrief's only exit is
 "Replay scenario" — the player must reopen Levels and remember what's next. Nothing persists, so
@@ -60,7 +60,7 @@ Phase 2; reload → picker shows Phase 1 ticked.
 
 ---
 
-## WP2 — Per-phase Help (the current Help actively mis-teaches)
+## WP2 — Per-phase Help (the current Help actively mis-teaches) **DONE**
 
 **Problem.** The "How to play" modal is 100% Phase 6 content — strike approval, BAD return link,
 reroute-vs-re-request — regardless of the loaded level. A Phase 1 player opening Help gets
@@ -284,7 +284,7 @@ code should be needed — this is UI over existing knobs; if a knob isn't reacha
 
 ---
 
-## WP9 — Housekeeping (batch with any other WP)
+## WP9 — Housekeeping (batch with any other WP) **DONE**
 
 - Favicon 404 on every load (`packages/game/index.html` has no icon link).
 - `CLAUDE.md` dev-environment note is **backwards**: `/usr/bin/chromium` IS installed,

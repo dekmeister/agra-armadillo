@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { type Phase, PHASES } from "../lib/phases.ts";
+  import { GENERIC_HELP, missionHelp } from "../lib/help.ts";
+  import { type Phase, PHASES, phaseByScenario } from "../lib/phases.ts";
   import { progress } from "../lib/progress.svelte.ts";
   import { game } from "../lib/store.svelte.ts";
   import type { ModalKind } from "../lib/ui.ts";
@@ -109,33 +110,20 @@
         authorised.</p>
 
     {:else}
-      <h3>The situation</h3>
-      <p>ACP-1 (the team leader) has asked the QB to approve a strike. The QB <b>approved it</b> — but
-        the QB→ACP-1 return link has gone <b>BAD</b> (bursty/lossy), so the approval reply is stuck in
-        <b>MISSING_ACK</b>: sent, but never confirmed. <i>Delivery ≠ approval</i> — the reply has to
-        actually arrive, on time, with verified QB authority.</p>
-      <h3>Your goal</h3>
-      <p>Get the reply delivered before the <b>WEZ window</b> counts down to zero, without letting COP
-        freshness collapse.</p>
-      <h3>How it flows</h3>
-      <p>The mission runs on a 1-second clock, but <b>auto-pauses at each decision point</b> and
-        explains what just happened. Read it, pick an action (or <b>Hold</b> to do nothing), and the
-        clock resumes. The WEZ countdown only ticks while the mission is running — reading is free.
-        You can also act any time from the <b>Inspector</b> on the right.</p>
-      <h3>What to try</h3>
+      {@const m = missionHelp(game.scenarioId)}
+      {@const p = phaseByScenario(game.scenarioId)}
+      <h3>This mission — Phase {p?.id ?? currentPhaseId}: {p?.name ?? "Threat Engagement at CAP"}</h3>
+      <p>{@html m.situation}</p>
+      <h4>Your goal</h4>
+      <p>{@html m.goal}</p>
+      <h4>What to try</h4>
       <ol>
-        <li><b>Re-prioritise the link.</b> Click the amber dashed <b>QB→ACP-1</b> link, then set its
-          queue order to <b>Deadline</b> or <b>Class</b> so the reply jumps ahead of routine traffic.</li>
-        <li><b>Reroute.</b> Click the stalled reply token (the spinning red “?”) and send it via a
-          relay platform's DMS (<b>QB → ACP-2 → ACP-1</b>) — reliable, but slower.</li>
-        <li><b>Re-request</b> issues a fresh approval — but onto the same BAD link, so on its own it’s
-          usually not enough.</li>
+        {#each m.tryThis as t}<li>{@html t}</li>{/each}
       </ol>
-      <h3>Reading the board</h3>
-      <p><b>Square = C2</b>, <b>circle = P2P</b>. Grey line = GOOD link, amber marching dashes = BAD.
-        A gold seal marks verified authority. Badges on nodes show queue depth.</p>
-      <p class="win">Win: reply delivered + QB authority verified before the deadline.<br />
-        Lose: deadline missed, or approval acted on under the wrong authority.</p>
+      <p class="win">{@html m.winLose}</p>
+
+      <h3>How the game works</h3>
+      {@html GENERIC_HELP}
     {/if}
   </div>
 </div>
@@ -155,6 +143,7 @@
   .x { border: none; background: var(--seg-track); width: 30px; height: 30px; border-radius: 8px; font-weight: 700; color: var(--sub); }
   .body { overflow-y: auto; padding: 16px 22px 22px; font-size: 13.5px; line-height: 1.5; color: #34383e; }
   .body h3 { font-size: 13px; font-weight: 800; margin: 16px 0 4px; letter-spacing: 0.2px; }
+  .body h4 { font-size: 12px; font-weight: 800; margin: 12px 0 2px; color: var(--sub); letter-spacing: 0.2px; }
   .body p { margin: 6px 0; }
   .body ol { margin: 6px 0; padding-left: 20px; }
   .body li { margin: 5px 0; }
