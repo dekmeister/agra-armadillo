@@ -14,20 +14,25 @@ which interface, gated by what. Real names, real message structures, real sequen
 only where fidelity would kill playability, and **flag every simplification `[S]`** so the game never
 teaches something false. When unsure whether a mechanic is faithful, check `docs/` before coding it.
 
-## Source standards (`docs/`)
-PDFs plus `.txt` extractions of each. **Always read the `.txt`, and grep large ones — do not load them
-whole** (C2 vol ~25k lines, Peer ~23k, MS ~10k).
-- `ASK 5.0a Start Here Guide.doc.txt` — small, read whole. OV-1 DCA vignette, the six L1 interfaces, RBAC roles, acronyms.
-- `ASK 5.0a Command and Control Interface Volume.txt` — C2 paradigms, RBAC, approval/weapon flow.
-- `ASK 5.0a Mission Systems Interface Volume.txt` — DMS lifecycle, PNT, sensors, link-health messages.
-- `ASK 5.0a Peer Interface Volume.txt` — team formation, leader election, COP, peer contingencies.
+## Source standards — in the **sibling repo**, not this one
+The ASK 5.0a `.txt` extractions live at `../brain-swap/docs/A-GRA References/` (alongside
+`A-GRA_MessageDefinitions_v5_0_a.xsd`). **Always read the `.txt`, and grep the large ones — do not
+load them whole.** Present on this device:
+- `ASK 5.0a Start Here Guide.doc.txt` — 277 lines, read whole. OV-1 DCA vignette, the six L1 interfaces, the acronym table (the authority for nearly every expansion the game uses).
+- `ASK 5.0a Mission Systems Interface Volume.txt` — ~10.5k lines. DMS lifecycle, PNT, sensors, link-health messages.
+- `ASK 5.0a Vehicle Interface Volume.txt` — ~8.6k lines. VI control modes, FA responsibilities.
 
-There is no standalone VI/MP/MD volume in `docs/` — fine; this game's OTA-heavy interfaces (C2, P2P,
-MS-DMS) are all present. VI is the *other* game's deep target.
+**Not present on this device:** the **Command and Control** and **Peer** Interface Volumes. They hold
+the RBAC role definitions, the approval/designation weapon flow, and the five leader-election methods
+— so those parts of the game rest on design-set assertion, not primary text. Everything affected is
+listed in `docs/VERIFY.md`; if you are on a machine that *does* have those volumes, work that
+checklist. Do not silently upgrade an unverified claim to a sourced one.
 
-## Design set (`design/`) — read before changing direction
-`00` one-pager · `01` mechanics→A-GRA mapping (all `[S]` flags) · `02` mission phases (OV-1) ·
-`03` failure/degradation · `04` tech + MVP. `README.md` indexes them.
+## Design set (`docs/`) — read before changing direction
+`docs/00-design-doc.md` one-pager · `01-mechanics-to-agra-mapping.md` (all `[S]` flags) ·
+`02-mission-phases.md` (OV-1) · `03-failure-degradation.md` · `04-tech-and-mvp.md`. The root
+`README.md` indexes them. (There is no `design/` directory — earlier revisions of this file said
+there was.)
 
 ## Locked design decisions
 - **Fabric = the real DMS** (Decentralized Messaging Service). One DMS instance *per platform*; the
@@ -72,16 +77,18 @@ Build order: deterministic sim + DMS lifecycle + headless harness **first**, the
 fan-out, then view, then param-sweep CSV.
 
 ## Dev environment
-- **Browser for screenshots:** `google-chrome-stable` is NOT installed. Use `/usr/bin/chromium` instead.
-  Headless screenshot: `/usr/bin/chromium --headless --disable-gpu --screenshot=<path> --window-size=1280,720 <url>`
-  The `vaInitialize failed: unknown libva error` warning is harmless — ignore it.
+- **Browser for screenshots:** **check what is actually installed before trusting this line** — it
+  has now been wrong in both directions. As of 2026-07-19 on this machine:
+  `/usr/bin/google-chrome-stable` **is** installed and `chromium` is **not**.
+  Headless screenshot: `google-chrome-stable --headless --disable-gpu --screenshot=<path> --window-size=1280,900 <url>`
+  Any `vaInitialize failed: unknown libva error` warning is harmless — ignore it.
 - **Playwright:** `npx playwright` (v1.61.1) is available globally but has no cached browser bundles.
-  Point it at the system browser via `executablePath: "/usr/bin/chromium"` (`playwright-core` works),
-  or fall back to the `/usr/bin/chromium` command above.
+  Point it at the system browser via `executablePath: "/usr/bin/google-chrome-stable"`
+  (`playwright-core` works), or fall back to the command above.
 
 ## Working conventions
 - Keep the sim deterministic and headless-testable; no rendering coupling. Seeded RNG only.
 - Use real A-GRA message/interaction names in code identifiers and comments where practical.
-- When adding a mechanic, cite the `docs/` basis; if it's a simplification, mark it `[S]` in code and in `design/01`.
+- When adding a mechanic, cite the `docs/` basis; if it's a simplification, mark it `[S]` in code and in `docs/01-mechanics-to-agra-mapping.md`.
 - This is a learning project for a domain expert (aerospace SE; RF/EMC; DO-178C/DO-377A). Be precise and
   technical; surface fidelity trade-offs explicitly rather than smoothing them over.

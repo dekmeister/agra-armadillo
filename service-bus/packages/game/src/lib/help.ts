@@ -84,9 +84,9 @@ export const MISSION_HELP: Record<string, MissionHelp> = {
   // Phase 3 — Team Formation. Beats: elect (Static vs Raft), quorum-stall (Raft needs a majority).
   phase3: {
     situation:
-      "The ACPs are joining a package (<code>MA_PackageManagementCommandMT</code> over <b>P2P</b>), " +
-      "but the team has no leader. You must run a <b>leader election</b> — and it isn't free: it " +
-      "runs over the same P2P links the team uses.",
+      "The ACPs have formed a package but have <b>no leader</b>. You must run a <b>leader " +
+      "election</b>, and it isn't free: the vote traffic (<code>MA_LeaderUpdateRequestMT</code> " +
+      "over <b>P2P</b>) runs over the same links the team is trying to use.",
     goal: "Elect a leader before the formation window closes.",
     tryThis: [
       "<b>Static Fitness Score</b> — the fittest node declares locally: ~n messages, no quorum, " +

@@ -20,7 +20,7 @@ per-level view-model helpers in `sim-adapter.ts` (pure `GameState -> VM`, no new
   and clearly NOT crossing the shaded OTA mesh. Contrast with the C2 link that does cross.
 - **Why:** the whole L1/L2 lesson is "VI is free and never crosses the air." A self-loop rendered as a
   normal straight rail reads as a bug; a rim arc reads as the point.
-- **Data:** already in state (`links.vi`, `MA_VehicleCommandMT` tokens). Needs a loop-arc path in
+- **Data:** already in state (`links.vi`, `MA_FlightCommandMT` tokens). Needs a loop-arc path in
   `layout.ts` for `from===to` links (the generic board should at least stub this).
 
 ## L2 Hold — the FAIL_MISSING_ACK "sent, unconfirmed" motif

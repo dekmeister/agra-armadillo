@@ -88,7 +88,7 @@ export const phase5: ScenarioDef = {
   beats: {
     "cop-fanout": {
       id: "cop-fanout",
-      title: "COP is one-to-many — every follower needs feeding",
+      title: "COP (Common Operating Picture) is one-to-many — every follower needs feeding",
       summary:
         "The leader must sync the COP to all three followers; fan-out cost scales with the package size.",
       concept:

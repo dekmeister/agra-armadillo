@@ -59,7 +59,7 @@ whom, over which interface, gated by what*.
 
 | Game element | A-GRA concept | Fidelity notes |
 |---|---|---|
-| A message token's per-hop states | `PENDING → EXECUTING → SENT` / `FAIL_UNSENT` / `FAIL_MISSING_ACK` from `MA_TxDataPayloadCommandStatusMT` | Faithful — taken verbatim from the MS volume DMS interaction. This is the failure vocabulary. |
+| A message token's per-hop states | `PENDING → EXECUTING → SENT` / `FAIL_UNSENT` / `FAIL_MISSING_ACK` from `MA_TxDataPayloadCommandStatusMT` | Progression and both failure states are faithful (MS Volume §DMS, `DestinationTransmissionStatus`). `[S]` **`SENT` is ours, not A-GRA's** — it collapses the two real success finals `SUCCESS_NO_ACK_EXPECTED` / `SUCCESS_RECEIVED_ACK`. See item 21. |
 | **Link-health readout** | `MA_CommTeamReportMT`, `MA_CommAvailableEndpointsMT` (Publish Network Endpoint Availability) | Faithful primitives; `[S]` surfaced as a simple per-link quality bar. |
 
 ## Master list of deliberate simplifications
@@ -141,6 +141,25 @@ real P2P links) — still limited to Raft + Static.
 20. **Static Fitness Score is a pre-loaded score, not derived from live comms health** (L3/L7). The dynamic
     "fitness = link GOOD-fraction" variant is a noted follow-on; the pre-loaded map keeps convergence
     deterministic. (`[S]`; narrows item 10.)
+
+## Field Guide notes (WP3)
+21. **`SENT` collapses the two real success finals.** A-GRA's
+    `MA_TxDataPayloadCommandStatusMT.DestinationTransmissionStatus` defines **four** final values, not
+    three: `FAIL_UNSENT`, `FAIL_MISSING_ACK`, `SUCCESS_NO_ACK_EXPECTED` ("sent using a protocol that
+    does not support confirmation … e.g. UDP") and `SUCCESS_RECEIVED_ACK` ("the protocol was able to
+    confirm that the message was received"). The game merges the two SUCCESS values into one `SENT`
+    state. Earlier revisions of this doc and of `03` described the lifecycle as taken "verbatim" — that
+    was **wrong**, and is corrected here and there. The fidelity cost is real but bounded: the MS Volume
+    adds that "DDS does not provide a standard way to access message receipt acknowledgments so
+    **`SUCCESS_NO_ACK_EXPECTED` may be the most common status**", i.e. the honest default on a DDS mesh
+    is *sent, ack never expected* rather than the game's confident *delivered and confirmed*. The
+    distinction sharpens rather than undermines L2's lesson (delivery ≠ confirmation), and the Field
+    Guide's lifecycle section states all four real values alongside the game's five states.
+    (`[S]`; vocabulary only — no topology, endpoint or gating consequence.)
+
+    Note also that the real `FAIL_UNSENT` occurs on **two** edges — on removal from the queue between
+    `PENDING` and `EXECUTING`, *and* as a final status — where `03`'s diagram previously drew only the
+    latter.
 
 **Nothing in this list alters topology, endpoints, interface assignment, or authority gating** — the
 four things the guard rail protects.

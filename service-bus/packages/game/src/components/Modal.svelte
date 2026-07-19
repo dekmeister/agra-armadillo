@@ -9,7 +9,6 @@
 
   const titles: Record<ModalKind, string> = {
     levels: "Missions",
-    background: "Background — A-GRA, the DMS & the service mesh",
     help: "How to play",
   };
 
@@ -79,35 +78,6 @@
           <span class="lockedtag">Locked — coming soon</span>
         {/if}
       </div>
-
-    {:else if kind === "background"}
-      <p>A-GRA is a reference architecture for collaborative military autonomy (ASK 5.0a, building on
-        UCI 2.5). This game models its <b>topology and message-flow layer</b> — who talks to whom, over
-        which interface, gated by what.</p>
-      <h3>ASB vs. DMS — two different buses</h3>
-      <p>The <b>Abstract Service Bus (ASB)</b> is the <b>on-platform</b> bus between a platform's
-        Mission Autonomy and its local Mission Systems — reliable, never over the air. The
-        <b>Decentralized Messaging Service (DMS)</b> is the <b>per-platform</b> messaging service that
-        carries traffic <b>off</b> the platform: every platform runs its <b>own</b> DMS instance, and
-        those instances form a <b>DDS/RTPS pub-sub mesh with no central broker</b> (that is the
-        "Decentralized"). A full off-platform hop is
-        <code>MA → ASB → local DMS → DDS/RTPS mesh → remote DMS → remote MA</code>.</p>
-      <p>Each message is part of an <b>interaction</b>: a request plus its required status reply (a
-        round trip). The round trip is the unit compliance is assessed at, and its return leg can fail
-        independently. <span class="s">[S]</span> The board collapses the mesh to a single shaded field
-        and each platform's DMS to one port badge.</p>
-      <h3>The six L1 interfaces</h3>
-      <p><b>C2</b> command/control · <b>P2P</b> peer-to-peer (team & COP) · <b>MS</b> mission systems
-        (carries the DMS) · <b>VI</b> vehicle interface · <b>MP</b> mission plan · <b>MD</b> mission
-        data. Only C2, P2P and MS/COP updates cross the contested air; VI and local sensor reads stay
-        on-platform and reliable.</p>
-      <h3>Nodes & authority</h3>
-      <p><b>ACP</b> — an autonomous platform running Mission Autonomy. <b>QB</b> — the command node and
-        Target Authority for weapon employment. Each platform hosts its <b>own DMS instance</b> (there
-        is no separate relay node — a "reroute" just takes a second path through another platform's
-        DMS). Authority is governed by five RBAC roles (<b>Admin · QB · AVC · LRE · Observer</b>) and is
-        checked <b>at the destination</b>: a message arriving somewhere does not make that node
-        authorised.</p>
 
     {:else}
       {@const m = missionHelp(game.scenarioId)}

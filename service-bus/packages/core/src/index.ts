@@ -6,6 +6,15 @@
  * same in Node (parameter sweeps) and in the browser (the Svelte console).
  */
 
+export {
+  type CodexEntry,
+  type CodexProvenance,
+  type CodexStatus,
+  KNOWN_MESSAGE_NAMES,
+  LIFECYCLE_SOURCE,
+  MESSAGE_CODEX,
+  REFERENCE_MESSAGE_NAMES,
+} from "./codex.ts";
 export { type ElectionStrategy, quorumOf, STRATEGIES } from "./election.ts";
 export { apply, createInitialState, tick } from "./engine.ts";
 export { blockProb, dispatchOrder, stepChannel } from "./link.ts";

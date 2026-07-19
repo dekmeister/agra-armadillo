@@ -9,18 +9,31 @@ within a package, items are ordered by importance. WPs are independent unless no
 
 - **Read `CLAUDE.md` in this directory** — the fidelity guard rail is non-negotiable: never
   misrepresent message topology (who talks to whom, over which interface, gated by what). When a
-  change touches a mechanic, check the relevant `docs/References/*.txt` extraction (grep, don't
-  load whole) and cite it in a comment; flag any simplification `[S]` in code and `design/01`.
+  change touches a mechanic, check the relevant ASK 5.0a `.txt` extraction (grep, don't load
+  whole) and cite it in a comment; flag any simplification `[S]` in code and in
+  `docs/01-mechanics-to-agra-mapping.md`.
+- **Source paths (corrected in WP3 — earlier revisions of this file and CLAUDE.md were wrong).**
+  There is no `design/` directory: the design set is `docs/00…04`. There is no
+  `docs/References/`: the ASK 5.0a extractions live in the sibling repo at
+  `../brain-swap/docs/A-GRA References/`, and only **Start Here**, **Mission Systems**, **Vehicle
+  Interface** and the normative **`A-GRA_MessageDefinitions_v5_0_a.xsd`** are present on this
+  device. The **C2 and Peer Interface Volumes are absent** — anything resting on them is
+  unverified and listed in **`docs/VERIFY.md`**.
 - The sim core (`packages/core`) is pure, deterministic, headless-tested. Keep it that way: no
-  DOM, no wall-clock, seeded RNG only. `npm test` (65 tests) and `npm run typecheck` must stay
-  green. View work lives in `packages/game` (Svelte 5 runes + SVG).
+  DOM, no wall-clock, seeded RNG only. `npm test` (**85 tests** as of WP3) and `npm run typecheck`
+  must stay green, as must `npx biome check packages/`. View work lives in `packages/game`
+  (Svelte 5 runes + SVG).
 - Tutorial seeds are curated per level (`tutorialSeed` in each `ScenarioDef`) — if you change
   scenario timing/traffic, re-verify the seed still produces the intended drama (there are
   `tutorial-seed*.test.ts` tests for this).
 - **Verify visually.** `npm run dev` → `http://localhost:5174/games/servicebus/?level=phaseN`
-  deep-links a level. For headless screenshots use `/usr/bin/chromium` (NOT
-  `google-chrome-stable` — the CLAUDE.md dev-environment note is stale, see WP9). Driving the
-  game with `playwright-core` (installed ad hoc, `executablePath: "/usr/bin/chromium"`) works.
+  deep-links a level; `?guide` / `?guide=<sectionId>` deep-links the Field Guide. For headless
+  screenshots use **`google-chrome-stable`** — `chromium` is NOT installed on this machine.
+  (This note has now been wrong in *both* directions; WP9 "fixed" it backwards. Run `which` and
+  trust that, not the prose.) Driving the game with `playwright-core` (installed ad hoc,
+  `executablePath: "/usr/bin/google-chrome-stable"`) works; note levels auto-pause on a beat, so
+  a stalled clock usually means an unacknowledged beat — the control is a button named
+  `/Acknowledged/`.
 - Reference implementation for the meta layer: `../brain-swap/packages/game/src/meta/` —
   full-screen views (Help, MessageCodex, ComplianceReport, FidelityNotesPanel) reachable from
   the shell. Port the *pattern*, not the code (brain-swap is React; this repo is Svelte).
@@ -79,7 +92,67 @@ everywhere.
 
 ---
 
-## WP3 — Field Guide: the technical-background layer (the biggest content gap)
+## WP3 — Field Guide: the technical-background layer **DONE** (2026-07-19)
+
+> **Outcome, and what a later session needs to know.** Shipped as a full-page view
+> (`components/FieldGuide.svelte`, content in `lib/fieldguide.ts`, codex in
+> `packages/core/src/codex.ts`) reachable from the header — it **replaced** the Background modal
+> rather than adding a fourth nav item. All eight sections below were built. 20 new tests.
+>
+> **Verification found three things the game was teaching falsely.** These are the durable part:
+> 1. **`SENT` is not an A-GRA state.** `MA_TxDataPayloadCommandStatusMT` defines *four* finals;
+>    `SENT` collapses `SUCCESS_NO_ACK_EXPECTED` / `SUCCESS_RECEIVED_ACK`. `types.ts`, `docs/01`
+>    L62 and `docs/03` L28 all claimed the lifecycle was "verbatim"/"Faithful" — corrected, and
+>    logged as **`[S]` item 21** in `docs/01`. The sim's `Lifecycle` union was deliberately left
+>    alone (owner's call): renaming it is a real change needing real ack-vs-no-ack semantics, not
+>    a cosmetic one. **Still open if anyone wants it.**
+> 2. **`MA_VehicleCommandMT` was invented** — no such A-GRA type. Renamed throughout to
+>    **`MA_FlightCommandMT`**, the real VI command (XSD; VI Volume ~L860 and Tables A-1-52/53/56
+>    for its HSA_CSA / WaypointFollowing / Heading extensions). A regression test forbids the old
+>    name returning.
+> 3. **Phase 3's copy named `MA_PackageManagementCommandMT`, which the sim never sends.** Fixed
+>    to `MA_LeaderUpdateRequestMT` and guarded (see below).
+>
+> **The XSD is on this device and is normative for message names** — checking against it upgraded
+> 11 of 12 game message names to primary-sourced, including *both* weapon-employment flows. Use it
+> before assuming something is unverifiable. The one name still unconfirmed is
+> `MA_SynchronizeGlobalCopToPeer` (absent from the XSD, and missing the `MT` suffix every real
+> type carries — probably wrong; needs the Peer Volume, tracked as VERIFY P6).
+>
+> **⚠ Two new drift guards will fail you if you change traffic or copy — this is intentional:**
+> - `packages/core/test/codex.test.ts` plays every level on its tutorial seed (passively *and*
+>   down its taught path) and asserts `MESSAGE_CODEX` matches what actually flies — including a
+>   **per-level `levels: [...]` list** on each entry, and that nothing is marked `exercised`
+>   unless some level emits it. **WP5 changes traffic, so WP5 must update `codex.ts`.** That is
+>   the guard working, not a broken test.
+> - `packages/game/test/copy-drift.test.ts` scans **all** of `packages/game/src` and fails on any
+>   `MA_*` token that isn't a documented name. To cite a real message the game doesn't send, add
+>   it to `REFERENCE_MESSAGE_NAMES` in `codex.ts` with a justification (the test requires one).
+> - `packages/game/test/fieldguide.test.ts` pins the glossary's required acronym set, the six
+>   interfaces, VI being on-platform, the five roles, the five election methods, and that AVC's
+>   expansion stays `null`.
+>
+> **Unverified-by-design.** Sections 4 (roles) and 5 (election) rest on design-set assertion, not
+> primary text, because the C2 and Peer Volumes are absent here. Rather than flatten that, every
+> claim carries a provenance chip in the UI (*ASK 5.0a* / *design set — unverified* / *inferred* /
+> *non-A-GRA source*), and **`docs/VERIFY.md` is the checklist** — 13 numbered items (C1–C6,
+> P1–P7, X1–X5), each naming the claim, where it appears, and which volume settles it. A session
+> on a machine with those volumes should work that file and update the chips in step. **Do not
+> silently upgrade a claim to "sourced".** `AVC`'s expansion is deliberately left blank; the XSD's
+> "Unmanned Air Vehicle Control Station" is a different concept and must not be borrowed.
+>
+> **Left for other WPs on purpose:** Phase 1's picker still claims `MS-PNT` with no MS traffic —
+> that is **WP5.6**, and half-fixing it here would have been worse. MP remains exercised by zero
+> messages and MS by one; the guide says so explicitly and points at the gap rather than papering
+> over it (**WP5** closes it).
+>
+> **Shell changes other WPs will meet:** `ModalKind` lost `"background"` and gained a sibling
+> `OverlayKind = ModalKind | "fieldguide"`; `App.svelte`'s `modal` is now `overlay`, and its
+> existing "an overlay is open, so pause the mission" `$effect` covers the guide for free.
+
+<details>
+<summary>Original WP3 brief (kept for reference)</summary>
+
 
 **Problem.** The only technical grounding in-game is one ~300-word Background modal. The project
 owner explicitly wants a proper technical-background section, following brain-swap's pattern of a
@@ -116,6 +189,8 @@ window").
 
 **Accept:** every acronym in the UI resolvable in-game; codex covers 100% of `MA_*` types used;
 a reader can answer "which interfaces cross the contested air?" from the guide alone.
+
+</details>
 
 ---
 
@@ -162,6 +237,14 @@ on the board is in the legend, mesh field present wherever traffic crosses the a
 ---
 
 ## WP5 — Level changes (curriculum fixes — the review's "should levels change?" answer)
+
+> **Read WP3's outcome note first.** Two things bind this WP: (a) `packages/core/src/codex.ts`
+> carries a per-level `levels: [...]` list for every message and a test that checks it against
+> what the levels actually emit — **add MP/MD messages there in the same change**, and update the
+> `status`/`inGame` copy for the interfaces the guide currently calls *thin*; (b) `lib/fieldguide.ts`
+> §2 explicitly tells the player MP is unexercised and MS appears once. When WP5 fixes that, fix
+> those strings too, or the guide starts lying in the other direction. Item 5.6 below is still
+> open — WP3 deliberately did not touch it.
 
 Structural review verdict: Phases 1, 2, 6, 7 are sound as designed. Phase 4 is the weak level;
 Phases 3/5/6 each have one teaching hole; Phase 8 wastes the synthesis moment. Two curriculum
@@ -261,7 +344,11 @@ Locked until the base phase is won (needs WP1's persistence).
    message semantics (QB designates rather than approves). Closes the "weapon employment is a
    distinct gated flow" claim with both of its real forms. Check the C2 volume for the exact
    sequence before coding; if 5.3's wrong-authority branch went into a variant instead of the
-   tutorial, it belongs here.
+   tutorial, it belongs here. **Note (WP3):** both names are XSD-confirmed and already sit in
+   `REFERENCE_MESSAGE_NAMES` in `packages/core/src/codex.ts` as "real, but the game doesn't send
+   them". Implementing this means **moving them into `MESSAGE_CODEX`** with a `levels` list — the
+   codex test forbids a name being in both places. The *sequence* remains unverified (VERIFY C4);
+   the C2 Volume is not on this device.
 3. **Phase 7 variant — alternate-site fallback.** Primary LRE link unreachable at Bingo; the RTB
    request must fall back to the alternate recovery site (real OV-1 contingency). Teaches that
    authority hand-back has a *routing* dimension, not just a role dimension.
@@ -287,9 +374,12 @@ code should be needed — this is UI over existing knobs; if a knob isn't reacha
 ## WP9 — Housekeeping (batch with any other WP) **DONE**
 
 - Favicon 404 on every load (`packages/game/index.html` has no icon link).
-- `CLAUDE.md` dev-environment note is **backwards**: `/usr/bin/chromium` IS installed,
-  `google-chrome-stable` is NOT. Fix the note (and check the sibling games' CLAUDE.md files for
-  the same claim).
+- ~~`CLAUDE.md` dev-environment note is **backwards**: `/usr/bin/chromium` IS installed,
+  `google-chrome-stable` is NOT.~~ **This item was itself wrong, and the WP9 fix made the note
+  wrong in the opposite direction.** Verified 2026-07-19 with `which`:
+  **`google-chrome-stable` IS installed; `chromium` is NOT.** CLAUDE.md now says so, dated, with
+  an instruction to re-check rather than trust the prose. **Still to do: check the sibling games'
+  CLAUDE.md files for the same claim** — that half was never done.
 - Gate the Inspector's queue-policy segment (Class/FIFO/Deadline) to links where policy is
   meaningful — it currently renders on clean links and the VI self-loop, where it does nothing
   observable; likewise "Prioritise C2 reply" shows at T+0 before the contingency exists.

@@ -30,7 +30,8 @@ export const PHASES: Phase[] = [
     name: "Launch",
     interfaces: "★C2 (LRE) · VI · MS-PNT",
     teaches: "LRE role authority is narrow — and its link is short-range and clean.",
-    blurb: "ACPs take off under LRE oversight; VI flies Waypoint/HSA and PNT initialises.",
+    blurb:
+      "ACPs take off under LRE (Launch and Recovery Element) oversight; VI flies Waypoint/HSA and PNT initialises.",
     playable: true,
     scenarioId: "phase1",
     hotspot: [72, 398, 180, 80],
@@ -41,7 +42,8 @@ export const PHASES: Phase[] = [
     name: "Hold",
     interfaces: "VI★ · MS · light C2",
     teaches: "VI is free; OTA costs. The idle baseline before the team forms.",
-    blurb: "Fly a hold pattern and await QB arrival, sending periodic status to LRE.",
+    blurb:
+      "Fly a hold pattern and await QB (Quarterback) arrival, sending periodic status to the LRE.",
     playable: true,
     scenarioId: "phase2",
     hotspot: [150, 258, 168, 60],
@@ -52,7 +54,7 @@ export const PHASES: Phase[] = [
     name: "Team formation",
     interfaces: "★P2P · C2",
     teaches: "Leader election has a real message cost — the first true P2P load.",
-    blurb: "Join a package and elect a leader (MA_PackageManagementCommandMT).",
+    blurb: "Elect a package leader over P2P (MA_LeaderUpdateRequestMT).",
     playable: true,
     scenarioId: "phase3",
     hotspot: [618, 270, 230, 78],
@@ -63,7 +65,8 @@ export const PHASES: Phase[] = [
     name: "Transit",
     interfaces: "★P2P · VI · C2",
     teaches: "Sustained P2P heartbeat plus formation keeping to the Mission Area.",
-    blurb: "Transit in formation; provide/receive formation status and seed the COP.",
+    blurb:
+      "Transit in formation; provide/receive formation status and seed the COP (Common Operating Picture).",
     playable: true,
     scenarioId: "phase4",
     hotspot: [460, 222, 175, 66],
@@ -86,7 +89,7 @@ export const PHASES: Phase[] = [
     interfaces: "★C2 (gated) · ★P2P · one contingency",
     teaches: "A gated round-trip under time pressure — the dramatic peak.",
     blurb:
-      "Push a deadline-critical strike-approval reply through a degraded return link before the WEZ window closes.",
+      "Push a deadline-critical strike-approval reply through a degraded return link before the WEZ (Weapon Engagement Zone) window closes.",
     playable: true,
     scenarioId: "phase6",
     hotspot: [560, 26, 430, 80],

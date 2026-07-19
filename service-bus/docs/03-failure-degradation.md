@@ -25,16 +25,27 @@ direction carries four first-class parameters, all tunable per scenario:
 Queueing discipline is **player-configurable per link** (priority by interface class, FIFO, or deadline-
 earliest-first) — this is the actual strategic surface of the throughput game.
 
-## 2. Per-message lifecycle (taken verbatim from the MS-DMS interaction)
+## 2. Per-message lifecycle (from the MS-DMS interaction; `SENT` is ours — see `01` item 21)
 Each message token, per destination, walks the real `MA_TxDataPayloadCommandStatusMT` states:
 
 ```
-PENDING ──► EXECUTING ──► SENT (delivered, ack received)
+PENDING ──► EXECUTING ──► SENT (delivered)
    │             │
-   │             ├─► FAIL_UNSENT        (loss/lost-comms before it left the queue)
+   │             ├─► FAIL_UNSENT        (loss/lost-comms; a final status)
    │             └─► FAIL_MISSING_ACK   (left, but no delivery confirmation — TCP-style)
+   │
+   ├─► FAIL_UNSENT   (removed from the queue before it ever executed)
    └─► (cancel/update only legal before EXECUTING)
 ```
+
+`FAIL_UNSENT` sits on **both** edges in the real interaction: the MS Volume has it both as the
+outcome of a message being removed from the queue (before `EXECUTING`) and as one of the four
+final statuses.
+
+**`SENT` is a game state, not an A-GRA one** (`[S]`, `01` item 21). A-GRA's four finals are
+`FAIL_UNSENT`, `FAIL_MISSING_ACK`, `SUCCESS_NO_ACK_EXPECTED` and `SUCCESS_RECEIVED_ACK`; `SENT`
+merges the last two. The volume notes DDS exposes no standard ack, so `SUCCESS_NO_ACK_EXPECTED`
+"may be the most common status" — the honest default is *sent, no ack expected*.
 
 - `FAIL_UNSENT` = you find out early; cheap to retry.
 - **`FAIL_MISSING_ACK` is the insidious one** and the heart of the drama: the *request* may have arrived

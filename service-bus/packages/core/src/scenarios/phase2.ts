@@ -153,7 +153,7 @@ export const phase2: ScenarioDef = {
       spawn(s, { type: "MA_CommTeamReportMT", cls: "C2", route: ["status"], leg: "oneway" });
     }
     if (s.tick % VI_PERIOD === 0) {
-      spawn(s, { type: "MA_VehicleCommandMT", cls: "VI", route: ["vi"], leg: "oneway" });
+      spawn(s, { type: "MA_FlightCommandMT", cls: "VI", route: ["vi"], leg: "oneway" });
     }
   },
 

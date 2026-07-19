@@ -15,7 +15,7 @@
  * Links (directed):
  *   cmdReq   ACP-1 -> LRE   C2   request: "request takeoff authorisation"
  *   cmdRep   LRE -> ACP-1   C2   reply:   MA_TaskStatusMT (authorised)
- *   vi       ACP-1 -> ACP-1 VI   on-platform MA_VehicleCommandMT — never crosses the air [S]
+ *   vi       ACP-1 -> ACP-1 VI   on-platform MA_FlightCommandMT — never crosses the air [S]
  *
  * No degradation, no deadline, no COP. Essentially unloseable — teaching by
  * observation, not punishment.
@@ -146,7 +146,7 @@ export const phase1: ScenarioDef = {
     // Free on-platform VI loop — fires forever at no air cost, always delivered.
     // Starts at tick 1 so on-platform-free is raised before the takeoff round trip wins.
     if (s.tick % VI_PERIOD === 1) {
-      spawn(s, { type: "MA_VehicleCommandMT", cls: "VI", route: ["vi"], leg: "oneway" });
+      spawn(s, { type: "MA_FlightCommandMT", cls: "VI", route: ["vi"], leg: "oneway" });
       raiseBeat(s, phase1, "on-platform-free");
     }
   },

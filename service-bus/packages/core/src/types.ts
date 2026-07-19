@@ -15,11 +15,18 @@
 export type InterfaceClass = "C2" | "P2P" | "VI" | "MS" | "MP" | "MD";
 
 /**
- * DMS message lifecycle — verbatim from MA_TxDataPayloadCommandStatusMT.
+ * DMS message lifecycle, from MA_TxDataPayloadCommandStatusMT's
+ * DestinationTransmissionStatus (MS Volume, §DMS).
  * PENDING (in queue, cancel/update legal) -> EXECUTING (left queue, in flight) ->
- * SENT (delivered + confirmed) | FAIL_UNSENT (lost before leaving queue, cheap
- * retry) | FAIL_MISSING_ACK (left, no delivery confirmation — the insidious one,
- * core drama on a return leg).
+ * SENT | FAIL_UNSENT (lost before leaving queue, cheap retry) | FAIL_MISSING_ACK
+ * (left, no delivery confirmation — the insidious one, core drama on a return leg).
+ *
+ * [S] SENT is ours, not A-GRA's: the standard defines FOUR finals, splitting success
+ * into SUCCESS_NO_ACK_EXPECTED (UDP-like, no confirmation available) and
+ * SUCCESS_RECEIVED_ACK (TCP-like, confirmed). We collapse both to SENT. The volume
+ * notes DDS exposes no standard ack, so SUCCESS_NO_ACK_EXPECTED "may be the most
+ * common status" — i.e. the real default is weaker than our confident SENT.
+ * See docs/01-mechanics-to-agra-mapping.md item 21; surfaced in the Field Guide.
  */
 export type Lifecycle = "PENDING" | "EXECUTING" | "SENT" | "FAIL_UNSENT" | "FAIL_MISSING_ACK";
 
@@ -67,7 +74,7 @@ export type MessageType =
   | "MA_TaskCommandMT" // command leg of a task round trip (takeoff/landing/RTB) (C2)
   | "MA_TaskStatusMT" // status reply of a task round trip (C2)
   | "MA_TaskMT" // formation/teaming task, e.g. FollowFormation heartbeat (P2P)
-  | "MA_VehicleCommandMT" // [S] on-platform VI command (HSA/Waypoint) — never crosses the air
+  | "MA_FlightCommandMT" // on-platform VI command (HSA_CSA / WaypointFollowing) — never crosses the air
   | "MA_LeaderUpdateRequestMT" // leader-election payload (P2P)
   | "MA_CommAvailableEndpointsMT"; // peer-join / endpoint advertisement (P2P)
 

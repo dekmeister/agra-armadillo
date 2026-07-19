@@ -1,11 +1,11 @@
 <script lang="ts">
 import { getScenario } from "@service-bus/core";
 import { copColor, mmss, wezRemaining } from "../lib/sim-adapter.ts";
-import type { ModalKind } from "../lib/ui.ts";
+import type { OverlayKind } from "../lib/ui.ts";
 import { game } from "../lib/store.svelte.ts";
 import Legend from "./Legend.svelte";
 
-const { onOpen }: { onOpen: (kind: ModalKind) => void } = $props();
+const { onOpen }: { onOpen: (kind: OverlayKind) => void } = $props();
 
 const gs = $derived(game.gs);
 const title = $derived(getScenario(gs.scenarioId).title);
@@ -36,7 +36,7 @@ const wezState = $derived(
     <span class="wordmark">Service&nbsp;Bus</span>
     <nav>
       <button onclick={() => onOpen("levels")}>Levels</button>
-      <button onclick={() => onOpen("background")}>Background</button>
+      <button onclick={() => onOpen("fieldguide")}>Field Guide</button>
       <button onclick={() => onOpen("help")}>Help</button>
     </nav>
     <span class="phase"><span class="dot"></span>{title}</span>
