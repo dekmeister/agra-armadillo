@@ -14,16 +14,35 @@
   --sub: #969ba2;
   --faint: #c2c6cc;
 
+  /* Interface-class hues — one dedicated hue per L1 class, so class never borrows a
+     semantic role. WP4: VI/MS/MD/MP previously reused --good / --sub / --amber / --gold,
+     which put an MD token in the same colour as a contested link and an MP token in the
+     colour reserved for the authority seal. */
   --c2: #2f6df0; /* C2 = blue square */
   --p2p: #8b5cf6; /* P2P = violet circle */
+  --vi: #0f9488; /* VI = teal — on-platform, never a rail */
+  --ms: #0369a1; /* MS = deep cyan — mission systems / sensors */
+  --md: #db2777; /* MD = magenta — mission data (bulk) */
+  --mp: #7c3f16; /* MP = umber — mission plan */
+  --ms-rail: #dedbd2; /* the thin MS relay rail (a desaturated --ms) */
 
   --good: #cfccc3; /* GOOD link line */
   --bad: #ef9d18; /* BAD link (amber, marching) */
 
   --green: #16b372; /* confirmed good */
+  /* Amber means DEGRADATION and nothing else: BAD link, FAIL_MISSING_ACK, hot queue
+     badge. Same hex as --bad by design — they are one role under two names. */
   --amber: #ef9d18; /* degraded / unconfirmed */
   --red: #e6473d; /* hard fail */
   --gold: #cf9a2e; /* authority seal only */
+
+  /* The OTA field. Both weights stay in the C2 blue hue: the medium is the medium.
+     Tinting the contested field amber would be wrong — the *field* isn't degraded,
+     individual *links* are (and on L3/L7 they are loss-free until the partition). */
+  --mesh-fill: rgba(47, 109, 240, 0.05);
+  --mesh-stroke: rgba(47, 109, 240, 0.35);
+  --mesh-fill-clean: rgba(47, 109, 240, 0.028);
+  --mesh-stroke-clean: rgba(47, 109, 240, 0.18);
 
   --tint-green: #e7f7ef;
   --tint-red: #fdeceb;
@@ -117,6 +136,15 @@ button {
   }
   50% {
     opacity: 0.6;
+  }
+}
+/* The rerouted reply's alarm standing down (WP4.1). */
+@keyframes handover {
+  from {
+    stroke: var(--amber);
+  }
+  to {
+    stroke: var(--c2);
   }
 }
 @keyframes glide {

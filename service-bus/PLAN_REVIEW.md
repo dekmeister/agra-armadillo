@@ -194,7 +194,55 @@ a reader can answer "which interfaces cross the contested air?" from the guide a
 
 ---
 
-## WP4 — Board truthfulness (visual fixes that currently mislead)
+## WP4 — Board truthfulness (visual fixes that currently mislead) **DONE** (2026-07-19)
+
+> **Outcome, and what a later session needs to know.** All six items shipped. 103 tests
+> (was 85) — the three new files are the repo's **first view-layer tests**; `layout.ts`,
+> `sim-adapter.ts` and the new `lib/palette.ts` are pure, so they run in the same node env
+> as core.
+>
+> **Two items in the brief below were wrong; both are corrected in the implementation.**
+> 1. **"The legend covers a third of the board" was stale** — `Legend.svelte` had already
+>    become a dismissible header popover. Only the *contents* half was real, and that is
+>    what got fixed.
+> 2. **Do not hand-set a contested/clean tone per level.** The brief groups 1/2/8 as clean
+>    and 3/4/5/7 as contested; the sim disagrees *both ways* — Phase 2's LRE link is
+>    genuinely bursty, while Phases 4 and 5 are **loss-free by construction** (their
+>    pressure is bandwidth and queue discipline, not the air). The field's contested weight
+>    is therefore **derived live** from `linkView().bad`, so it can never contradict the
+>    rails drawn on top of it. Consequence: L3/L7 show an uncontested field until their
+>    partition fires, and L4/L5 never contest. That is correct, not a bug.
+>
+> **New drift guards — these will fail you if you move geometry, and that is the point:**
+> - `packages/game/test/layout.test.ts` asserts, for **every** level, that every OTA rail
+>   lies **inside** the mesh hull and every VI self-loop lobe lies **outside** it. Those two
+>   are teaching claims about A-GRA topology, not cosmetics: a hull that drifts a few pixels
+>   starts asserting that VI crosses the contested air. It also pins that only boards with
+>   **>= 3 peering platforms** may call the field a *mesh* — Phase 4 is two platforms and one
+>   link and is labelled `OTA · P2P formation link` deliberately.
+> - `packages/game/test/palette.test.ts` forbids any interface class reusing `--amber`,
+>   `--bad`, `--gold`, `--good`, `--sub`, `--red` or `--green`. Amber now means degradation
+>   **only** (contested link, `FAIL_MISSING_ACK`, hot queue badge).
+> - `packages/game/test/sim-adapter.test.ts` asserts the reply **never** reverts to the
+>   `missing` alarm on any tick after a reroute, and that every link's selection highlight
+>   traces byte-identical path/width to `linkView` — the anti-drift pairing for WP4.5a.
+>
+> **Gotchas for the next session.** `selfLoopPath`'s lobe extends to `r*(1 + sqrt(3)/2)`
+> past the node rim (x ~ 619 on the pair boards, **not** the ~594 that `selfLoopPoint`
+> suggests) — use the exported `selfLoopBBox`, don't re-derive it. `MeshHull` gained
+> required `label`/`labelPos`; Phase 6's hull rect is byte-unchanged and still
+> screenshot-locked. `CLASS_FILL`/`SHAPE` moved out of `Graph.svelte`/`sim-adapter.ts` into
+> `lib/palette.ts`, which `Legend.svelte` now iterates — add a class there and the legend
+> updates itself. New `[S]` items **22-25** in `docs/01`.
+>
+> **Left open on purpose:** after a reroute the board is calm but the **Objective card still
+> reads `STALLED`** — same family of complaint as WP4.1, but it is sim state (`gs.objective`),
+> not a board visual, so it belongs to WP1.3/WP6 rather than here. `Debrief.svelte:80` still
+> detects reroute by regexing the event log (that is **WP6.3**); the new code derives it
+> structurally from `reply.route.length > 1` instead.
+
+<details>
+<summary>Original WP4 brief (kept for reference)</summary>
 
 These aren't polish — each one contradicts the model the game is trying to teach.
 
@@ -233,6 +281,8 @@ These aren't polish — each one contradicts the model the game is trying to tea
 
 **Accept:** screenshot pass over all 8 phases: no red alarm on a recovering reply, every colour
 on the board is in the legend, mesh field present wherever traffic crosses the air.
+
+</details>
 
 ---
 

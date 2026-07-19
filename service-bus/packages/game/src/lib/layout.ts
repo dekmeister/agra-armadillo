@@ -19,22 +19,43 @@ export interface Pt {
   x: number;
   y: number;
 }
+/**
+ * The OTA field: the region every off-platform hop crosses. Present on EVERY layout —
+ * all eight levels put traffic over the air, and rendering the air on only one of them
+ * (WP4.2) hid the game's central metaphor and gutted the L1/L2 "VI is free, OTA costs"
+ * lesson.
+ *
+ * `label` describes what the medium IS and is static; the *contested* treatment is
+ * derived per-frame in the view from live link state, so the field can never contradict
+ * the rails drawn on top of it. See `docs/01` items 22-23.
+ */
 export interface MeshHull {
   x: number;
   y: number;
   w: number;
   h: number;
   rx: number;
+  /**
+   * What this medium is. Only boards where three or more platforms actually peer may
+   * call it a *mesh* — Phase 4 is two platforms and one link, and labelling that a mesh
+   * would imply peering the topology does not have (guard rail).
+   */
+  label: string;
+  /** Caption corner — `bl` unless a node occupies the bottom-left of the hull. */
+  labelPos: "tl" | "bl";
 }
 
 export interface ScenarioLayout {
   nodes: Record<string, NodeGeom>;
   viewBox: string;
-  /** The contested-OTA mesh backdrop, when the topology is genuinely an OTA mesh. */
+  /** The OTA field backdrop. */
   mesh?: MeshHull;
   /** Where DMS ports point (toward the mesh interior). Defaults to the node centroid. */
   meshCenter: Pt;
 }
+
+/** Label for the boards where >= 3 platforms genuinely peer over the DDS/RTPS mesh. */
+const MESH_LABEL = "DMS / DDS-RTPS mesh — no central broker";
 
 /** Lateral lane offset (px) by interface class — splits opposing links onto two rails. */
 const LANE_BY_CLS: Record<InterfaceClass, number> = {
@@ -96,6 +117,29 @@ const TRI_NODES: Record<string, NodeGeom> = {
   acp3: { x: 708, y: 340, r: 42 },
 };
 
+// L4 — two platforms, one capped link.
+const PHASE4_NODES: Record<string, NodeGeom> = {
+  acp1: { x: 380, y: 210, r: 46 },
+  acp2: { x: 740, y: 210, r: 44 },
+};
+
+// L5 — leader over three followers (COP fan-out).
+const PHASE5_NODES: Record<string, NodeGeom> = {
+  acp1: { x: 540, y: 92, r: 46 },
+  acp2: { x: 336, y: 340, r: 38 },
+  acp3: { x: 540, y: 340, r: 38 },
+  acp4: { x: 744, y: 340, r: 38 },
+};
+
+// L7 — authorities up top (QB/LRE), ACP-1 centre, the orphan pair below.
+const PHASE7_NODES: Record<string, NodeGeom> = {
+  qb: { x: 372, y: 84, r: 40 },
+  lre: { x: 708, y: 84, r: 40 },
+  acp1: { x: 540, y: 236, r: 46 },
+  acp2: { x: 400, y: 388, r: 38 },
+  acp3: { x: 680, y: 388, r: 38 },
+};
+
 function mk(nodes: Record<string, NodeGeom>, o: Partial<ScenarioLayout> = {}): ScenarioLayout {
   return {
     nodes,
@@ -103,6 +147,56 @@ function mk(nodes: Record<string, NodeGeom>, o: Partial<ScenarioLayout> = {}): S
     mesh: o.mesh,
     meshCenter: o.meshCenter ?? centroid(nodes),
   };
+}
+
+/**
+ * An OTA field derived from the node bounding box, inflated by `pad`. `left` overrides
+ * the left edge (caption room) and `right` clamps it — the pair boards clamp to the ACP
+ * rim so the on-platform VI lobe falls visibly OUTSIDE the field, which is the whole
+ * point of L1/L2. `layout.test.ts` pins both containments.
+ */
+function hull(
+  nodes: Record<string, NodeGeom>,
+  o: {
+    pad?: number;
+    left?: number;
+    right?: number;
+    rx?: number;
+    label: string;
+    labelPos?: "tl" | "bl";
+  },
+): MeshHull {
+  const pad = o.pad ?? 30;
+  const ns = Object.values(nodes);
+  const x0 = o.left ?? Math.min(...ns.map((n) => n.x - n.r)) - pad;
+  const x1 = o.right ?? Math.max(...ns.map((n) => n.x + n.r)) + pad;
+  const y0 = Math.min(...ns.map((n) => n.y - n.r)) - pad;
+  const y1 = Math.max(...ns.map((n) => n.y + n.r)) + pad;
+  return {
+    x: r(x0),
+    y: r(y0),
+    w: r(x1 - x0),
+    h: r(y1 - y0),
+    rx: o.rx ?? 40,
+    label: o.label,
+    labelPos: o.labelPos ?? "bl",
+  };
+}
+
+/**
+ * L1/L2/L8's field: a narrow vertical corridor between the LRE and ACP-1. The right edge
+ * is clamped to ACP-1's rim (x = 566) because the VI self-loop lobe starts exactly there
+ * and runs out to x ~ 619 — so the loop hugs the OUTSIDE of the field. The caption goes
+ * top-left; a bottom-left caption would run straight through ACP-1.
+ */
+function pairHull(): MeshHull {
+  return hull(PAIR_NODES, {
+    left: 404, // caption room only — nothing is drawn left of 474
+    right: 566, // = acp1.x + acp1.r, tangent to the rim, so the VI lobe sits outside
+    rx: 28,
+    label: "OTA · short-range C2 (LRE)",
+    labelPos: "tl",
+  });
 }
 
 // Phase 6 — exact original geometry (screenshot-locked MVP slice); also the fallback.
@@ -114,43 +208,35 @@ const PHASE6_LAYOUT: ScenarioLayout = {
     acp3: { x: 800, y: 350, r: 36 },
   },
   viewBox: "240 0 660 424",
-  mesh: { x: 250, y: 14, w: 640, h: 402, rx: 44 },
+  // Screenshot-locked: these exact numbers predate WP4 and are deliberately NOT
+  // regularised to `hull()` — they already satisfy the convention.
+  mesh: { x: 250, y: 14, w: 640, h: 402, rx: 44, label: MESH_LABEL, labelPos: "bl" },
   meshCenter: { x: 560, y: 232 },
 };
 
 export const LAYOUTS: Record<string, ScenarioLayout> = {
   phase6: PHASE6_LAYOUT,
 
-  // L1/L2/L8 — the VI self-loop needs room to the right of ACP-1.
-  phase1: mk(PAIR_NODES, { viewBox: frame(PAIR_NODES, 84, { r: 96 }) }),
-  phase2: mk(PAIR_NODES, { viewBox: frame(PAIR_NODES, 84, { r: 96 }) }),
-  phase8: mk(PAIR_NODES, { viewBox: frame(PAIR_NODES, 84, { r: 96 }) }),
+  // L1/L2/L8 — the VI self-loop needs room to the right of ACP-1, outside the field.
+  phase1: mk(PAIR_NODES, { viewBox: frame(PAIR_NODES, 84, { r: 96 }), mesh: pairHull() }),
+  phase2: mk(PAIR_NODES, { viewBox: frame(PAIR_NODES, 84, { r: 96 }), mesh: pairHull() }),
+  phase8: mk(PAIR_NODES, { viewBox: frame(PAIR_NODES, 84, { r: 96 }), mesh: pairHull() }),
 
-  // L3 — the P2P mesh is the contested medium.
-  phase3: mk(TRI_NODES),
+  // L3 — three platforms peering: a genuine mesh. Caption goes top-left: the triangle
+  // puts ACP-2 in the bottom-left corner, and its selection ring runs over the text.
+  phase3: mk(TRI_NODES, { mesh: hull(TRI_NODES, { label: MESH_LABEL, labelPos: "tl" }) }),
 
-  // L4 — two platforms, one capped link.
-  phase4: mk({
-    acp1: { x: 380, y: 210, r: 46 },
-    acp2: { x: 740, y: 210, r: 44 },
+  // L4 — two platforms, one capped link. NOT a mesh: two peers do not make a pub-sub
+  // mesh, and labelling it one would imply peering this topology does not have.
+  phase4: mk(PHASE4_NODES, {
+    mesh: hull(PHASE4_NODES, { rx: 34, label: "OTA · P2P formation link" }),
   }),
 
   // L5 — leader over three followers (COP fan-out).
-  phase5: mk({
-    acp1: { x: 540, y: 92, r: 46 },
-    acp2: { x: 336, y: 340, r: 38 },
-    acp3: { x: 540, y: 340, r: 38 },
-    acp4: { x: 744, y: 340, r: 38 },
-  }),
+  phase5: mk(PHASE5_NODES, { mesh: hull(PHASE5_NODES, { label: MESH_LABEL }) }),
 
   // L7 — authorities up top (QB/LRE), ACP-1 centre, the orphan pair below.
-  phase7: mk({
-    qb: { x: 372, y: 84, r: 40 },
-    lre: { x: 708, y: 84, r: 40 },
-    acp1: { x: 540, y: 236, r: 46 },
-    acp2: { x: 400, y: 388, r: 38 },
-    acp3: { x: 680, y: 388, r: 38 },
-  }),
+  phase7: mk(PHASE7_NODES, { mesh: hull(PHASE7_NODES, { label: MESH_LABEL }) }),
 };
 
 /** The layout for a scenario id (falls back to Phase 6). */
@@ -220,9 +306,76 @@ export function selfLoopPath(node: NodeGeom): string {
   return `M ${r(cx)} ${r(cy - rr * 0.5)} A ${r(rr)} ${r(rr)} 0 1 1 ${r(cx)} ${r(cy + rr * 0.5)}`;
 }
 
-/** Token position for a self-loop, near the outer edge of the lobe. */
+/** Token position for a self-loop: inside the lobe, near its centre. */
 export function selfLoopPoint(node: NodeGeom): Pt {
   return { x: node.x + node.r + node.r * 0.62, y: node.y };
+}
+
+/**
+ * Bounding box of the arc `selfLoopPath` actually draws. Exported rather than re-derived
+ * at the call sites because the arc centre is the subtle part: the chord runs vertically
+ * at `x = node.x + node.r` with length `rr`, and large-arc=1/sweep=1 selects the centre
+ * `rr*sqrt(3)/2` to its RIGHT, so the lobe reaches `rr*(1 + sqrt(3)/2)` past the rim —
+ * markedly further than the token point suggests. The pair boards' mesh hull is clamped
+ * against this box so the on-platform loop never overlaps the OTA field.
+ */
+export function selfLoopBBox(node: NodeGeom): { x: number; y: number; w: number; h: number } {
+  const rr = node.r * 0.62;
+  const x0 = node.x + node.r; // the chord
+  const cx = x0 + (rr * Math.sqrt(3)) / 2; // arc centre
+  return { x: x0, y: node.y - rr, w: cx + rr - x0, h: 2 * rr };
+}
+
+/** Caption anchor for a self-loop: just outboard of the lobe, vertically centred. */
+export function selfLoopLabelPoint(node: NodeGeom): Pt {
+  const b = selfLoopBBox(node);
+  return { x: r(b.x + b.w + 10), y: node.y + 4 };
+}
+
+/** Unit normal of a link's rail — the direction lane/sidecar offsets push along. */
+export function railNormal(nodes: Record<string, NodeGeom>, from: string, to: string): Pt {
+  const f = nodes[from];
+  const t = nodes[to];
+  if (!f || !t || from === to) return { x: 1, y: 0 };
+  const dx = t.x - f.x;
+  const dy = t.y - f.y;
+  const len = Math.hypot(dx, dy) || 1;
+  return { x: -dy / len, y: dx / len };
+}
+
+/** Length of the drawn rail (between the rim-trimmed endpoints). */
+function railLength(nodes: Record<string, NodeGeom>, from: string, to: string): number {
+  const { a, b } = linkEndpoints(nodes, from, to);
+  return Math.hypot(b.x - a.x, b.y - a.y);
+}
+
+/** Arc-length from the source rim at which a queue stack sits. */
+const STACK_PX = 34;
+/** Envelope (beyond a node's radius) that the stack token + its badge must clear. */
+const RIM_CLEAR = 24;
+
+/**
+ * Where along a rail a queue stack sits, as a fraction. A fixed *fraction* (the old
+ * `t = 0.3`) means wildly different pixel gaps across the eight boards — rails run from
+ * ~150px to ~360px — which is why Phase 5's stacks collided with ACP-1's rim (WP4.6).
+ * So: a fixed pixel offset, then walk forward until the token clears every node circle.
+ * The test asserts the postcondition (clearance), not the constant.
+ */
+export function stackFrac(
+  nodes: Record<string, NodeGeom>,
+  from: string,
+  to: string,
+  off = 0,
+): number {
+  if (from === to) return 0.3; // self-loops ignore `t` entirely
+  const len = railLength(nodes, from, to) || 1;
+  const start = Math.min(0.45, Math.max(0.12, STACK_PX / len));
+  const clears = (t: number): boolean => {
+    const p = alongLink(nodes, from, to, t, off);
+    return Object.values(nodes).every((n) => Math.hypot(p.x - n.x, p.y - n.y) >= n.r + RIM_CLEAR);
+  };
+  for (let t = start; t <= 0.5; t += 0.02) if (clears(t)) return t;
+  return 0.5; // mid-rail is the best available on a very short link
 }
 
 /**

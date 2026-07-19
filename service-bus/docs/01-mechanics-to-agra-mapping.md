@@ -161,5 +161,35 @@ real P2P links) — still limited to Raft + Static.
     `PENDING` and `EXECUTING`, *and* as a final status — where `03`'s diagram previously drew only the
     latter.
 
+## Board visual notes (WP4)
+
+22. **The OTA field is drawn as a bounded region containing the platforms.** Real RF is unbounded;
+    the hull is a readability device and carries **no range, adjacency or membership semantics**. It
+    must not be read as an enclave, a coverage footprint, or "these platforms can reach each other
+    and nobody else" — and above all not as the central broker the standard says does not exist. On
+    boards where three or more platforms genuinely peer it is labelled *DMS / DDS-RTPS mesh — no
+    central broker*; Phase 4 is two platforms and one link and is deliberately labelled *OTA · P2P
+    formation link* instead, because calling that a mesh would imply peering the topology lacks
+    (`packages/game/test/layout.test.ts` enforces the distinction). On L1/L2/L8 the field's right
+    edge is clamped to the ACP rim precisely so the on-platform VI self-loop falls **outside** it —
+    also pinned by test. (`[S]`; presentational only, extends the `DMS mesh` row of §1.)
+23. **The field's "contested" weight is derived from live link state, not authored per level.** It
+    lights up exactly when some off-platform link is currently contested — the same
+    `linkView().bad` the rails use — so the field can never contradict the rails drawn on top of it.
+    Consequence, and it is the honest one: L3 and L7 render an *uncontested* field until their
+    partition fires, and L4/L5 never contest at all because their links are loss-free by design
+    (item 17) — their pressure is bandwidth and queue discipline, not the air. (`[S]`; view-only.)
+24. **`REROUTED · EN ROUTE` is a view state, not a DMS lifecycle value.** The relayed reply is
+    `PENDING`/`EXECUTING` on hop 0 of a two-hop route; the badge reports `route.length > 1`, not any
+    A-GRA field. The five game lifecycle states are unchanged, and this adds no sixth. It exists
+    because `MISSING ACK` was the *fallback* rendering, so a correctly-rerouted reply kept a red
+    alarm while recovering — the board punished the right decision. (`[S]`; vocabulary only; see
+    also item 21 on `SENT` already being the game's own word.)
+25. **Token colour and shape are a game legend, not an A-GRA artefact.** Six hues, one per L1 class,
+    with C2 as the only square. The *class assignment* of each message is real; the encoding is
+    ours. Amber is reserved for degradation alone (contested link, `FAIL_MISSING_ACK`, hot queue
+    backlog) — `packages/game/test/palette.test.ts` forbids any class reusing it, or `--gold`, which
+    means authority and nothing else. (`[S]`.)
+
 **Nothing in this list alters topology, endpoints, interface assignment, or authority gating** — the
 four things the guard rail protects.

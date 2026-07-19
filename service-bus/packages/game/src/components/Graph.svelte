@@ -1,12 +1,13 @@
 <script lang="ts">
-import type { InterfaceClass } from "@service-bus/core";
 import { fade } from "svelte/transition";
 import { dmsPort, layoutFor } from "../lib/layout.ts";
+import { CLASS_FILL } from "../lib/palette.ts";
 import {
   heroReply,
   type Highlight,
   highlightFor,
   linkView,
+  selfLoopLabels,
   type TokenVM,
   tokens,
 } from "../lib/sim-adapter.ts";
@@ -26,27 +27,30 @@ const linkIds = $derived(
     .map((l) => l.id),
 );
 
+// The OTA field renders "contested" only while an off-platform link actually is —
+// derived from the same `linkView().bad` the rails use, so the field can never
+// contradict the rails drawn on top of it. VI self-loops are on-platform: excluded.
+const loopLabels = $derived(selfLoopLabels(gs));
+const meshContested = $derived(
+  Object.values(gs.links).some((l) => l.from !== l.to && linkView(gs, l.id)?.bad),
+);
+
 const sel = $derived(game.sel);
-// A token's ring rides its live (glided) position from `toks`/`hero`; nodes and links defer
+// The hero's ring is NOT computed here. It is rendered inside the hero's own <g>, which
+// carries a 0.45s `.heroslide` transform transition — a ring positioned out here from the
+// instantaneous hero.x/hero.y detached from the glyph for the whole slide after a reroute
+// and hung around empty space (WP4.5b). Sharing one transform makes that impossible.
+const heroSelected = $derived(sel?.type === "token" && !!hero && hero.id === sel.id);
+// Other tokens' rings ride their live (glided) position from `toks`; nodes and links defer
 // to highlightFor. Matching `headId ?? id` mirrors tokClick, so queue stacks ring correctly.
 const hl = $derived.by((): Highlight | null => {
   if (sel?.type === "token") {
-    if (hero && hero.id === sel.id) return { kind: "circle", cx: hero.x, cy: hero.y, r: 28 };
+    if (heroSelected) return null;
     const t = toks.find((tk) => (tk.headId ?? tk.id) === sel.id);
     return t ? { kind: "circle", cx: t.x, cy: t.y, r: 16 } : null;
   }
   return highlightFor(gs, sel);
 });
-
-/** Token fill by interface class (shape already distinguishes C2 as a square). */
-const CLASS_FILL: Record<InterfaceClass, string> = {
-  C2: "var(--c2)",
-  P2P: "var(--p2p)",
-  VI: "var(--good)",
-  MS: "var(--sub)",
-  MD: "var(--amber)",
-  MP: "var(--gold)",
-};
 
 function nodeCat(id: string): { ring: string; sub: string; subColor: string } {
   const n = gs.nodes[id];
@@ -88,12 +92,23 @@ function key(e: KeyboardEvent, fn: () => void): void {
        each platform runs its own DMS instance). Painted first so links sit on top.
        Only shown for scenarios whose topology is genuinely an OTA mesh. -->
   {#if layout.mesh}
-    <g class="mesh" pointer-events="none">
-      <rect x={layout.mesh.x} y={layout.mesh.y} width={layout.mesh.w} height={layout.mesh.h}
-        rx={layout.mesh.rx} />
-      <text x={layout.mesh.x + 16} y={layout.mesh.y + layout.mesh.h - 14} class="meshlabel">
-        DMS / DDS-RTPS mesh — contested OTA [S]
+    {@const m = layout.mesh}
+    <g class="mesh" class:clean={!meshContested} pointer-events="none">
+      <rect x={m.x} y={m.y} width={m.w} height={m.h} rx={m.rx} />
+      <text x={m.x + 16} y={m.labelPos === "tl" ? m.y + 20 : m.y + m.h - 14} class="meshlabel">
+        {m.label}{meshContested ? " · contested" : ""} [S]
       </text>
+    </g>
+  {/if}
+
+  <!-- A selected link glows along its own rail path, painted UNDER the links so the rail
+       itself stays crisp on top of its halo. -->
+  {#if hl?.kind === "rail"}
+    <g pointer-events="none" class="selrail">
+      <path d={hl.d} fill="none" stroke="var(--c2)" stroke-width={hl.width + 12}
+        stroke-linecap="round" stroke-opacity="0.22" />
+      <path d={hl.d} fill="none" stroke="var(--ink)" stroke-width={hl.width + 3}
+        stroke-linecap="round" stroke-opacity="0.35" />
     </g>
   {/if}
 
@@ -109,7 +124,7 @@ function key(e: KeyboardEvent, fn: () => void): void {
           fill="none"
           stroke-linecap="round"
           stroke-width={lv.width}
-          stroke={lv.bad ? "var(--bad)" : lv.cls === "MS" ? "#dedbd2" : "var(--good)"}
+          stroke={lv.bad ? "var(--bad)" : lv.cls === "MS" ? "var(--ms-rail)" : "var(--good)"}
           stroke-dasharray={lv.bad ? "3 16" : "none"}
           class:marching={lv.bad}
           marker-end={lv.cls === "MS" ? "none" : lv.bad ? "url(#aBad)" : "url(#aGood)"}
@@ -118,27 +133,30 @@ function key(e: KeyboardEvent, fn: () => void): void {
     {/if}
   {/each}
 
+  <!-- On-platform (self-loop) links, named on the board. The VI loop is the object of
+       Phase 1/2's headline lesson — "VI is free and never crosses the air" — and was an
+       anonymous grey lobe until you clicked it (WP4.4). -->
+  {#each loopLabels as l (l.id)}
+    <text x={l.x} y={l.y} class="looplabel">{l.text}</text>
+  {/each}
+
   <!-- C2 lane labels for Phase 6's QB↔ACP-1 round trip (its two pipes). -->
   {#if gs.scenarioId === "phase6"}
     <text x="560" y="124" class="railLabel" text-anchor="middle">request ▴</text>
     <text x="560" y="198" class="railLabel" text-anchor="middle">reply ▾</text>
   {/if}
 
-  <!-- Selection highlight: an oval hugs a link's rail; a circle rings a node or a token. -->
-  {#if hl}
-    {#if hl.kind === "ellipse"}
-      <ellipse cx={hl.cx} cy={hl.cy} rx={hl.rx} ry={hl.ry}
-        transform="rotate({hl.angle} {hl.cx} {hl.cy})" fill="none" stroke="var(--ink)"
-        stroke-width="2.5" stroke-dasharray="4 5" class="selring" />
-    {:else}
-      <circle cx={hl.cx} cy={hl.cy} r={hl.r} fill="none" stroke="var(--ink)"
-        stroke-width="2.5" stroke-dasharray="4 5" class="selring" />
-    {/if}
+  <!-- Selection highlight for a node or an ordinary token (links glow above; the hero
+       ring lives inside the hero group so it can't detach during the slide). -->
+  {#if hl?.kind === "circle"}
+    <circle cx={hl.cx} cy={hl.cy} r={hl.r} fill="none" stroke="var(--ink)"
+      stroke-width="2.5" stroke-dasharray="4 5" class="selring" />
   {/if}
 
   <!-- Message tokens (in-flight = moving; queues = one stack + count) -->
   {#each toks as t (t.id)}
-    {@const bx = t.x < 560 ? t.x - 14 : t.x + 14}
+    {@const bx = t.bx ?? t.x}
+    {@const by = t.by ?? t.y}
     <g class="tok" transition:fade={{ duration: 160 }} onclick={() => tokClick(t)}
       onkeydown={(e) => key(e, () => tokClick(t))} role="button" tabindex="0">
       <circle cx={t.x} cy={t.y} r="15" fill="transparent" />
@@ -148,10 +166,12 @@ function key(e: KeyboardEvent, fn: () => void): void {
         <circle class:settle={!!t.count} cx={t.x} cy={t.y} r="9" fill={CLASS_FILL[t.cls]} />
       {/if}
       {#if t.count}
-        <circle cx={bx} cy={t.y - 12} r="8.5"
+        <!-- Amber at >= 3 is legitimate here: a hot backlog IS degradation, and it is
+             now the only amber near a token (MD/MP got their own hues in WP4.3). -->
+        <circle cx={bx} cy={by} r="8.5"
           fill={t.count >= 3 ? "var(--tint-amber)" : "#fff"}
           stroke={t.count >= 3 ? "var(--amber)" : "var(--hair)"} stroke-width="1.5" />
-        <text x={bx} y={t.y - 8.5} class="tcount"
+        <text x={bx} y={by + 3.5} class="tcount"
           fill={t.count >= 3 ? "var(--amber)" : "var(--sub)"}>{t.count}</text>
       {/if}
     </g>
@@ -164,6 +184,12 @@ function key(e: KeyboardEvent, fn: () => void): void {
     <g transform="translate({hero.x},{hero.y})" class="tok heroslide"
       onclick={() => game.select("token", hero.id)}
       onkeydown={(e) => key(e, () => game.select("token", hero.id))} role="button" tabindex="0">
+      <!-- Inside the transitioned group, at local (0,0): the ring is welded to the glyph
+           and cannot lag behind it during the reroute slide. -->
+      {#if heroSelected}
+        <circle r="28" fill="none" stroke="var(--ink)" stroke-width="2.5"
+          stroke-dasharray="4 5" class="selring" />
+      {/if}
       {#if hero.ack === "missing"}
         <circle r="22" fill="none" stroke="var(--red)" stroke-width="2.5" class="glow" />
         <rect x="-11" y="-11" width="22" height="22" rx="3" fill="none"
@@ -173,6 +199,16 @@ function key(e: KeyboardEvent, fn: () => void): void {
           stroke-dasharray="14 8" class="ringspin" />
         <text class="glyph" y="5" fill="var(--red)">?</text>
         <text x={sgn * 30} y="5" text-anchor={anc} class="floatlabel" fill="var(--red)">MISSING ACK</text>
+      {:else if hero.ack === "rerouted"}
+        <!-- The player took the CORRECT recovery action, so the alarm stands down: same
+             glyph grammar (it is the same reply), but blue and calm — no red glow, no
+             spinning "?". The amber->blue handover animates once, so the change reads as
+             a consequence of the decision rather than a silent swap. -->
+        <circle r="14" fill="var(--tint-cream)" />
+        <circle r="14" fill="none" stroke="var(--c2)" stroke-width="2.5"
+          stroke-dasharray="14 8" class="ringspin handover" />
+        <text class="glyph" y="5" fill="var(--c2)">⇢</text>
+        <text x={sgn * 30} y="5" text-anchor={anc} class="floatlabel" fill="var(--c2)">REROUTED · EN ROUTE</text>
       {:else if hero.ack === "sent"}
         <circle r="15" fill="var(--tint-green)" />
         <rect x="-8" y="-8" width="16" height="16" rx="3" fill="var(--c2)" />
@@ -219,12 +255,22 @@ function key(e: KeyboardEvent, fn: () => void): void {
   .node, .link, .tok { cursor: pointer; }
   .nlabel { text-anchor: middle; font-weight: 800; fill: var(--ink); }
   .nsub { text-anchor: middle; font-size: 9px; font-weight: 700; letter-spacing: 0.5px; }
-  .mesh rect { fill: var(--c2); fill-opacity: 0.05; stroke: var(--c2); stroke-opacity: 0.35;
+  .mesh rect { fill: var(--mesh-fill); stroke: var(--mesh-stroke);
     stroke-width: 1.5; stroke-dasharray: 6 7; }
   .meshlabel { font-size: 10px; font-weight: 700; letter-spacing: 0.4px; fill: var(--c2);
     fill-opacity: 0.7; }
+  /* Uncontested air: the same medium, lighter. Still visibly present — "no field" would
+     wrongly read as "this traffic doesn't cross the air". */
+  .mesh.clean rect { fill: var(--mesh-fill-clean); stroke: var(--mesh-stroke-clean);
+    stroke-dasharray: 2 6; }
+  .mesh.clean .meshlabel { fill-opacity: 0.45; }
   .dmsport { fill: #fff; stroke: var(--c2); stroke-width: 2; }
   .railLabel { font-size: 10px; font-weight: 700; letter-spacing: 0.3px; fill: var(--sub); pointer-events: none; }
+  .looplabel { font-size: 10px; font-weight: 700; letter-spacing: 0.3px; fill: var(--vi);
+    text-anchor: start; pointer-events: none; }
+  .selrail { animation: selpulse 1.4s ease-in-out infinite; }
+  /* One-shot amber -> blue as the reroute takes effect: the alarm visibly standing down. */
+  .handover { animation: ringspin 2s linear infinite, handover 0.9s ease-out 1; }
   .tcount { text-anchor: middle; font-size: 10px; font-weight: 800; }
   .glyph { text-anchor: middle; font-size: 16px; font-weight: 800; }
   .mini { text-anchor: middle; font-size: 9px; font-weight: 800; }

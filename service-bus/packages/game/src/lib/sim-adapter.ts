@@ -9,18 +9,29 @@ import {
   alongLink,
   laneFor,
   layoutFor,
+  railNormal,
+  selfLoopLabelPoint,
   selfLoopPath,
   selfLoopPoint,
+  stackFrac,
   straightPath,
   TOKEN_SIDECAR,
 } from "./layout.ts";
+import { CLASS_DESC, SHAPE } from "./palette.ts";
 
 export type Selection = { type: "node" | "link" | "token"; id: string } | null;
 
-/** Selection highlight shape: a circle (nodes, tokens) or an oriented oval (a link's rail). */
+/**
+ * Selection highlight: a circle (nodes, tokens) or the link's own rail path, glowing.
+ *
+ * WP4.5a: this used to be an oriented ellipse enclosing the rail, which on a long link
+ * (worst on Phase 4's single horizontal one) spanned the whole board and read as diagram
+ * geometry rather than as a selection. The rail variant carries the SAME path string
+ * `linkView` draws, so highlight and rail cannot disagree.
+ */
 export type Highlight =
   | { kind: "circle"; cx: number; cy: number; r: number }
-  | { kind: "ellipse"; cx: number; cy: number; rx: number; ry: number; angle: number };
+  | { kind: "rail"; d: string; width: number };
 
 /** Links as the lane helper wants them (id/from/to/cls). */
 function linkList(gs: GameState): { id: string; from: string; to: string; cls: InterfaceClass }[] {
@@ -57,19 +68,30 @@ export interface LinkVM {
   cls: Link["cls"];
   bad: boolean;
   width: number;
+  /** `from === to` — an on-platform link, drawn as a rim lobe and captioned as such. */
+  selfLoop: boolean;
+}
+
+/** Stroke width of a drawn rail. Shared so `linkView` and `highlightFor` can't diverge. */
+function railWidth(cls: InterfaceClass): number {
+  return cls === "MS" ? 3 : 7;
+}
+
+/** The exact path a link is drawn along. Shared by the rail and its selection glow. */
+function railPath(gs: GameState, l: Link): string | null {
+  const nodes = layoutFor(gs.scenarioId).nodes;
+  const from = nodes[l.from];
+  if (!from || !nodes[l.to]) return null;
+  return l.from === l.to
+    ? selfLoopPath(from)
+    : straightPath(nodes, l.from, l.to, laneFor(linkList(gs), l.id));
 }
 
 export function linkView(gs: GameState, linkId: string): LinkVM | null {
   const l = gs.links[linkId];
   if (!l) return null;
-  const nodes = layoutFor(gs.scenarioId).nodes;
-  const from = nodes[l.from];
-  const to = nodes[l.to];
-  if (!from || !to) return null;
-  const d =
-    l.from === l.to
-      ? selfLoopPath(from)
-      : straightPath(nodes, l.from, l.to, laneFor(linkList(gs), linkId));
+  const d = railPath(gs, l);
+  if (d === null) return null;
   // A degraded OTA link renders as stably CONTESTED (amber marching) rather than
   // flickering with every Gilbert-Elliott transition. [S] presentational — the live
   // GOOD/BAD channel is in the Inspector. Phase 6 keeps its exact damping (the reply
@@ -82,8 +104,36 @@ export function linkView(gs: GameState, linkId: string): LinkVM | null {
     d,
     cls: l.cls,
     bad: contested,
-    width: l.cls === "MS" ? 3 : 7,
+    width: railWidth(l.cls),
+    selfLoop: l.from === l.to,
   };
+}
+
+/** Caption for an on-platform (self-loop) link — see `selfLoopLabels`. */
+export interface LoopLabelVM {
+  id: string;
+  x: number;
+  y: number;
+  text: string;
+}
+
+/**
+ * Captions for self-loop links. A self-loop is by definition on-platform: it never
+ * reaches the DMS port, never crosses the OTA field. That is the headline lesson of
+ * Phases 1-2, and until WP4.4 the loop was an anonymous grey lobe you had to click to
+ * identify. Generic over class, so a future non-VI on-platform link is covered too.
+ */
+export function selfLoopLabels(gs: GameState): LoopLabelVM[] {
+  const nodes = layoutFor(gs.scenarioId).nodes;
+  const out: LoopLabelVM[] = [];
+  for (const l of Object.values(gs.links)) {
+    if (l.from !== l.to) continue;
+    const n = nodes[l.from];
+    if (!n) continue;
+    const p = selfLoopLabelPoint(n);
+    out.push({ id: l.id, x: p.x, y: p.y, text: `${l.cls} · on-platform` });
+  }
+  return out;
 }
 
 // ---- tokens ----------------------------------------------------------------
@@ -100,18 +150,10 @@ export interface TokenVM {
   state: Message["state"];
   /** If set, this is a queue stack of `count` messages (rendered as one + a badge). */
   count?: number;
+  /** Count-badge centre (stacks only) — outboard of the stack, on the rail's normal. */
+  bx?: number;
+  by?: number;
 }
-
-// Square = C2 command; every other interface class reads as a circle (colour carries
-// the class — see Graph.svelte's CLASS_FILL).
-const SHAPE: Record<InterfaceClass, "square" | "circle"> = {
-  C2: "square",
-  P2P: "circle",
-  VI: "circle",
-  MS: "circle",
-  MP: "circle",
-  MD: "circle",
-};
 
 /**
  * Message tokens. In-flight (EXECUTING) messages render individually and glide
@@ -147,13 +189,22 @@ export function tokens(gs: GameState, heroId: string | null, frac = 0): TokenVM[
     const queued = link.queue.filter((id) => id !== heroId && gs.messages[id]?.state === "PENDING");
     const head = queued[0] ? gs.messages[queued[0]] : undefined;
     if (!head) continue;
-    // Upper rail (0.3): clears the node rims and sits above the focal hero (t=0.5).
-    const p = place(gs, link.id, 0.3);
+    // A fixed pixel offset from the source rim, walked forward until it clears every
+    // node circle — a fixed *fraction* collided with ACP-1's rim on Phase 5 (WP4.6).
+    const nodes = layoutFor(gs.scenarioId).nodes;
+    const off = laneFor(linkList(gs), link.id) + TOKEN_SIDECAR;
+    const p = place(gs, link.id, stackFrac(nodes, link.from, link.to, off));
+    // The badge sits further out along the SAME normal that pushed the token off its
+    // rail, so it is unambiguously "this rail's badge" on every board. (It used to be
+    // keyed to `x < 560`, Phase 6's corridor centre, which is meaningless elsewhere.)
+    const nrm = railNormal(nodes, link.from, link.to);
     out.push({
       id: `stack:${link.id}`,
       headId: head.id,
       x: p.x,
       y: p.y,
+      bx: p.x + nrm.x * 15,
+      by: p.y + nrm.y * 15,
       shape: SHAPE[head.cls] ?? "circle",
       cls: head.cls,
       state: "PENDING",
@@ -169,7 +220,7 @@ export interface HeroVM {
   id: string;
   x: number;
   y: number;
-  ack: "missing" | "sent" | "fail";
+  ack: "missing" | "rerouted" | "sent" | "fail";
   label: string;
   /** Which side the floating label hangs, so it points away from the corridor. */
   labelSide: "left" | "right";
@@ -194,6 +245,10 @@ export function heroReply(gs: GameState): HeroVM | null {
   // (not on it) and the rail stays clickable along its length.
   const p = link ? place(gs, linkId, 0.5) : { x: 526, y: 156 };
 
+  // Order matters: "missing" is the FALLBACK, so any state not positively identified
+  // reads as a red alarm. That is what made a correctly-rerouted reply keep its
+  // MISSING-ACK treatment while it flew happily down the relay path (WP4.1) — the
+  // player took the right action and the board punished them for it.
   let ack: HeroVM["ack"] = "missing";
   let label = "MISSING ACK";
   if (reply.state === "SENT" && reply.authorityVerified) {
@@ -202,9 +257,17 @@ export function heroReply(gs: GameState): HeroVM | null {
   } else if (gs.outcome === "loss" || reply.approval === "REJECTED") {
     ack = "fail";
     label = "MISSED";
+  } else if (reply.route.length > 1 && (reply.state === "PENDING" || reply.state === "EXECUTING")) {
+    // `rerouteReply` (phase6.ts) rewrites the route to the two-hop relay path via
+    // ACP-2's DMS, so a multi-hop route IS "took the relay". Derived, not scripted:
+    // no sim change, and no hardcoded link id. [S] docs/01 item 24 — this is a view
+    // state, not a DMS lifecycle value; the message is still PENDING/EXECUTING.
+    ack = "rerouted";
+    label = "REROUTED · EN ROUTE";
   }
-  // Hang the label outboard (away from the corridor centre at x=560).
-  return { id: reply.id, x: p.x, y: p.y, ack, label, labelSide: p.x < 560 ? "left" : "right" };
+  // Hang the label outboard, away from the board's centre of mass.
+  const mid = layoutFor(gs.scenarioId).meshCenter.x;
+  return { id: reply.id, x: p.x, y: p.y, ack, label, labelSide: p.x < mid ? "left" : "right" };
 }
 
 // ---- HUD -------------------------------------------------------------------
@@ -270,29 +333,10 @@ export function highlightFor(gs: GameState, sel: Selection): Highlight | null {
   if (sel.type === "link") {
     const l = gs.links[sel.id];
     if (!l) return null;
-    // A self-loop has no straight rail; ring its lobe instead.
-    if (l.from === l.to) {
-      const n = nodes[l.from];
-      if (!n) return null;
-      const p = selfLoopPoint(n);
-      return { kind: "circle", cx: p.x, cy: p.y, r: n.r * 0.62 + 12 };
-    }
-    // An oval hugging the rail itself — lane offset only, NO token sidecar, so it sits
-    // centred on the drawn line (which straightPath also draws at the bare lane offset).
-    const lane = laneFor(linkList(gs), sel.id);
-    const a = alongLink(nodes, l.from, l.to, 0, lane);
-    const b = alongLink(nodes, l.from, l.to, 1, lane);
-    const dx = b.x - a.x;
-    const dy = b.y - a.y;
-    const width = l.cls === "MS" ? 3 : 7; // mirrors linkView's stroke width
-    return {
-      kind: "ellipse",
-      cx: (a.x + b.x) / 2,
-      cy: (a.y + b.y) / 2,
-      rx: Math.hypot(dx, dy) / 2 + 8,
-      ry: width / 2 + 11,
-      angle: (Math.atan2(dy, dx) * 180) / Math.PI,
-    };
+    // The rail's own path, glowing — self-loops included, so the lobe lights up as a
+    // lobe rather than being ringed by a circle that doesn't match its shape.
+    const d = railPath(gs, l);
+    return d === null ? null : { kind: "rail", d, width: railWidth(l.cls) };
   }
   return null; // token: handled in the view against the live token position
 }
@@ -355,15 +399,6 @@ function inspectNode(gs: GameState, id: string): InspectorVM {
     ],
   };
 }
-
-const CLASS_DESC: Record<InterfaceClass, string> = {
-  C2: "command",
-  P2P: "peer",
-  VI: "on-platform",
-  MS: "mission-sys",
-  MP: "mission-plan",
-  MD: "mission-data",
-};
 
 function inspectToken(gs: GameState, id: string): InspectorVM {
   const m = gs.messages[id];
