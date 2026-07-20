@@ -10,6 +10,10 @@ const { onOpen }: { onOpen: (kind: OverlayKind) => void } = $props();
 const gs = $derived(game.gs);
 const title = $derived(getScenario(gs.scenarioId).title);
 const cop = $derived(Math.round(gs.cop));
+// L5's cost readout (WP5.2): local track/fusion completeness, which decays while the
+// MD sensor bulk is shed. Same ring widget as Phase 6's COP — it is the same kind of
+// claim ("how good is this picture right now"), so it should look the same.
+const track = $derived(Math.round(gs.trackCompleteness ?? 0));
 const wez = $derived(wezRemaining(gs));
 
 // The glossary/legend popout — anchored under its trigger chip, closed on outside
@@ -18,11 +22,13 @@ let showLegend = $state(false);
 // The scalar COP ring is Phase 6's mechanic; the WEZ card shows only when a deadline
 // is armed. Other levels leave the HUD-right clean (their state reads on the board).
 const showCop = $derived(gs.scenarioId === "phase6");
+const showTrack = $derived(gs.trackCompleteness !== undefined);
 const showWez = $derived(gs.wezDeadlineTick !== null);
 
 // COP ring arc (r15, circumference ~94.2), -90deg start.
 const C = 94.2;
 const offset = $derived(C * (1 - cop / 100));
+const trackOffset = $derived(C * (1 - track / 100));
 
 const wezState = $derived(
   gs.outcome === "win" ? "win" : gs.outcome === "loss" ? "loss" : "stalled",
@@ -76,6 +82,21 @@ const wezState = $derived(
       <div>
         <div class="caps">COP</div>
         <div class="ringval" style:color={copColor(cop)}>{cop}%</div>
+      </div>
+    </div>
+    {/if}
+
+    {#if showTrack}
+    <div class="card ring">
+      <svg width="38" height="38" viewBox="0 0 38 38">
+        <circle cx="19" cy="19" r="15" fill="none" stroke="var(--hair)" stroke-width="5" />
+        <circle cx="19" cy="19" r="15" fill="none" stroke={copColor(track)} stroke-width="5"
+          stroke-linecap="round" stroke-dasharray={C}
+          stroke-dashoffset={trackOffset} transform="rotate(-90 19 19)" />
+      </svg>
+      <div>
+        <div class="caps">Track</div>
+        <div class="ringval" style:color={copColor(track)}>{track}%</div>
       </div>
     </div>
     {/if}

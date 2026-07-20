@@ -81,7 +81,17 @@ function act(fn: () => void): void {
       {/if}
       {#if beat.actions.includes("shedTraffic")}
         <button class="primary" onclick={() => act(() => game.shedTraffic())}>
-          ▸ Shed low-priority bulk (protect the COP fan-out)
+          ▸ Shed sensor bulk (protect the COP fan-out — costs track completeness)
+        </button>
+      {/if}
+      {#if beat.actions.includes("resumeTraffic")}
+        <button class="primary" onclick={() => act(() => game.resumeTraffic())}>
+          ▸ Restore the sensor feed (rebuild local track completeness)
+        </button>
+      {/if}
+      {#if beat.actions.includes("requestVia")}
+        <button class="ghost" onclick={() => act(() => game.requestVia("acp3"))}>
+          ▸ Ask ACP-3 to authorise (clean link, answers immediately)
         </button>
       {/if}
       {#if beat.actions.includes("handBack")}

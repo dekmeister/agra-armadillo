@@ -168,7 +168,8 @@ export const INTERFACES: InterfaceRow[] = [
     flows:
       "Team formation and leader election; distributing the package COP; peer contingencies and state-data sharing.",
     air: "OTA",
-    inGame: "Elections (L3, L7), the formation heartbeat (L4), and COP fan-out (L5, L6).",
+    inGame:
+      "Package joining (L3), elections (L3, L7), the formation heartbeat (L4), and COP fan-out (L5, L6).",
   },
   {
     code: "MS",
@@ -177,8 +178,7 @@ export const INTERFACES: InterfaceRow[] = [
       "Message exchange between A-GRA platforms — this is where the DMS lives. Also PNT and system status, sensor and comms interactions, and weapons-related interactions.",
     air: "Mixed",
     inGame:
-      "The DMS lifecycle every token walks is MS. As a traffic class of its own it appears only once, on L6's relay link.",
-    thin: true,
+      "The DMS lifecycle every token walks is MS. As a traffic class of its own: L6's relay link, and L1's PNT service exchange with the local Mission Systems — the four-message sequence that gets the ACP position and time before it is any use to anyone.",
   },
   {
     code: "VI",
@@ -187,7 +187,7 @@ export const INTERFACES: InterfaceRow[] = [
       "MA and Flight Autonomy (FA) responsibilities for safety-criticality; control modes (HSA, Waypoint Following, Curve Following); subsystem status and vehicle state from FA; FA's accept/reject validation. FA always retains control but listens to MA based on mission state.",
     air: "On-platform",
     inGame:
-      "The self-loop on L1 and L2 — free, lossless, no bandwidth. Its whole job is to contrast with the C2 traffic beside it.",
+      "The self-loop on L1, L2 and L8 — free, lossless, no bandwidth. Its whole job is to contrast with the C2 traffic beside it: L1 takes off with it, L8 flies the approach with it.",
   },
   {
     code: "MP",
@@ -196,7 +196,7 @@ export const INTERFACES: InterfaceRow[] = [
       "The Mission Data Package that many MA interactions depend on being loaded before the mission; a system of plans and sub-plans; ROE settings and other configuration.",
     air: "Mostly pre-load",
     inGame:
-      "Not exercised. No message in the campaign is class MP — the game currently teaches four of the six interfaces, not six.",
+      "L4's mission-plan update: a re-tasking pushed from the QB through the leader to a formation member, which then has to share a capped link with the formation heartbeat. One honest appearance rather than none — it is still the thinnest of the six here.",
     thin: true,
   },
   {
@@ -205,20 +205,24 @@ export const INTERFACES: InterfaceRow[] = [
     flows:
       "Use cases for mission debrief and replay of MA data; on-board debrief systems and in-flight debrief support.",
     air: "Mostly pre-load",
-    inGame: "One appearance: L5's deferrable bulk traffic, the thing you shed under COP pressure.",
+    inGame:
+      "L5's deferrable bulk: the raw sensor observation reports local fusion builds tracks from. The thing you shed under COP pressure — and the reason shedding costs you something, because your own track completeness decays while it is off.",
     thin: true,
   },
 ];
 
 export const INTERFACES_NOTE_HTML = `
 <p><b>The answer to "which interfaces cross the contested air?"</b> — <b>C2</b>, <b>P2P</b>, and the
-  <b>MS</b>/DMS and COP updates. <b>VI is on-platform and cannot be lost to the air at all</b>;
-  local sensor reads likewise. MP is mostly something you paid for on the ground, and MD is the
+  <b>MS</b>/DMS and COP updates <i>between platforms</i>. <b>VI is on-platform and cannot be lost to
+  the air at all</b>; so are local sensor reads and the MA&#8596;local-MS exchange L1 runs, which is
+  why L1's PNT loop sits outside the shaded field next to the VI one. MP is mostly something you paid for on the ground, and MD is the
   deferrable bulk class. If you ever find yourself reasoning about "routing VI traffic across the
   QB link", the board is right and the intuition is wrong: VI is internal wiring.</p>
-<p class="thin-note">Rows marked <b>thin</b> above are where this game is currently weaker than the
-  architecture it teaches. MP has no traffic at all and MS almost none. That is a known curriculum
-  gap, not a claim about A-GRA.</p>
+<p class="thin-note">Rows marked <b>thin</b> above are where this game is lighter than the
+  architecture it teaches. All six interfaces now carry real, XSD-named traffic — until WP5 that
+  was four of six, with MP exercised by nothing at all and MD faked by sending a C2 message at
+  class MD. MP and MD each get one honest appearance rather than a curriculum of their own. That
+  is a statement about the game's depth, not about A-GRA.</p>
 `;
 
 /** The Start Here Guide contradicts itself on what MP stands for. */

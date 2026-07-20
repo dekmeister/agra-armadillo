@@ -39,6 +39,23 @@ function inside(
   );
 }
 
+/**
+ * Where a self-loop sits in its node's stack of on-platform lanes — mirrors
+ * `loopSlot` in sim-adapter.ts. A node can carry several (L1 has VI and MS since
+ * WP5.6), and checking them all at the default slot would silently stop testing the
+ * lobes actually drawn.
+ */
+function loopSlot(
+  links: { id: string; from: string; to: string }[],
+  link: { id: string; from: string },
+): { index: number; count: number } {
+  const loops = links
+    .filter((l) => l.from === l.to && l.from === link.from)
+    .map((l) => l.id)
+    .sort();
+  return { index: Math.max(0, loops.indexOf(link.id)), count: loops.length || 1 };
+}
+
 describe("board geometry", () => {
   it("covers every scenario", () => {
     expect(IDS.length).toBe(8);
@@ -113,7 +130,8 @@ describe("board geometry", () => {
       for (const l of Object.values(gs.links)) {
         if (l.from !== l.to) continue;
         const n = layout.nodes[l.from] as NodeGeom;
-        const box = selfLoopBBox(n);
+        const slot = loopSlot(Object.values(gs.links), l);
+        const box = selfLoopBBox(n, slot.index, slot.count);
         expect(box.x, `${id}/${l.id} lobe overlaps the OTA field`).toBeGreaterThanOrEqual(
           m.x + m.w,
         );
@@ -132,11 +150,40 @@ describe("board geometry", () => {
       for (const l of Object.values(gs.links)) {
         if (l.from !== l.to) continue;
         const n = layout.nodes[l.from] as NodeGeom;
-        const box = selfLoopBBox(n);
+        const slot = loopSlot(Object.values(gs.links), l);
+        const box = selfLoopBBox(n, slot.index, slot.count);
         expect(inside(vb, { x: box.x + box.w, y: box.y }), `${id}/${l.id} lobe clipped`).toBe(true);
+        expect(
+          inside(vb, { x: box.x + box.w, y: box.y + box.h }),
+          `${id}/${l.id} lobe clipped at its foot`,
+        ).toBe(true);
         // The caption runs ~90px right of its anchor at 10px/700.
-        const cap = selfLoopLabelPoint(n);
+        const cap = selfLoopLabelPoint(n, slot.index, slot.count);
         expect(cap.x + 90, `${id}/${l.id} caption clipped`).toBeLessThanOrEqual(vb.x + vb.w);
+      }
+    }
+  });
+
+  it("never stacks two on-platform lobes on the same pixels", () => {
+    // L1 carries both a VI loop (MA -> Flight Autonomy) and an MS loop (MA -> local
+    // Mission Systems). Drawn at the same slot they render as one lobe with two captions
+    // on top of each other, which reads as a single lane and hides half the lesson.
+    for (const id of IDS) {
+      const layout = LAYOUTS[id];
+      if (!layout) continue;
+      const gs = createInitialState(1, { scenarioId: id });
+      const loops = Object.values(gs.links).filter((l) => l.from === l.to);
+      const boxes = loops.map((l) => {
+        const slot = loopSlot(Object.values(gs.links), l);
+        return selfLoopBBox(layout.nodes[l.from] as NodeGeom, slot.index, slot.count);
+      });
+      for (let i = 0; i < boxes.length; i++) {
+        for (let j = i + 1; j < boxes.length; j++) {
+          const a = boxes[i] as { y: number; h: number };
+          const b = boxes[j] as { y: number; h: number };
+          const overlaps = a.y < b.y + b.h && b.y < a.y + a.h;
+          expect(overlaps, `${id}: loops ${loops[i]?.id}/${loops[j]?.id} overlap`).toBe(false);
+        }
       }
     }
   });

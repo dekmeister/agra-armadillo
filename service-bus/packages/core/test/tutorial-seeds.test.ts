@@ -68,7 +68,7 @@ describe("per-level tutorial seeds", () => {
     const won = play("phase4", () => {
       if (set) return null;
       set = true;
-      return { type: "setPolicy", linkId: "form", policy: "class" };
+      return { type: "setPolicy", linkId: "form2", policy: "class" };
     });
     expect(won.outcome).toBe("win");
   });

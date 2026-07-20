@@ -286,7 +286,80 @@ on the board is in the legend, mesh field present wherever traffic crosses the a
 
 ---
 
-## WP5 — Level changes (curriculum fixes — the review's "should levels change?" answer)
+## WP5 — Level changes (curriculum fixes) **DONE** (2026-07-20)
+
+> **Outcome, and what a later session needs to know.** All six items shipped. **134 tests**
+> (was 103), 23 files. All eight levels now put real, XSD-named traffic on the wire for the
+> interface class they claim.
+>
+> **Three things the game was teaching falsely, found while implementing:**
+> 1. **Phase 5 was unwinnable by following its own advice.** The `cop-starvation` beat fired with
+>    the worst follower one decay step from breach, while shedding takes two ticks to bite — so a
+>    player who did exactly what the prompt said still lost. The level was only winnable by shedding
+>    at T+1, *before* the game told you to. `WARN_BAND` 30 → 50, and
+>    `phase5.test.ts` now pins "acting on the beat wins". This was pre-existing, not a WP5
+>    regression — verified against the pre-WP5 tree.
+> 2. **MD and MP were fake.** L5 spawned `MA_CommTeamReportMT` — a C2 message per the codex — with
+>    `cls` overridden to `MD` and `MP` at the call site, so one message type flew as three different
+>    interface classes. Both classes now have real messages (`ObservationMeasurementReportMT`,
+>    `MA_MissionPlanCommandMT`).
+> 3. **The Inspector's backlog readout was hardcoded to `C2·n P2P·n`**, so L4's and L5's links showed
+>    an empty backlog with a dozen messages queued in them; "Next dispatch" described everything
+>    non-P2P as "routine C2". Both are now generic over `InterfaceClass`.
+>
+> **The XSD and the MS Volume carried more than expected.** Three items that looked like they needed
+> the absent volumes turned out to be primary-sourced on this device — the PNT sequence (MS Vol
+> §1.2.7.1, verbatim, four messages), the sensor-track/OMR flow (§1.2.4.1, which is also what makes
+> WP5.2's cost model honest rather than invented), and both mission-plan names. **Grep the MS Volume
+> before assuming something needs the C2 or Peer Volume.**
+>
+> **⚠ New drift guards, and one seed change:**
+> - `packages/game/test/picker-honesty.test.ts` plays every level and asserts the picker's claim
+>   matches the sim. `Phase.classes` is the new machine-checkable field; `interfaces` is the prose,
+>   and the test pins the two to each other as well as to the traffic. **Editing only the prose is
+>   never the fix.**
+> - `packages/core/src/replay.ts` now holds the shared replay harness (`typesForLevel`,
+>   `classesForLevel`, `TAUGHT_PATHS`) that `codex.test.ts` grew and the picker guard needed. If you
+>   add decision-gated traffic, extend `TAUGHT_PATHS` there or the guards will not see it.
+> - `packages/core/src/counterfactual.ts` computes L3's "the other method would have cost N" by
+>   replaying the branch, so the number cannot rot. `counterfactual.test.ts` asserts it equals a real
+>   run.
+> - **`TUTORIAL_SEED` changed 1412 → 140.** Adding Phase 6's ACP-3 links changed how many channels
+>   `stepChannel` steps per tick, which shifts every subsequent RNG draw. 140 is the lowest seed
+>   satisfying the old matrix *plus* the new requirement that asking ACP-3 loses **by rejection**,
+>   not by running out of clock. A scan of 20k seeds found 8; the scan is in
+>   `tutorial-seed.test.ts`'s docstring if it needs redoing.
+> - `layout.test.ts` gained a "no two on-platform lobes overlap" assertion — L1 now has *two*
+>   self-loops (VI and MS) and they drew on top of each other until `selfLoopPath` learned to stack.
+>
+> **What a session with the C2 / Peer Interface Volumes should look at.** New and upgraded items are
+> in `docs/VERIFY.md`; the ones WP5 made more urgent:
+> - **C7 (new, C2 Volume) — "an AVC may not approve weapon employment" is now load-bearing.** It was
+>   background design-set assertion; WP5.3 made the wrong-authority rejection a *reachable tutorial
+>   outcome*, so Phase 6 now actively teaches it. If the C2 Volume says an AVC can hold delegated
+>   release authority, the decision branch needs rethinking, not a copy edit. Settles with **C2**.
+> - **C4/C5 (C2 Volume) — the approval sequence and `CannotComply`-as-REJECTED.** Same reason: the
+>   rejection path went from a tested-but-unreachable code path to something the player is
+>   deliberately tempted into.
+> - **C3 (C2 Volume) — AVC's expansion is still blank**, and it now appears in a decision the player
+>   has to reason about. It matters more than it did in WP3.
+> - **P8 (new, Peer Volume) — Phase 4's formation heartbeat.** We kept `MA_TaskMT`/FollowFormation
+>   rather than adopt `MA_PositionReportMT`, because a peer position report's *interface assignment*
+>   is unverifiable here. Check **"Provide/Receive Formation Status"** and correct the message if the
+>   volume names a real one.
+> - **P6 (Peer Volume) — `MA_SynchronizeGlobalCopToPeer` is still the one game message absent from
+>   the XSD**, and still lacks the `MT` suffix. Rename it the way WP3 renamed `MA_VehicleCommandMT`.
+> - **P1/P2 (Peer Volume) — the election message costs.** L3's debrief now prints a *computed*
+>   message count for the method not taken. The number is exact for the game's model, but the model
+>   rests on design-set assertion; a confident-looking "Raft: 4 messages" deserves a real source.
+> - **X4 — MP is Mission *Planning* or Mission *Planner*?** Start Here contradicts itself (L114 vs
+>   L218). Now that MP carries traffic, pick one if a volume settles it.
+>
+> **Still open from the original brief:** nothing in WP5 itself, but WP6.1 (beat timing) overlaps
+> what was fixed here for L3, L5 and L8 — L2's and L7's beat timing was not revisited.
+
+<details>
+<summary>Original WP5 brief (kept for reference)</summary>
 
 > **Read WP3's outcome note first.** Two things bind this WP: (a) `packages/core/src/codex.ts`
 > carries a per-level `levels: [...]` list for every message and a test that checks it against
@@ -347,6 +420,8 @@ four), and **the RBAC negative case is unreachable in Phase 6** (see 5.3).
 **Accept:** class tally after WP5 includes MP≥1, MD≥1 with real gameplay meaning; a player can
 lose Phase 6 by trusting the wrong authority; Phase 3 debrief names both methods' costs; picker
 interface strings match spawned traffic exactly.
+
+</details>
 
 ---
 

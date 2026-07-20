@@ -16,7 +16,7 @@ const p4 = { scenarioId: "phase4" };
 /** Play the level applying an optional one-off policy change at tick 1. */
 function playWithPolicy(policy?: "class" | "edf", seed = 1): GameState {
   const actions: Record<number, Action[]> = policy
-    ? { 1: [{ type: "setPolicy", linkId: "form", policy }] }
+    ? { 1: [{ type: "setPolicy", linkId: "form2", policy }] }
     : {};
   return run({ seed, scenario: p4, actions, maxTicks: 30 });
 }

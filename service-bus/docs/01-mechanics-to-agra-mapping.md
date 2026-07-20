@@ -168,9 +168,10 @@ real P2P links) — still limited to Raft + Static.
     must not be read as an enclave, a coverage footprint, or "these platforms can reach each other
     and nobody else" — and above all not as the central broker the standard says does not exist. On
     boards where three or more platforms genuinely peer it is labelled *DMS / DDS-RTPS mesh — no
-    central broker*; Phase 4 is two platforms and one link and is deliberately labelled *OTA · P2P
-    formation link* instead, because calling that a mesh would imply peering the topology lacks
-    (`packages/game/test/layout.test.ts` enforces the distinction). On L1/L2/L8 the field's right
+    central broker*; a two-platform board must not be, because calling that a mesh would imply
+    peering the topology lacks (`packages/game/test/layout.test.ts` enforces the distinction —
+    Phase 4 was such a board until WP5.1 grew it to a three-ship formation, at which point it
+    earned the label). On L1/L2/L8 the field's right
     edge is clamped to the ACP rim precisely so the on-platform VI self-loop falls **outside** it —
     also pinned by test. (`[S]`; presentational only, extends the `DMS mesh` row of §1.)
 23. **The field's "contested" weight is derived from live link state, not authored per level.** It
@@ -190,6 +191,46 @@ real P2P links) — still limited to Raft + Static.
     ours. Amber is reserved for degradation alone (contested link, `FAIL_MISSING_ACK`, hot queue
     backlog) — `packages/game/test/palette.test.ts` forbids any class reusing it, or `--gold`, which
     means authority and nothing else. (`[S]`.)
+
+## Curriculum notes (WP5)
+
+26. **All six L1 interfaces now carry traffic, but MP and MD carry one interaction each.** Before
+    WP5 the class tally was C2x23, P2P x16, VI x4, MS x2, MD x1, MP x0 — the game claimed six
+    interfaces and exercised four. Worse, the single MD/MP "appearance" was `MA_CommTeamReportMT`
+    (a C2 message per the codex) spawned with `cls` overridden to `MD` and `MP` at the call site,
+    so one message type flew as three different interface classes. That is now gone: L1 runs the
+    real MS PNT exchange, L4 the real MP plan update, L5 the real MD observation bulk. Breadth is
+    honest; depth on MP/MD is still one interaction apiece, and the Field Guide says so.
+    (`[S]`; curriculum scope, not a topology claim.)
+27. **L4's capped link carries both the P2P formation heartbeat and the MP plan update.** The
+    shared-air simplification of item 17, now with faithful traffic on both sides instead of
+    synthetic ROE spam. Each message keeps its true interface class; what is abstracted is that one
+    modelled link stands for the shared RF/DMS resource between two platforms.
+    (`[S]`; extends item 17.)
+28. **L4's plan update re-tasks one follower, so exactly one formation link is contended.** A
+    package-wide push would contend on both links, which the per-link queue policy cannot express
+    in a single decision. This is a scoping choice about the *control*, not a claim about how
+    mission plans are distributed — nothing here says plan updates are single-addressee.
+    (`[S]`; presentational/control scope.)
+29. **L5's `trackCompleteness` is a scalar stand-in for local fusion quality.** Not a track table,
+    a correlation state, or any A-GRA field. It is fed by delivered `ObservationMeasurementReportMT`
+    and decays when they are shed, which is grounded — MS Vol §1.2.4.1 states that only a subset of
+    OMRs are associated with a given track and that fused tracks feed the COP — but the *scalar* is
+    ours, exactly as `cop` is (item 4). It is deliberately floored rather than allowed to reach
+    zero, because the same section notes a platform that cannot fuse locally can still use
+    pre-fused tracks. (`[S]`; generalises item 4.)
+30. **Shedding costs fidelity but can never lose L5; a stale follower can.** The asymmetry is
+    authored, so that shedding stays the *correct* call under COP pressure while ceasing to be a
+    free one — the pre-WP5 level degraded nothing when you shed, and so taught that triage is
+    costless. Resuming restores bulk at a **sustainable** rate rather than the original firehose:
+    restoring the rate that caused the starvation would make the prompt a trap. (`[S]`; game
+    balance, no A-GRA claim.)
+31. **L3's counterfactual is computed, not authored.** The debrief's "on this seed, Raft would have
+    cost N messages" line comes from replaying the other branch headlessly
+    (`packages/core/src/counterfactual.ts`), so it is exact and cannot drift when the scenario is
+    retuned. The message *costs* it reports are the game's election model, which rests on design-set
+    assertion, not primary text — see VERIFY P1/P2. (No `[S]`; noted because the number looks
+    authoritative and its provenance is the model, not the standard.)
 
 **Nothing in this list alters topology, endpoints, interface assignment, or authority gating** — the
 four things the guard rail protects.

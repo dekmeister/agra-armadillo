@@ -12,7 +12,7 @@ import { apply, createInitialState, tick } from "../src/index.ts";
 import { TUTORIAL_SEED } from "../src/scenario.ts";
 import type { Action, BeatId, GameState } from "../src/types.ts";
 
-type Strat = "none" | "edf" | "class" | "reroute" | "rerequest";
+type Strat = "none" | "edf" | "class" | "reroute" | "rerequest" | "acp3";
 
 /** What the player does when a given beat appears, for each strategy. */
 function actionFor(strat: Strat, beat: BeatId): Action | null {
@@ -22,6 +22,7 @@ function actionFor(strat: Strat, beat: BeatId): Action | null {
     return { type: "setPolicy", linkId: "bad", policy: "class" };
   if (strat === "reroute" && beat === "missing-ack") return { type: "reroute" };
   if (strat === "rerequest" && beat === "missing-ack") return { type: "rerequest" };
+  if (strat === "acp3" && beat === "missing-ack") return { type: "requestVia", nodeId: "acp3" };
   return null;
 }
 
@@ -62,5 +63,23 @@ describe("the clamped tutorial seed", () => {
 
   it("the re-request trap (re-routes onto the same BAD link) loses", () => {
     expect(play("rerequest").outcome).toBe("loss");
+  });
+
+  it("asking ACP-3 loses BY REJECTION — the wrong-authority trap (WP5.3)", () => {
+    // The point of this branch is that it must fail for the RBAC reason, not by running
+    // out of clock: the request reaches ACP-3 over a clean link, perfectly, and is
+    // refused because an AVC is not the Target Authority. If a retune ever makes this
+    // lose on the WEZ deadline instead, the lesson silently becomes "that path was too
+    // slow" rather than "that node was never allowed to answer".
+    const s = play("acp3");
+    expect(s.outcome).toBe("loss");
+    const replies = Object.values(s.interactions)
+      .map((i) => i.reply)
+      .filter((id): id is string => !!id)
+      .map((id) => s.messages[id]);
+    const rejected = replies.find((m) => m?.approval === "REJECTED");
+    expect(rejected, "no REJECTED reply — the RBAC gate never fired").toBeTruthy();
+    expect(rejected?.authorityVerified).toBe(false);
+    expect(s.failReason ?? "").toMatch(/authority/i);
   });
 });

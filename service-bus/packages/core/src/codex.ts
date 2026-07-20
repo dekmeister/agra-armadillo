@@ -6,6 +6,10 @@
  * renders this table rather than a hand-maintained copy of it, so the two cannot
  * disagree. See `test/codex.test.ts` for the guards.
  *
+ * Note the MS and MD entries carry no `MA_` prefix: subsystem-side messages in the
+ * Mission Systems Volume are named without it, and inventing one to make the table look
+ * uniform would be exactly the kind of plausible-looking fiction the guard rail forbids.
+ *
  * PROVENANCE. Every name below except `MA_SynchronizeGlobalCopToPeer` is confirmed
  * against `A-GRA_MessageDefinitions_v5_0_a.xsd` (the normative schema, in the sibling
  * brain-swap repo — see CLAUDE.md). That check is what caught the invented
@@ -75,19 +79,19 @@ export const MESSAGE_CODEX: Record<MessageType, CodexEntry> = {
     cls: "C2",
     direction: "C2 node -> MA",
     role: "Routine ROE traffic. In the game it is the congestion that competes with the approval reply on a degraded link — the reason queue policy matters.",
-    levels: [4, 6],
+    levels: [6],
     status: "exercised",
     provenance: "xsd",
   },
   MA_CommTeamReportMT: {
     cls: "C2",
-    direction: "MA -> C2 node (L2); MA -> MA (L5 bulk)",
-    role: "Link-health / status report. L2 uses it for the report round trip that teaches FAIL_MISSING_ACK; L5 spawns it as deferrable bulk.",
-    levels: [2, 5],
+    direction: "MA -> C2 node",
+    role: "Link-health / status report. L2 uses it for the report round trip that teaches FAIL_MISSING_ACK.",
+    levels: [2],
     status: "exercised",
     provenance: "xsd",
     caveat:
-      "L5 spawns this at class MD to stand in for deferrable bulk — see docs/01 item 17 on shared-air contention.",
+      "Until WP5.2 L5 also spawned this at class MD to stand in for deferrable bulk — one message type flying as three different interface classes. L5 now uses the real ObservationMeasurementReportMT instead.",
   },
   MA_SynchronizeGlobalCopToPeer: {
     cls: "P2P",
@@ -120,7 +124,7 @@ export const MESSAGE_CODEX: Record<MessageType, CodexEntry> = {
   MA_TaskMT: {
     cls: "P2P",
     direction: "MA -> MA (intra-package)",
-    role: "Formation/teaming task — the FollowFormation heartbeat that must keep flowing while sharing a capped link with routine C2 (L4's bandwidth lesson).",
+    role: "Formation/teaming task — the FollowFormation heartbeat that must keep reaching each follower while sharing a capped link with an MP mission-plan update (L4's bandwidth lesson).",
     levels: [4],
     status: "exercised",
     provenance: "xsd",
@@ -128,8 +132,8 @@ export const MESSAGE_CODEX: Record<MessageType, CodexEntry> = {
   MA_FlightCommandMT: {
     cls: "VI",
     direction: "MA -> FA (on-platform)",
-    role: "The vehicle command — HSA_CSA or WaypointFollowing. Renders as the VI self-loop: it never crosses the air, costs no bandwidth and cannot burst-lose. That contrast is L1/L2's headline lesson.",
-    levels: [1, 2],
+    role: "The vehicle command — HSA_CSA or WaypointFollowing. Renders as the VI self-loop: it never crosses the air, costs no bandwidth and cannot burst-lose. That contrast is L1/L2's headline lesson, and L8 flies the final approach with it.",
+    levels: [1, 2, 8],
     status: "exercised",
     provenance: "xsd",
     caveat:
@@ -148,12 +152,81 @@ export const MESSAGE_CODEX: Record<MessageType, CodexEntry> = {
   MA_CommAvailableEndpointsMT: {
     cls: "P2P",
     direction: "MA -> MA (intra-package)",
-    role: "Publish Network Endpoint Availability — peer-join / endpoint advertisement. The campaign models link health through the Inspector's quality bar instead, so this never flies.",
-    levels: [],
-    status: "declared-only",
+    role: "Publish Network Endpoint Availability — peer-join / endpoint advertisement. L3 flies it as the package-joining traffic that forms the team before any leader exists to elect.",
+    levels: [3],
+    status: "exercised",
     provenance: "xsd",
     caveat:
-      "Declared to keep the seam honest (docs/01 L63): the game surfaces endpoint availability as a per-link readout rather than as messages.",
+      "The game still surfaces ongoing link health as the Inspector's per-link quality readout rather than as a message stream; L3 uses this only for the initial join (docs/01 L63).",
+  },
+
+  // --- MS: the PNT service package (L1) -------------------------------------
+  // MS Volume §1.2.7.1 "Request PNT Navigation Data" (~L2063-2085) gives this whole
+  // four-message sequence verbatim; all four names are XSD-confirmed. It runs MA <->
+  // *local* MS over the on-platform ASB, so like VI it is reliable and free.
+  SubsystemStatusDataRequestMT: {
+    cls: "MS",
+    direction: "MA -> MS (on-platform)",
+    role: "Step 1 of PNT init: MA asks the Mission Systems subsystem whether it can supply position at all, before relying on it.",
+    levels: [1],
+    status: "exercised",
+    provenance: "xsd",
+  },
+  SubsystemStatusDataRequestStatusMT: {
+    cls: "MS",
+    direction: "MS -> MA (on-platform)",
+    role: "Step 2: the MS reports its own health and status back. The request is not answered until this returns — the same round-trip rule as every C2 command.",
+    levels: [1],
+    status: "exercised",
+    provenance: "xsd",
+  },
+  SubsystemSettingsCommandMT: {
+    cls: "MS",
+    direction: "MA -> MS (on-platform)",
+    role: "Step 3: MA commands the PNT service how often to publish. Configuration, not a data request — the subscription model in miniature.",
+    levels: [1],
+    status: "exercised",
+    provenance: "xsd",
+  },
+  MA_PositionReportDetailedMT: {
+    cls: "MS",
+    direction: "MS -> MA (on-platform)",
+    role: "Step 4 and the product: detailed ACP position, published at the commanded rate. The free on-platform loop that runs alongside the VI one in L1.",
+    levels: [1],
+    status: "exercised",
+    provenance: "xsd",
+  },
+
+  // --- MD: sensor track distribution (L5) ------------------------------------
+  ObservationMeasurementReportMT: {
+    cls: "MD",
+    direction: "MS -> MA, and MA -> MA across the package",
+    role: "Raw sensor observations (OMRs) that local fusion builds tracks from. L5's deferrable bulk: shedding it protects the COP fan-out but decays your own track completeness — the trade that makes shedding triage rather than a free win.",
+    levels: [5],
+    status: "exercised",
+    provenance: "xsd",
+    caveat:
+      "MS Volume §1.2.4.1 (~L1350-1400) defines it and states that only a SUBSET of OMRs are associated with any given track, and that fused tracks then feed the COP — which is what makes it deferrable and what the cost model rests on.",
+  },
+
+  // --- MP: the mission-planning interface (L4) -------------------------------
+  MA_MissionPlanCommandMT: {
+    cls: "MP",
+    direction: "C2 node -> MA -> MA (two hops, into and across the package)",
+    role: "An OTA mission-plan update re-tasking a formation member. L4's competing traffic: important, but deadline-free, so it is exactly what should yield to a formation heartbeat.",
+    levels: [4],
+    status: "exercised",
+    provenance: "xsd",
+    caveat:
+      "MP's one honest appearance in the campaign. Before WP5.1 no message anywhere was class MP; L5 faked it by spawning MA_CommTeamReportMT at that class.",
+  },
+  MA_MissionPlanCommandStatusMT: {
+    cls: "MP",
+    direction: "MA -> MA (back to the leader)",
+    role: "The plan update's required status reply. Its arrival is what makes the plan push an interaction rather than a fire-and-forget push.",
+    levels: [4],
+    status: "exercised",
+    provenance: "xsd",
   },
 };
 

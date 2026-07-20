@@ -9,6 +9,12 @@
  *
  * Topology (identical shape to L1, the level this bookends):
  *   ACP-1 (leader) <-C2-> LRE     one clean landing round trip
+ *   ACP-1 -> ACP-1                the on-platform VI loop flying the final approach
+ *
+ * The VI loop is the other half of the bookend: L1 opened with MA_FlightCommandMT taking
+ * the aircraft off, L8 closes with it flying the approach. VI control modes for final
+ * approach are the Vehicle Interface Volume's own territory (WaypointFollowing / Heading,
+ * Tables A-1-52/53/56) — and, as in L1, it never crosses the air.
  *
  * [S] takeoff/landing/RTB collapsed to one MA_TaskCommandMT/MA_TaskStatusMT round trip.
  *     No degradation — the capstone is about fluency and recap, not new stress.
@@ -18,6 +24,9 @@ import { adjudicate } from "../rbac.ts";
 import { destNode, log, mkLink, mkNode, raiseBeat, spawn } from "../runtime.ts";
 import type { ScenarioDef } from "../scenario-def.ts";
 import type { GameState, Interaction, Link, Message, SimNode } from "../types.ts";
+
+/** VI cadence on the approach — mirrors L1's free on-platform loop. */
+const VI_PERIOD = 2;
 
 const DEFAULT_CONFIG = {
   seed: 1,
@@ -48,15 +57,16 @@ export const phase8: ScenarioDef = {
   beats: {
     "campaign-debrief": {
       id: "campaign-debrief",
-      title: "Debrief — landing under LRE authority",
+      title: "Landing clearance is the LRE's to give",
       summary:
-        "Landing is the LRE's call, like takeoff (L1) and RTB (L7) — not the QB's. One clean round trip closes the campaign.",
+        "The request has reached the LRE. Landing is its call, like takeoff (L1) and RTB (L7) — never the QB's.",
       concept:
-        "The campaign toured the topology: C2 command round trips gated by role (LRE for takeoff/landing/" +
-        "RTB, QB for weapon employment), P2P for team formation / leader election / COP fan-out, MS/DMS " +
-        "reroutes across the contested air, and the on-platform VI/sensor lanes that never leave the " +
-        "platform. Only C2/P2P/MS cross the air and feel burst loss, bandwidth and latency. This final " +
-        "landing is a clean LRE-authorised round trip — authority is contextual, and here it's the LRE's.",
+        "Watch the last round trip close. The same C2 command type you sent in L1 and L7 is in flight " +
+        "again, and once again what decides the outcome is not where it went but who was standing at the " +
+        "other end: the LRE holds takeoff, landing and recovery, and holds nothing else. In L6 the very " +
+        "same pattern with the QB at the far end released a weapon — and a request that reached a node " +
+        "without that authority arrived perfectly and did nothing. Authority is contextual, checked at " +
+        "the destination, every time.",
       focus: { kind: "link", id: "landReq" },
       actions: [],
     },
@@ -72,6 +82,7 @@ export const phase8: ScenarioDef = {
       // latency 2 so the debrief beat surfaces before the round trip wins.
       landReq: cleanLink({ id: "landReq", from: "acp1", to: "lre", cls: "C2", latency: 2 }),
       landRep: cleanLink({ id: "landRep", from: "lre", to: "acp1", cls: "C2", latency: 2 }),
+      vi: cleanLink({ id: "vi", from: "acp1", to: "acp1", cls: "VI" }),
     };
     return {
       scenarioId: "phase8",
@@ -119,7 +130,18 @@ export const phase8: ScenarioDef = {
   },
 
   generateDemand(s) {
-    raiseBeat(s, phase8, "campaign-debrief");
+    // The approach itself: on-platform VI commands to Flight Autonomy, free and reliable,
+    // closing the bookend L1 opened.
+    if (s.tick % VI_PERIOD === 1) {
+      spawn(s, { type: "MA_FlightCommandMT", cls: "VI", route: ["vi"], leg: "oneway" });
+    }
+    // The beat used to fire at T+1, narrating the landing round trip before any of it had
+    // happened (WP5.5/WP6.1). It now waits for the request to have reached the LRE, so it
+    // comments on something the player has watched. The campaign SYNTHESIS proper moved
+    // out of here entirely and into the win debrief, where the mission is actually over.
+    const ixn = activeLanding(s);
+    const req = ixn ? s.messages[ixn.request] : null;
+    if (req && (req.state === "SENT" || ixn?.reply)) raiseBeat(s, phase8, "campaign-debrief");
   },
 
   onDelivered(s, msg) {
@@ -139,7 +161,13 @@ export const phase8: ScenarioDef = {
       });
       ixn.reply = reply.id;
       ixn.status = status === "APPROVED" ? "approved" : "rejected";
-      log(s, "LRE cleared landing — MA_TaskStatusMT en route → ACP-1.", "info");
+      log(
+        s,
+        status === "APPROVED"
+          ? "LRE cleared landing — MA_TaskStatusMT en route → ACP-1."
+          : "Landing clearance REJECTED at destination — not the LRE's authority to give.",
+        status === "APPROVED" ? "info" : "fail",
+      );
     }
   },
 

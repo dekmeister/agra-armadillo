@@ -14,117 +14,21 @@
  *
  * The second direction is the one that matters when WP5 changes traffic: if a level
  * stops emitting something, the codex is forced to stop advertising it.
+ *
+ * The replay harness itself (`typesForLevel`, and the taught-path action choosers it
+ * runs) lives in `src/replay.ts` — WP5's picker-honesty guard needs the same loop, and
+ * two copies would be two things to keep in step.
  */
 import { describe, expect, it } from "vitest";
 import {
-  apply,
   CAMPAIGN,
-  createInitialState,
   KNOWN_MESSAGE_NAMES,
   LIFECYCLE_SOURCE,
   MESSAGE_CODEX,
   REFERENCE_MESSAGE_NAMES,
-  tick,
+  typesForLevel,
 } from "../src/index.ts";
-import type { Action, GameState, MessageType } from "../src/types.ts";
-
-/**
- * Play a level on its tutorial seed under a per-tick action chooser, acknowledging
- * beats so the clock keeps moving, and return every message type it spawned.
- * Mirrors the `play()` loop in tutorial-seeds.test.ts.
- */
-function typesEmittedBy(
-  scenarioId: string,
-  seed: number,
-  choose: (s: GameState) => Action | null,
-  maxTicks = 60,
-): Set<MessageType> {
-  let s: GameState = createInitialState(seed, { scenarioId });
-  const seen = new Set<MessageType>();
-  const collect = () => {
-    for (const m of Object.values(s.messages)) seen.add(m.type);
-  };
-  collect();
-  for (let t = 1; t <= maxTicks && s.outcome === "pending"; t++) {
-    s = tick(s);
-    const a = choose(s);
-    if (a) s = apply(s, a);
-    if (s.pendingBeat) s = apply(s, { type: "acknowledgeBeat" });
-    collect();
-  }
-  return seen;
-}
-
-/**
- * The taught action for each level — the choice its Help text tells the player to
- * make, matching the winning paths locked in tutorial-seeds.test.ts. Needed because
- * some traffic only exists downstream of a decision: the election messages (L3, L7)
- * are never emitted under passive play, since passivity is precisely the losing
- * "never elect" branch. A codex built from passive play alone would wrongly conclude
- * MA_LeaderUpdateRequestMT is dead code.
- */
-const TAUGHT: Record<string, () => (s: GameState) => Action | null> = {
-  phase3: () => {
-    let picked = false;
-    return () => {
-      if (picked) return null;
-      picked = true;
-      return { type: "pickElection", method: "static" };
-    };
-  },
-  phase4: () => {
-    let set = false;
-    return () => {
-      if (set) return null;
-      set = true;
-      return { type: "setPolicy", linkId: "form", policy: "class" };
-    };
-  },
-  phase5: () => {
-    let shed = false;
-    return () => {
-      if (shed) return null;
-      shed = true;
-      return { type: "shedTraffic" };
-    };
-  },
-  phase6: () => {
-    let rerouted = false;
-    return (s) => {
-      if (!rerouted && s.pendingBeat?.id === "missing-ack") {
-        rerouted = true;
-        return { type: "reroute" };
-      }
-      return null;
-    };
-  },
-  phase7: () => {
-    let merged = false;
-    return (s) => {
-      if (s.pendingBeat?.id === "authority-handback") return { type: "handBack" };
-      if (s.pendingBeat?.id === "split-brain") return { type: "pickElection", method: "static" };
-      if (!merged && s.election?.leader && s.partition) {
-        merged = true;
-        return { type: "mergeTeam" };
-      }
-      return null;
-    };
-  },
-};
-
-/**
- * Everything a level can put on the wire: passive play unioned with the taught
- * path. Both matter — passive covers baseline/background traffic that a quick
- * winning run may skip, the taught path covers decision-gated traffic.
- */
-function typesForLevel(scenarioId: string, seed: number): Set<MessageType> {
-  const all = typesEmittedBy(scenarioId, seed, () => null);
-  const taught = TAUGHT[scenarioId];
-  if (taught) {
-    for (const t of typesEmittedBy(scenarioId, seed, taught())) all.add(t);
-  }
-  return all;
-}
+import type { MessageType } from "../src/types.ts";
 
 /** Union of everything the campaign puts on the wire, across all 8 levels. */
 function campaignMessageTypes(): Set<MessageType> {

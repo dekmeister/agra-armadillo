@@ -150,6 +150,12 @@ class GameStore {
   shedTraffic(): void {
     this.#act({ type: "shedTraffic" }); // L5
   }
+  resumeTraffic(): void {
+    this.#act({ type: "resumeTraffic" }); // L5: undo the shed once the fan-out recovers
+  }
+  requestVia(nodeId: string): void {
+    this.#act({ type: "requestVia", nodeId }); // L6: re-address the approval (RBAC lesson)
+  }
   handBack(): void {
     this.#act({ type: "handBack" }); // L7: QB → LRE authority
   }

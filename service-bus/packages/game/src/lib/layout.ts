@@ -37,8 +37,9 @@ export interface MeshHull {
   rx: number;
   /**
    * What this medium is. Only boards where three or more platforms actually peer may
-   * call it a *mesh* — Phase 4 is two platforms and one link, and labelling that a mesh
-   * would imply peering the topology does not have (guard rail).
+   * call it a *mesh*; labelling a two-node board one would imply peering the topology
+   * does not have (guard rail). Phase 4 was such a board until WP5.1 grew it to a
+   * three-ship formation, at which point it earned the label.
    */
   label: string;
   /** Caption corner — `bl` unless a node occupies the bottom-left of the hull. */
@@ -117,10 +118,14 @@ const TRI_NODES: Record<string, NodeGeom> = {
   acp3: { x: 708, y: 340, r: 42 },
 };
 
-// L4 — two platforms, one capped link.
+// L4 — the QB pushes a plan down through the leader to a three-ship formation (WP5.1;
+// was two platforms and one link). Laid out along the direction of flow: QB on top,
+// ACP-1 relaying in the middle, the two followers below.
 const PHASE4_NODES: Record<string, NodeGeom> = {
-  acp1: { x: 380, y: 210, r: 46 },
-  acp2: { x: 740, y: 210, r: 44 },
+  qb: { x: 540, y: 76, r: 40 },
+  acp1: { x: 540, y: 236, r: 46 },
+  acp2: { x: 380, y: 396, r: 40 },
+  acp3: { x: 700, y: 396, r: 40 },
 };
 
 // L5 — leader over three followers (COP fan-out).
@@ -226,11 +231,10 @@ export const LAYOUTS: Record<string, ScenarioLayout> = {
   // puts ACP-2 in the bottom-left corner, and its selection ring runs over the text.
   phase3: mk(TRI_NODES, { mesh: hull(TRI_NODES, { label: MESH_LABEL, labelPos: "tl" }) }),
 
-  // L4 — two platforms, one capped link. NOT a mesh: two peers do not make a pub-sub
-  // mesh, and labelling it one would imply peering this topology does not have.
-  phase4: mk(PHASE4_NODES, {
-    mesh: hull(PHASE4_NODES, { rx: 34, label: "OTA · P2P formation link" }),
-  }),
+  // L4 — three ACPs peering plus the QB pushing the plan in. Now a genuine mesh (it was
+  // two platforms and one link before WP5.1, which is why it used to be labelled a plain
+  // link — two peers do not make a pub-sub mesh).
+  phase4: mk(PHASE4_NODES, { mesh: hull(PHASE4_NODES, { label: MESH_LABEL }) }),
 
   // L5 — leader over three followers (COP fan-out).
   phase5: mk(PHASE5_NODES, { mesh: hull(PHASE5_NODES, { label: MESH_LABEL }) }),
@@ -297,18 +301,32 @@ export function straightPath(
   return `M ${r(a.x)} ${r(a.y)} L ${r(b.x)} ${r(b.y)}`;
 }
 
+/**
+ * Vertical centre of one of a node's self-loop lobes.
+ *
+ * A node can carry more than one on-platform lane — L1 has both the VI loop to Flight
+ * Autonomy and the MS loop to local Mission Systems (WP5.6) — and before this they drew
+ * as one lobe with two captions stacked on the same pixel. Lobes are stacked vertically
+ * and centred on the node, which keeps them all in the same x-band: the "self-loop lobes
+ * stay outside the OTA field" guard is an x-axis test, so it holds regardless of count.
+ */
+function loopCy(node: NodeGeom, index: number, count: number): number {
+  const rr = node.r * 0.62;
+  return node.y + (index - (count - 1) / 2) * (2 * rr + 8);
+}
+
 /** A self-loop link (from === to): a small arc hugging the node's right rim. */
-export function selfLoopPath(node: NodeGeom): string {
+export function selfLoopPath(node: NodeGeom, index = 0, count = 1): string {
   const cx = node.x + node.r;
-  const cy = node.y;
+  const cy = loopCy(node, index, count);
   const rr = node.r * 0.62;
   // Two arcs forming a lobe to the node's right (an on-platform loop, off the mesh).
   return `M ${r(cx)} ${r(cy - rr * 0.5)} A ${r(rr)} ${r(rr)} 0 1 1 ${r(cx)} ${r(cy + rr * 0.5)}`;
 }
 
 /** Token position for a self-loop: inside the lobe, near its centre. */
-export function selfLoopPoint(node: NodeGeom): Pt {
-  return { x: node.x + node.r + node.r * 0.62, y: node.y };
+export function selfLoopPoint(node: NodeGeom, index = 0, count = 1): Pt {
+  return { x: node.x + node.r + node.r * 0.62, y: loopCy(node, index, count) };
 }
 
 /**
@@ -319,17 +337,21 @@ export function selfLoopPoint(node: NodeGeom): Pt {
  * markedly further than the token point suggests. The pair boards' mesh hull is clamped
  * against this box so the on-platform loop never overlaps the OTA field.
  */
-export function selfLoopBBox(node: NodeGeom): { x: number; y: number; w: number; h: number } {
+export function selfLoopBBox(
+  node: NodeGeom,
+  index = 0,
+  count = 1,
+): { x: number; y: number; w: number; h: number } {
   const rr = node.r * 0.62;
   const x0 = node.x + node.r; // the chord
   const cx = x0 + (rr * Math.sqrt(3)) / 2; // arc centre
-  return { x: x0, y: node.y - rr, w: cx + rr - x0, h: 2 * rr };
+  return { x: x0, y: loopCy(node, index, count) - rr, w: cx + rr - x0, h: 2 * rr };
 }
 
 /** Caption anchor for a self-loop: just outboard of the lobe, vertically centred. */
-export function selfLoopLabelPoint(node: NodeGeom): Pt {
-  const b = selfLoopBBox(node);
-  return { x: r(b.x + b.w + 10), y: node.y + 4 };
+export function selfLoopLabelPoint(node: NodeGeom, index = 0, count = 1): Pt {
+  const b = selfLoopBBox(node, index, count);
+  return { x: r(b.x + b.w + 10), y: loopCy(node, index, count) + 4 };
 }
 
 /** Unit normal of a link's rail — the direction lane/sidecar offsets push along. */

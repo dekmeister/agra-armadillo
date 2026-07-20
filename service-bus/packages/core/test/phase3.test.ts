@@ -73,11 +73,50 @@ describe("Phase 3 — Team Formation", () => {
     expect(s.outcome).toBe("loss");
   });
 
-  it("raises the election-cost beat before any terminal tick", () => {
+  it("shows the package forming before asking which election method to use", () => {
+    // WP5.4/WP6.1: the beat used to fire at T+1, asking the player to weigh the message
+    // cost of two methods with an empty board in front of them. It must now wait until
+    // peer-join traffic has completed at least one full leg, so the "coordination costs
+    // messages" claim is something they have watched rather than been told.
     let s = createInitialState(1, p3());
     s = tick(s);
-    expect(s.pendingBeat?.id).toBe("election-cost");
+    expect(s.pendingBeat?.id, "election decision raised before any traffic moved").not.toBe(
+      "election-cost",
+    );
+
+    let raisedAt: number | null = null;
+    let joinsDelivered = 0;
+    for (let t = 1; t <= 25 && s.outcome === "pending" && raisedAt === null; t++) {
+      joinsDelivered = Object.values(s.messages).filter(
+        (m) => m.type === "MA_CommAvailableEndpointsMT" && m.state === "SENT",
+      ).length;
+      if (s.pendingBeat?.id === "election-cost") raisedAt = s.tick;
+      else s = tick(s);
+    }
+    expect(raisedAt, "election-cost never raised").not.toBeNull();
+    expect(joinsDelivered, "no peer joins had landed by the decision").toBeGreaterThan(0);
     expect(s.outcome).toBe("pending");
+  });
+
+  it("lets a stalled Raft election be replaced by Static", () => {
+    // The `quorum` beat offers pickElection again, but startElection refuses to begin a
+    // second election while one is in flight — so before WP5.4 taking the beat's own
+    // advice after a Raft stall did nothing at all.
+    let s = createInitialState(1, { ...p3(), config: { contingencyTick: 1 } });
+    for (let t = 1; t <= 4; t++) {
+      s = tick(s);
+      if (s.pendingBeat) s = apply(s, { type: "acknowledgeBeat" });
+    }
+    s = apply(s, { type: "pickElection", method: "raft" });
+    for (let t = 1; t <= 6; t++) {
+      s = tick(s);
+      if (s.pendingBeat) s = apply(s, { type: "acknowledgeBeat" });
+    }
+    expect(s.election?.leader, "Raft should be stalled on the severed mesh").toBeFalsy();
+
+    s = apply(s, { type: "pickElection", method: "static" });
+    expect(s.election?.method).toBe("static");
+    expect(s.election?.leader, "Static declares locally, no quorum needed").toBeTruthy();
   });
 
   it("is deterministic per seed", () => {

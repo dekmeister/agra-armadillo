@@ -55,7 +55,14 @@ export const DEFAULT_CONFIG = {
  * and the re-request trap loses — so the lesson always lands. Locked by
  * test/tutorial-seed.test.ts; changing scenario balance must re-find it.
  */
-export const TUTORIAL_SEED = 1412;
+/**
+ * The clamped tutorial seed. Re-scanned in WP5.3: adding the ACP-3 approval links changed
+ * how many channels `stepChannel` steps per tick, which shifts every subsequent RNG draw,
+ * so 1412's carefully-staged drama no longer played on the new topology. 140 is the
+ * lowest seed satisfying the full matrix in test/tutorial-seed.test.ts — including the
+ * new requirement that asking ACP-3 loses *by rejection*, not by running out of clock.
+ */
+export const TUTORIAL_SEED = 140;
 
 /** Back-compat factory (re-exported from scenario.ts and @service-bus/core). */
 export function buildPhase6(seed: number, opts: ScenarioOpts = {}): GameState {
@@ -87,12 +94,32 @@ function fail(s: GameState, reason: string): void {
   log(s, `reply FAILED — ${reason}.`, "fail");
 }
 
-function spawnStrikeRequest(s: GameState): Interaction {
+/**
+ * Where an approval request can be addressed, and the link pair that serves it.
+ *
+ * `qb` is the Target Authority and the only endpoint that can actually approve. `acp3`
+ * exists so the RBAC lesson is REACHABLE (WP5.3): the machinery for a wrong-authority
+ * rejection was fully built and tested but unreachable in play, because every request
+ * routed to the QB and so the check always passed. The game's own tagline — authority is
+ * checked at the destination, arrival != effect — was never experienced as a failure.
+ *
+ * ACP-3 is an AVC: a real commander of flight tasks, weapon-restricted by default. That
+ * makes it the *tempting* wrong answer rather than an obviously silly one, which is the
+ * point — the lesson is that authority is per-interaction, not per-rank. Its links are
+ * deliberately CLEAN: the request arrives perfectly and still has no effect.
+ */
+const APPROVAL_ROUTES: Record<string, { req: string; rep: string }> = {
+  qb: { req: "req", rep: "bad" },
+  acp3: { req: "reqAcp3", rep: "repAcp3" },
+};
+
+function spawnStrikeRequest(s: GameState, dest = "qb"): Interaction {
+  const route = APPROVAL_ROUTES[dest] ?? APPROVAL_ROUTES.qb;
   const id = `ixn-${s.nextSeq}`;
   const req = spawn(s, {
     type: "MA_ApprovalRequestMT",
     cls: "C2",
-    route: ["req"],
+    route: [route?.req ?? "req"],
     leg: "request",
     ixn: id,
     priority: 2,
@@ -105,7 +132,11 @@ function spawnStrikeRequest(s: GameState): Interaction {
     status: "open",
   };
   s.interactions[id] = ixn;
-  log(s, "MA_ApprovalRequestMT issued — ACP-1 → QB (strike approval).", "info");
+  log(
+    s,
+    `MA_ApprovalRequestMT issued — ACP-1 → ${s.nodes[dest]?.label ?? dest} (strike approval).`,
+    "info",
+  );
   return ixn;
 }
 
@@ -114,11 +145,13 @@ function spawnReply(
   ixn: Interaction,
   status: "APPROVED" | "REJECTED",
   authorityVerified: boolean,
+  from = "qb",
 ): void {
+  const route = APPROVAL_ROUTES[from] ?? APPROVAL_ROUTES.qb;
   const reply = spawn(s, {
     type: "MA_ApprovalRequestStatusMT",
     cls: "C2",
-    route: ["bad"],
+    route: [route?.rep ?? "bad"],
     leg: "reply",
     ixn: ixn.id,
     priority: 3, // outranks routine C2 under the `class` policy
@@ -127,11 +160,15 @@ function spawnReply(
     authorityVerified,
   });
   ixn.reply = reply.id;
+  const who = s.nodes[from]?.label ?? from;
+  const role = s.nodes[from]?.role ?? "?";
   log(
     s,
     status === "APPROVED"
-      ? "QB authorised — MA_ApprovalRequestStatusMT(APPROVED) en route → ACP-1."
-      : "QB role check FAILED at destination — MA_ApprovalRequestStatusMT(REJECTED).",
+      ? `${who} authorised — MA_ApprovalRequestStatusMT(APPROVED) en route → ACP-1.`
+      : `${who} is ${role}, not the Target Authority — role check FAILED at the destination. ` +
+          "MA_ApprovalRequestStatusMT(REJECTED / CannotComply). The request arrived perfectly; " +
+          "it simply had no effect.",
     status === "APPROVED" ? "info" : "fail",
   );
 }
@@ -148,12 +185,18 @@ function rerouteReply(s: GameState): void {
   log(s, "Reply rerouted QB → ACP-2 → ACP-1 via ACP-2's DMS.", "info");
 }
 
-function rerequestStrike(s: GameState): void {
+function rerequestStrike(s: GameState, dest = "qb"): void {
   const ixn = activeStrike(s);
   if (ixn) ixn.status = "failed";
-  spawnStrikeRequest(s);
+  spawnStrikeRequest(s, dest);
   if (s.armed) s.wezDeadlineTick = s.tick + s.config.wezWindow;
-  log(s, "Strike approval re-requested (fresh interaction).", "info");
+  log(
+    s,
+    dest === "qb"
+      ? "Strike approval re-requested (fresh interaction)."
+      : `Strike approval re-addressed to ${s.nodes[dest]?.label ?? dest} (fresh interaction).`,
+    "info",
+  );
 }
 
 const BEAT_DEFS: Record<
@@ -188,14 +231,16 @@ const BEAT_DEFS: Record<
   "missing-ack": {
     id: "missing-ack",
     title: "Reply FAIL_MISSING_ACK — sent, unconfirmed",
-    summary: "Reply sent but never confirmed. Reroute around the BAD hop, or re-request (risky).",
+    summary:
+      "Reply sent but never confirmed. Reroute around the BAD hop, re-request, or find another authority.",
     concept:
       "The reply left the queue but no delivery confirmation came back — the insidious " +
       "return-leg failure. Arrival ≠ approval: you cannot assume it landed. Reroute it around " +
       "the BAD hop via ACP-2's DMS, or re-request (which re-routes onto the same BAD link — " +
-      "usually not enough on its own).",
+      "usually not enough on its own). ACP-3 is also airborne on a clean link and could answer " +
+      "immediately — but check what it is allowed to answer before you ask it.",
     focus: { kind: "link", id: "bad" },
-    actions: ["reroute", "rerequest"],
+    actions: ["reroute", "rerequest", "requestVia"],
   },
   "cop-warning": {
     id: "cop-warning",
@@ -218,7 +263,7 @@ export const phase6: ScenarioDef = {
   phase: 6,
   title: "Threat Engagement at CAP",
   defaultConfig: DEFAULT_CONFIG,
-  tutorialSeed: TUTORIAL_SEED, // 1412 — the clamped MVP seed (see test/tutorial-seed.test.ts)
+  tutorialSeed: TUTORIAL_SEED, // the clamped MVP seed (see test/tutorial-seed.test.ts)
   beats: BEAT_DEFS,
 
   build(seed, opts = {}) {
@@ -236,6 +281,30 @@ export const phase6: ScenarioDef = {
       bad: mkLink({ id: "bad", from: "qb", to: "acp1", cls: "C2" }),
       p2p: mkLink({ id: "p2p", from: "acp1", to: "acp2", cls: "P2P" }),
       p2p3: mkLink({ id: "p2p3", from: "acp1", to: "acp3", cls: "P2P" }),
+      // The wrong-authority path (WP5.3). Clean on purpose: ACP-3 is reachable, the
+      // request gets there intact, and it still cannot approve a weapon release.
+      reqAcp3: mkLink({
+        id: "reqAcp3",
+        from: "acp1",
+        to: "acp3",
+        cls: "C2",
+        pGoodToBad: 0,
+        pBadToGood: 1,
+        blockGood: 0,
+        blockBad: 0,
+        ackLoss: 0,
+      }),
+      repAcp3: mkLink({
+        id: "repAcp3",
+        from: "acp3",
+        to: "acp1",
+        cls: "C2",
+        pGoodToBad: 0,
+        pBadToGood: 1,
+        blockGood: 0,
+        blockBad: 0,
+        ackLoss: 0,
+      }),
       relayQbAcp2: mkLink({ id: "relayQbAcp2", from: "qb", to: "acp2", cls: "MS", latency: 2 }),
       relayAcp2Acp1: mkLink({
         id: "relayAcp2Acp1",
@@ -305,6 +374,9 @@ export const phase6: ScenarioDef = {
       case "rerequest":
         rerequestStrike(s);
         return true;
+      case "requestVia":
+        rerequestStrike(s, action.nodeId);
+        return true;
       case "refreshCop":
         s.cop = COP_REFRESH;
         log(s, "COP refreshed via P2P picture sync · age 0s", "success");
@@ -361,11 +433,14 @@ export const phase6: ScenarioDef = {
     }
     if (msg.type === "MA_ApprovalRequestMT" && msg.ixn) {
       const ixn = s.interactions[msg.ixn];
-      const destRole = destNode(s, msg)?.role ?? "Observer";
+      const dest = destNode(s, msg);
+      const destRole = dest?.role ?? "Observer";
+      // The gate is unchanged and role-generic: whoever it reached is adjudicated on the
+      // role they declare. Routing a request somewhere does not make that node authorised.
       const status = adjudicateApproval(destRole);
       if (ixn) {
         ixn.status = status === "APPROVED" ? "approved" : "rejected";
-        spawnReply(s, ixn, status, isTargetAuthority(destRole));
+        spawnReply(s, ixn, status, isTargetAuthority(destRole), dest?.id ?? "qb");
       }
     }
   },
@@ -390,7 +465,12 @@ export const phase6: ScenarioDef = {
 
     if (reply && reply.state === "SENT") {
       if (reply.approval === "REJECTED" || !reply.authorityVerified) {
-        fail(s, "approval REJECTED — request reached a non-authority (arrival ≠ authority)");
+        fail(
+          s,
+          "strike approval REJECTED — the request reached a node that is not the Target " +
+            "Authority. It arrived intact and had no effect: authority is checked at the " +
+            "destination, and only the QB may release a weapon (arrival ≠ authority)",
+        );
         return;
       }
       if (s.copBreached) {

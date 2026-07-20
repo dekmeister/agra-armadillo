@@ -22,7 +22,7 @@
  *     the Raft quorum stall. Only Raft + Static are modelled.
  */
 
-import { log, mkLink, mkNode, raiseBeat } from "../runtime.ts";
+import { log, mkLink, mkNode, raiseBeat, spawn } from "../runtime.ts";
 import type { ScenarioDef } from "../scenario-def.ts";
 import type { GameState, Link, NodeId, SimNode } from "../types.ts";
 import { handleElectionDelivery, startElection } from "./election-flow.ts";
@@ -31,6 +31,15 @@ import { handleElectionDelivery, startElection } from "./election-flow.ts";
 const FITNESS: Record<NodeId, number> = { acp1: 2, acp2: 3, acp3: 1 };
 /** Raise the quorum-stall prompt if Raft hasn't resolved within this many ticks of the pick. */
 const STALL_WARN = 4;
+/**
+ * Hold the election decision until the package has visibly formed (WP5.4 / WP6.1).
+ *
+ * The beat used to fire at T+1, before a single message had moved: the player was asked
+ * to weigh the message cost of two election methods while looking at an empty board.
+ * Teaching by observation needs something to observe, so the peer-join traffic below gets
+ * to complete at least one full leg first.
+ */
+const JOIN_TICKS = 3;
 
 const DEFAULT_CONFIG = {
   seed: 1,
@@ -57,6 +66,19 @@ function meshLink(from: NodeId, to: NodeId): Link {
     blockBad: 1,
     ackLoss: 0,
   });
+}
+
+/** One endpoint advertisement per directed peer link — the package joining up. */
+function spawnPeerJoins(s: GameState): void {
+  for (const link of Object.values(s.links)) {
+    spawn(s, {
+      type: "MA_CommAvailableEndpointsMT",
+      cls: "P2P",
+      route: [link.id],
+      leg: "oneway",
+      priority: 1,
+    });
+  }
 }
 
 /** Install the package leader: mark the winner across the package, seed COP, log. */
@@ -154,8 +176,12 @@ export const phase3: ScenarioDef = {
     };
   },
 
-  seedDemand() {
-    // The election is player-initiated (pickElection); no opening demand.
+  seedDemand(s) {
+    // The package forms before it can elect: every peer advertises its endpoints to
+    // every other. This is the real P2P joining traffic (MA_CommAvailableEndpointsMT,
+    // "Publish Network Endpoint Availability"), and it is also what gives the player
+    // something to watch before the election decision lands.
+    spawnPeerJoins(s);
   },
 
   fireContingency(s) {
@@ -172,11 +198,19 @@ export const phase3: ScenarioDef = {
   },
 
   generateDemand(s) {
-    if (!s.election) raiseBeat(s, phase3, "election-cost");
+    // Keep advertising while the package forms, then raise the election decision once
+    // the joins have had time to land.
+    if (s.tick < JOIN_TICKS) spawnPeerJoins(s);
+    if (!s.election && s.tick >= JOIN_TICKS) raiseBeat(s, phase3, "election-cost");
   },
 
   applyAction(s, action) {
     if (action.type === "pickElection") {
+      // Clear any stalled election first. `startElection` refuses to start a second one
+      // while `s.election` is set, so without this the `quorum` beat offered a choice
+      // that silently did nothing: a player told "Static needs no quorum" would pick
+      // Static after a Raft stall and watch precisely nothing happen.
+      if (s.election && !s.election.leader) s.election = undefined;
       startElection(s, action.method, Object.values(s.nodes), FITNESS, installLeader);
       return true;
     }

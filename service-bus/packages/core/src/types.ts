@@ -76,7 +76,17 @@ export type MessageType =
   | "MA_TaskMT" // formation/teaming task, e.g. FollowFormation heartbeat (P2P)
   | "MA_FlightCommandMT" // on-platform VI command (HSA_CSA / WaypointFollowing) — never crosses the air
   | "MA_LeaderUpdateRequestMT" // leader-election payload (P2P)
-  | "MA_CommAvailableEndpointsMT"; // peer-join / endpoint advertisement (P2P)
+  | "MA_CommAvailableEndpointsMT" // peer-join / endpoint advertisement (P2P)
+  // --- MS: the PNT service package (MS Volume §1.2.7.1 "Request PNT Navigation Data") ---
+  | "SubsystemStatusDataRequestMT" // MA asks the MS whether it can provide position (MS)
+  | "SubsystemStatusDataRequestStatusMT" // MS replies with its health/status (MS)
+  | "SubsystemSettingsCommandMT" // MA commands the PNT service's publish frequency (MS)
+  | "MA_PositionReportDetailedMT" // the PNT product: detailed ACP position (MS)
+  // --- MS: sensor track distribution (MS Volume §1.2.4.1 "Distribute Single Sensor Track Data") ---
+  | "ObservationMeasurementReportMT" // raw sensor observations (OMRs) tracks are fused from (MD)
+  // --- MP: the mission-planning interface ---
+  | "MA_MissionPlanCommandMT" // push a mission-plan update to the package (MP)
+  | "MA_MissionPlanCommandStatusMT"; // its required status reply (MP)
 
 /** Approval status carried by MA_ApprovalRequestStatusMT. CannotComply == REJECTED. */
 export type ApprovalStatus = "APPROVED" | "REJECTED";
@@ -172,6 +182,8 @@ export type InteractionKind =
   | "rtb" // L7: return-to-base, authority hands back to LRE
   | "status" // L2: periodic status report (low stakes)
   | "election" // L3: leader-election round
+  | "pnt" // L1: MA <-> local MS precision navigation/time exchange (on-platform)
+  | "mission-plan" // L4: OTA mission-plan update pushed to the package
   | "command"; // generic command round trip
 
 export interface Interaction {
@@ -212,6 +224,7 @@ export type BeatId =
   // L5 — CAP
   | "cop-fanout"
   | "cop-starvation"
+  | "bulk-resume"
   // L7 — RTB
   | "authority-handback"
   | "split-brain"
@@ -246,10 +259,12 @@ export type Action =
   | { type: "setPolicy"; linkId: LinkId; policy: QueuePolicy }
   | { type: "reroute" } // reroute the stalled approval reply QB -> ACP-2 -> ACP-1 via ACP-2's DMS
   | { type: "rerequest" } // re-issue the approval request (fresh interaction)
+  | { type: "requestVia"; nodeId: NodeId } // L6: re-issue the approval to a DIFFERENT node (RBAC)
   | { type: "refreshCop" } // push a COP refresh over P2P
   | { type: "retry" } // L2: re-attempt a failed status report onto its link
   | { type: "pickElection"; method: ElectionMethod } // L3: choose the election strategy
   | { type: "shedTraffic" } // L5: drop low-priority bulk traffic to protect COP
+  | { type: "resumeTraffic" } // L5: restore the shed sensor bulk once the picture recovers
   | { type: "handBack" } // L7: hand authority back QB -> LRE for RTB
   | { type: "mergeTeam" } // L7: command-merge a split package (never automatic)
   | { type: "acknowledgeBeat" }; // dismiss the current decision point (view resumes the clock)
@@ -274,6 +289,15 @@ export interface GameState {
    * A breach is *any* follower below `copThreshold`.
    */
   copFollowers?: Record<NodeId, number>;
+  /**
+   * L5: local track/fusion completeness (0..100) — how much of the sensor picture the
+   * platform is actually building. Fed by delivered ObservationMeasurementReportMT bulk
+   * (MS Vol §1.2.4.1: OMRs are what tracks are fused from), so it decays whenever that
+   * bulk is shed. Deliberately NOT the scalar `cop`, whose engine decay path carries
+   * breach semantics: shedding must have a visible COST without being a second way to
+   * lose the level. Optional — levels that don't model fusion leave it undefined.
+   */
+  trackCompleteness?: number;
   /**
    * L3/L7: message-driven leader election state. Optional — levels without election
    * leave it undefined. [S] Only Raft + Static are modelled (per MVP scope).

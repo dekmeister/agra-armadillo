@@ -5,9 +5,11 @@
  * takeaway), the moves they made, and — because the tutorial seed is clamped —
  * the deterministic counterfactual when they lose.
  */
-import type { BeatId } from "@service-bus/core";
+import type { BeatId, ElectionMethod } from "@service-bus/core";
+import { electionCounterfactual, getScenario } from "@service-bus/core";
 import { phaseByScenario } from "../lib/phases.ts";
 import { game } from "../lib/store.svelte.ts";
+import { SYNTHESIS, SYNTHESIS_CLOSER } from "../lib/synthesis.ts";
 
 // The picker exit is App's to open (it owns modal state); the debrief just asks for it.
 const { onMissions }: { onMissions: () => void } = $props();
@@ -25,7 +27,8 @@ const campaignComplete = $derived(won && nextId === null);
 const LESSONS: Partial<Record<BeatId, string>> = {
   "link-degraded": "C2 crosses the contested air, so it suffers Gilbert–Elliott burst loss.",
   "queue-starved": "Queue discipline decides which message gets the link's scarce GOOD windows.",
-  "missing-ack": "Arrival ≠ approval — rerouting around a BAD hop beats blindly re-requesting.",
+  "missing-ack":
+    "Arrival ≠ approval — reroute around a BAD hop, and never mistake a reachable node for an authorised one.",
   "cop-warning": "Don't starve the P2P COP picture while you fight the C2 reply.",
   lifecycle: "An interaction is a round trip: request + its required status reply.",
   "on-platform-free": "VI is on-platform — free, never crosses the contested air.",
@@ -36,10 +39,13 @@ const LESSONS: Partial<Record<BeatId, string>> = {
   "bandwidth-cap": "Bandwidth is finite — excess demand queues and waits.",
   "queue-discipline": "Class/EDF float the critical flow ahead of routine traffic; FIFO starves it.",
   "cop-fanout": "COP is one-to-many; freshness is a per-follower budget.",
-  "cop-starvation": "Shed low-priority bulk to protect the COP fan-out.",
+  "cop-starvation":
+    "Shed low-priority bulk to protect the COP fan-out — triage, and it costs track completeness.",
+  "bulk-resume": "Restore the shed feed within budget once the pressure lifts; a shed never resumed is capability given away.",
   "authority-handback": "Authority is contextual — RTB is the LRE's, not the QB's.",
   "split-brain": "Orphan re-elects locally; halves merge ONLY on command (never auto).",
-  "campaign-debrief": "Authority is contextual across the whole campaign; landing is the LRE's.",
+  "campaign-debrief":
+    "The same C2 command type means different things at different destinations; landing is the LRE's.",
 };
 const beatTitle: Partial<Record<BeatId, string>> = {
   "link-degraded": "Return link degraded",
@@ -56,9 +62,10 @@ const beatTitle: Partial<Record<BeatId, string>> = {
   "queue-discipline": "Queue discipline",
   "cop-fanout": "COP fan-out",
   "cop-starvation": "COP starvation",
+  "bulk-resume": "Sensor feed restored",
   "authority-handback": "Authority hand-back",
   "split-brain": "Split-brain",
-  "campaign-debrief": "Campaign debrief",
+  "campaign-debrief": "Landing authority",
 };
 
 const cause = $derived(
@@ -83,10 +90,30 @@ const counterfactual = $derived(
     ? "On this seed, rerouting at the MISSING_ACK point (QB→ACP-2→ACP-1) delivers the reply in time."
     : null,
 );
+
+/**
+ * L3's road not taken (WP5.4). The player picks Static or Raft and never sees the other,
+ * so the level's actual subject — the cost/robustness trade — is one they only experience
+ * half of. Shown on WIN as well as loss: it is a comparison, not a consolation.
+ *
+ * Computed by replaying the other branch on this level's own seed, so the numbers are
+ * exact and cannot go stale if the scenario is retuned.
+ */
+const electionAlt = $derived.by(() => {
+  const taken = gs.election?.method as ElectionMethod | undefined;
+  if (gs.scenarioId !== "phase3" || !taken) return null;
+  const seed = getScenario(gs.scenarioId).tutorialSeed;
+  const alt = electionCounterfactual(gs.scenarioId, seed, taken);
+  if (!alt) return null;
+  const name = alt.method === "raft" ? "Raft" : "Static Fitness Score";
+  return alt.stalled
+    ? `On this seed, ${name} would have stalled — no quorum, so the package stays leaderless.`
+    : `On this seed, ${name} would have cost ${alt.messages} messages and elected at T+${alt.electedTick}.`;
+});
 </script>
 
 <div class="backdrop" role="presentation"></div>
-<div class="modal card" class:won role="dialog" aria-modal="true" aria-label="Debrief">
+<div class="modal card" class:won class:complete-view={campaignComplete} role="dialog" aria-modal="true" aria-label="Debrief">
   <div class="head">
     <span class="verdict" class:won>{won ? "✓ MISSION COMPLETE" : "✕ MISSION FAILED"}</span>
   </div>
@@ -112,8 +139,33 @@ const counterfactual = $derived(
     <p class="counter">↳ {counterfactual}</p>
   {/if}
 
+  {#if electionAlt}
+    <div class="caps">The other method</div>
+    <p class="counter">↳ {electionAlt}</p>
+  {/if}
+
   {#if campaignComplete}
+    <!-- WP5.5: the synthesis belongs here, not in a Phase 8 beat that fired at T+1 and
+         narrated the landing before it happened. This is the only moment the player has
+         actually flown all eight. -->
     <p class="complete">✓ Campaign complete — all eight OV-1 phases flown.</p>
+    <div class="caps">What the campaign taught</div>
+    <table class="synth">
+      <thead>
+        <tr><th>Phase</th><th>Interfaces</th><th>Authority</th></tr>
+      </thead>
+      <tbody>
+        {#each SYNTHESIS as row (row.phase)}
+          <tr>
+            <td class="ph"><b>{row.phase}</b> {row.name}</td>
+            <td>{row.interfaces}</td>
+            <td>{row.authority}</td>
+          </tr>
+          <tr class="lesson"><td colspan="3">{row.lesson}</td></tr>
+        {/each}
+      </tbody>
+    </table>
+    <p class="closer">{SYNTHESIS_CLOSER}</p>
   {/if}
 
   <div class="actions">
@@ -138,6 +190,19 @@ const counterfactual = $derived(
     border-top: 5px solid var(--red);
   }
   .modal.won { border-top-color: var(--green); }
+  /* The synthesis table needs more room than a normal debrief; only the final win shows it. */
+  .modal.complete-view { width: min(760px, 94vw); }
+  .synth { width: 100%; border-collapse: collapse; font-size: 12px; margin: 6px 0 4px; }
+  .synth th {
+    text-align: left; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--sub); font-weight: 700; padding: 4px 8px 4px 0; border-bottom: 1px solid var(--hair);
+  }
+  .synth td { padding: 6px 8px 2px 0; vertical-align: top; color: #34383e; }
+  .synth .ph { white-space: nowrap; }
+  .synth tr.lesson td {
+    padding: 0 0 8px; color: var(--sub); font-style: italic; border-bottom: 1px solid var(--hair);
+  }
+  .closer { font-size: 13px; line-height: 1.55; color: #34383e; margin: 14px 0 4px; }
   .head { display: flex; align-items: baseline; justify-content: space-between; }
   .verdict { font-size: 18px; font-weight: 800; letter-spacing: -0.3px; color: var(--red); }
   .verdict.won { color: var(--green); }

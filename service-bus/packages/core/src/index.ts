@@ -15,10 +15,22 @@ export {
   MESSAGE_CODEX,
   REFERENCE_MESSAGE_NAMES,
 } from "./codex.ts";
+export {
+  type ElectionOutcome,
+  electionCounterfactual,
+  electionOutcome,
+} from "./counterfactual.ts";
 export { type ElectionStrategy, quorumOf, STRATEGIES } from "./election.ts";
 export { apply, createInitialState, tick } from "./engine.ts";
 export { blockProb, dispatchOrder, stepChannel } from "./link.ts";
 export { adjudicate, adjudicateApproval, isTargetAuthority } from "./rbac.ts";
+export {
+  classesForLevel,
+  emissionsForLevel,
+  messagesEmittedBy,
+  TAUGHT_PATHS,
+  typesForLevel,
+} from "./replay.ts";
 export { Rng } from "./rng.ts";
 export {
   buildPhase6,

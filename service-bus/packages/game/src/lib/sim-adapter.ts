@@ -38,6 +38,19 @@ function linkList(gs: GameState): { id: string; from: string; to: string; cls: I
   return Object.values(gs.links).map((l) => ({ id: l.id, from: l.from, to: l.to, cls: l.cls }));
 }
 
+/**
+ * Where a self-loop sits in its node's stack of on-platform lanes, and how many there
+ * are. A node can carry more than one (L1 has both VI and MS since WP5.6), and they must
+ * not draw on top of each other. Ordered by link id so the stack is stable across ticks.
+ */
+function loopSlot(gs: GameState, link: Link): { index: number; count: number } {
+  const loops = Object.values(gs.links)
+    .filter((l) => l.from === l.to && l.from === link.from)
+    .map((l) => l.id)
+    .sort();
+  return { index: Math.max(0, loops.indexOf(link.id)), count: loops.length || 1 };
+}
+
 /** Token/label placement along a link (self-loops included), on the lane + sidecar. */
 function place(gs: GameState, linkId: string, t: number): { x: number; y: number } {
   const nodes = layoutFor(gs.scenarioId).nodes;
@@ -45,7 +58,9 @@ function place(gs: GameState, linkId: string, t: number): { x: number; y: number
   if (!link) return { x: 0, y: 0 };
   if (link.from === link.to) {
     const n = nodes[link.from];
-    return n ? selfLoopPoint(n) : { x: 0, y: 0 };
+    if (!n) return { x: 0, y: 0 };
+    const slot = loopSlot(gs, link);
+    return selfLoopPoint(n, slot.index, slot.count);
   }
   const off = laneFor(linkList(gs), linkId) + TOKEN_SIDECAR;
   return alongLink(nodes, link.from, link.to, t, off);
@@ -82,9 +97,11 @@ function railPath(gs: GameState, l: Link): string | null {
   const nodes = layoutFor(gs.scenarioId).nodes;
   const from = nodes[l.from];
   if (!from || !nodes[l.to]) return null;
-  return l.from === l.to
-    ? selfLoopPath(from)
-    : straightPath(nodes, l.from, l.to, laneFor(linkList(gs), l.id));
+  if (l.from === l.to) {
+    const slot = loopSlot(gs, l);
+    return selfLoopPath(from, slot.index, slot.count);
+  }
+  return straightPath(nodes, l.from, l.to, laneFor(linkList(gs), l.id));
 }
 
 export function linkView(gs: GameState, linkId: string): LinkVM | null {
@@ -130,7 +147,8 @@ export function selfLoopLabels(gs: GameState): LoopLabelVM[] {
     if (l.from !== l.to) continue;
     const n = nodes[l.from];
     if (!n) continue;
-    const p = selfLoopLabelPoint(n);
+    const slot = loopSlot(gs, l);
+    const p = selfLoopLabelPoint(n, slot.index, slot.count);
     out.push({ id: l.id, x: p.x, y: p.y, text: `${l.cls} · on-platform` });
   }
   return out;
@@ -341,12 +359,26 @@ export function highlightFor(gs: GameState, sel: Selection): Highlight | null {
   return null; // token: handled in the view against the live token position
 }
 
+/**
+ * Queue depth broken out by interface class. Derived from what is actually queued rather
+ * than a fixed "C2 / P2P" pair: WP5 put MP on L4 and MD on L5, and a hardcoded readout
+ * showed those links as an empty backlog while a dozen messages sat in them.
+ */
+function backlogByClass(gs: GameState, l: Link): string {
+  const counts = new Map<InterfaceClass, number>();
+  for (const id of l.queue) {
+    const cls = gs.messages[id]?.cls;
+    if (cls) counts.set(cls, (counts.get(cls) ?? 0) + 1);
+  }
+  if (counts.size === 0) return "empty";
+  return [...counts.entries()].map(([cls, n]) => `${cls}·${n}`).join("  ");
+}
+
 function inspectLink(gs: GameState, id: string): InspectorVM {
   const l = gs.links[id];
   if (!l) return empty();
   const bad = l.channel === "BAD";
-  const backlogC2 = l.queue.filter((m) => gs.messages[m]?.cls === "C2").length;
-  const backlogP2P = l.queue.filter((m) => gs.messages[m]?.cls === "P2P").length;
+  const backlog = backlogByClass(gs, l);
   return {
     title: `${l.from.toUpperCase()} → ${l.to.toUpperCase()}`,
     badge: bad ? "BAD" : "GOOD",
@@ -362,7 +394,7 @@ function inspectLink(gs: GameState, id: string): InspectorVM {
         value: `${Math.round(l.ackLoss * 100)}%`,
         tone: bad ? "bad" : undefined,
       },
-      { label: "Backlog", value: `C2·${backlogC2}  P2P·${backlogP2P}` },
+      { label: "Backlog", value: backlog },
       { label: "Next dispatch", value: nextDispatch(gs, l), tone: "blue" },
     ],
   };
@@ -445,7 +477,9 @@ export function nextDispatch(gs: GameState, link: Link): string {
     const rem = wezRemaining(gs);
     return `C2 reply${rem !== null ? ` (${mmss(rem)})` : ""}`;
   }
-  return head.cls === "P2P" ? "P2P picture (oldest)" : "routine C2 (oldest)";
+  if (head.cls === "P2P") return "P2P picture (oldest)";
+  // Generic over class so a link carrying MP/MD/MS/VI does not get described as C2.
+  return `${head.cls} (oldest)`;
 }
 
 function lifecycleTone(s: Message["state"]): StatRow["tone"] {
