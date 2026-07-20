@@ -425,7 +425,77 @@ interface strings match spawned traffic exactly.
 
 ---
 
-## WP6 — Beat timing & debrief quality
+## WP6 — Beat timing & debrief quality **DONE** (2026-07-20)
+
+> **Outcome, and what a later session needs to know.** All five items shipped. **161 tests**
+> (was 134), 4 new test files. The debrief no longer reads the event log for anything.
+>
+> **Three things the game was teaching falsely, found while implementing:**
+> 1. **Phase 7 told the player about a rejection the requester could not yet know about.**
+>    `authority-handback` was raised in the *request*-delivery branch — the instant the RTB
+>    reached the QB, while the `REJECTED` reply was still in flight. That leaked
+>    destination-side knowledge straight back to the requester, contradicting the one thing
+>    the level exists to teach. Raising it on the **reply's** arrival is both the fidelity fix
+>    and WP6.1's timing fix (T+2 → T+3, after a full observed round trip). **This is why the
+>    brief's "delay the RTB and add routine traffic" plan was dropped** — it would have papered
+>    over the fidelity bug while inventing a P2P formation heartbeat the absent Peer Volume
+>    cannot justify (the same trap WP5 avoided at P8).
+> 2. **Phase 6's counterfactual was asserted, never checked.** "On this seed, rerouting
+>    delivers the reply in time" was a hardcoded string printed on *every* loss — including
+>    runs where it was not true. It is now computed by replaying the taught path, and the
+>    debrief renders nothing when that path does not win. Never restore a written-down
+>    counterfactual.
+> 3. **`STALLED` was a lie in both directions.** `phase6.ts` set it whenever the reply was
+>    `!== "SENT"`, so a correctly rerouted reply still showed a red alarm (WP4 fixed the token
+>    and explicitly deferred the card here). The naive fix — test for `FAIL_*` states — would
+>    have made STALLED **unreachable**, because `onLegFailed` re-queues a MISSING_ACK reply as
+>    PENDING within the same tick. It now tests the **channel of the link the reply is sitting
+>    on**. `sim-adapter.test.ts` asserts both directions; a fix that only checks one is wrong.
+>
+> **WP6.1 was already three-quarters done and the brief did not know it.** Phase 3's beat was
+> gated behind `JOIN_TICKS` by WP5.4 and Phase 8's waits for the request to be `SENT` by
+> WP5.5. **Phase 2 needs nothing** — `burst-loss` fires at `contingencyTick = 3` with the first
+> status report spawned at T+2, so a full leg has moved. Recorded here so it is not re-opened.
+>
+> **⚠ New drift guards, and one behaviour change:**
+> - `packages/core/test/sweep.test.ts` re-runs the **full 500-seed × 5-strategy sweep** (~4 s)
+>   and asserts `STRATEGY_WIN_RATES` **exactly** — the sim is deterministic, so a tolerance band
+>   would only hide regressions. The README's numbers had no guard at all before this and were
+>   already stale-ish prose. **If it fails, re-measure and update the constants, `sweep.ts` and
+>   the README together — never widen the assertion.** The sweep loop moved out of
+>   `tools/run-sweep.ts` into `packages/core/src/sweep.ts`; the CLI is now a thin wrapper and
+>   its output is byte-identical.
+> - `packages/core/test/beats.test.ts` gained a "beat copy" block: every beat has a non-empty
+>   `takeaway`, no takeaway restates its own title, every level has a `principle`, and no two
+>   levels share one. It caught Phase 1's takeaway restating its title on the first run.
+> - `packages/core/test/moves.test.ts` pins that a **passive run records zero moves** — the
+>   headline WP6.3 bug was Phase 6's automatic "Re-attempting." log line being listed as a
+>   player action — and that `describeAction` is total over `Action`.
+> - `counterfactual.test.ts` asserts every `TAUGHT_PATHS` level actually **wins** on its
+>   tutorial seed, so the debrief can never promise a fix that would not have worked.
+> - **`TAUGHT_PATHS` gained a `phase2` entry** and is no longer test-only — the debrief replays
+>   it at runtime. Adding an entry is now player-visible, and it also widens what
+>   `codex.test.ts` / `picker-honesty.test.ts` see (L2's retry path was invisible to both).
+>
+> **Shell changes other WPs will meet.** `GameState` gained `playerMoves: PlayerMove[]`,
+> appended in `engine.ts`'s `apply()` — the one choke point — only when the action took effect
+> (`applyAction`'s boolean return, previously discarded). `arm` and `acknowledgeBeat` are
+> deliberately not recorded. `Beat` gained a required `takeaway`; `ScenarioDef` gained a
+> required `principle`. Both are compiler-enforced across all eight levels, and both deleted a
+> hand-maintained lookup table from the view. New `[S]` items **32-34** in `docs/01`.
+>
+> **Fidelity note for a session with the C2 / Peer Volumes.** WP6 added no new unverified A-GRA
+> claims, but WP6.4 **raised the prominence of two existing ones** by putting them on the
+> Objective card for a whole level: **P2** (election cost/robustness, Phase 3) and **P5**
+> (never auto-merge, Phase 7). Both are flagged in `docs/VERIFY.md`. Phrased as the trade the
+> game models rather than as sourced fact — keep it that way unless a volume settles it.
+>
+> **Left open on purpose:** the sweep strip is Phase 6 only (the other levels have no
+> comparable strategy space), and it uses precomputed constants rather than an in-browser
+> Monte Carlo — that is **WP8**, and `sweep.ts` is now the seam it should build on.
+
+<details>
+<summary>Original WP6 brief (kept for reference)</summary>
 
 1. **Delay lesson beats until the evidence is on screen.** Phase 3 elects at T+1, Phase 7's
    RTB-REJECTED lands at T+2, Phase 8 debriefs at T+1. Teaching-by-observation needs a few
@@ -448,6 +518,8 @@ interface strings match spawned traffic exactly.
    reroute ~95%, re-request ~22%) never reaches the player. After a Phase 6 outcome, show a
    small "across 500 seeds" strategy-comparison strip (precomputed constants are fine; cite the
    sweep command in a comment). This is the bridge to the WP8 sandbox and costs an afternoon.
+
+</details>
 
 ---
 

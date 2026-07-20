@@ -6,8 +6,9 @@
  * guard needs it too, and a second copy would be a second thing to keep in step. So it
  * lives here, in the pure core, where both can import it.
  *
- * Nothing here is used by the game at runtime — it is test/tooling infrastructure that
- * happens to belong in the deterministic module, since it is nothing but `tick`.
+ * Mostly test/tooling infrastructure, living in the deterministic module because it is
+ * nothing but `tick`. `TAUGHT_PATHS` is the exception since WP6.2: the debrief's per-level
+ * counterfactual replays it at runtime, so an entry here is now player-visible.
  */
 import { apply, createInitialState, tick } from "./engine.ts";
 import type { Action, GameState, InterfaceClass, MessageType } from "./types.ts";
@@ -23,6 +24,17 @@ import type { Action, GameState, InterfaceClass, MessageType } from "./types.ts"
  * Each entry is a *factory* so every replay gets fresh closure state.
  */
 export const TAUGHT_PATHS: Record<string, () => (s: GameState) => Action | null> = {
+  /**
+   * L2: re-attempt every report that lands in FAIL_MISSING_ACK. Added with WP6.2 so the
+   * level can state a counterfactual on loss — and it closes a real hole in the drift
+   * guards too, which until now only ever saw L2's passive traffic and never the reports
+   * the retry path re-dispatches.
+   */
+  phase2: () => (s) =>
+    s.pendingBeat?.id === "missing-ack-intro" ||
+    Object.values(s.messages).some((m) => m.state === "FAIL_MISSING_ACK")
+      ? { type: "retry" }
+      : null,
   phase3: () => {
     let picked = false;
     return () => {

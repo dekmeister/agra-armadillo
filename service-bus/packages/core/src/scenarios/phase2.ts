@@ -66,11 +66,13 @@ export const phase2: ScenarioDef = {
   id: "phase2",
   phase: 2,
   title: "Hold",
+  principle: "delivery ≠ confirmation · tactical links fail in bursts, not coin flips",
   defaultConfig: DEFAULT_CONFIG,
   tutorialSeed: 7, // scanned: passive play loses, actively retrying MISSING_ACK wins
   beats: {
     "burst-loss": {
       id: "burst-loss",
+      takeaway: "Tactical links fail in BURSTS (Gilbert–Elliott), not independent coin flips.",
       title: "The link just dropped into a BAD burst",
       summary:
         "Gilbert–Elliott flipped the status link to BAD — losses now come in bursts, not one-offs.",
@@ -84,6 +86,8 @@ export const phase2: ScenarioDef = {
     },
     "missing-ack-intro": {
       id: "missing-ack-intro",
+      takeaway:
+        "Delivery ≠ confirmation — the report may already be at the LRE, so re-attempting is cheap here and a real dilemma in Phase 6.",
       title: "FAIL_MISSING_ACK — sent, but unconfirmed",
       summary:
         "A report left the queue but no ack returned. It may have arrived — you cannot tell. Retry it?",
@@ -126,6 +130,7 @@ export const phase2: ScenarioDef = {
       failReason: null,
       pendingBeat: null,
       seenBeats: [],
+      playerMoves: [],
       log: [{ tick: 0, text: "Phase 2 — Hold. Sending periodic status to LRE.", severity: "info" }],
       nextSeq: 0,
       config,

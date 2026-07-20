@@ -205,6 +205,7 @@ const BEAT_DEFS: Record<
 > = {
   "link-degraded": {
     id: "link-degraded",
+    takeaway: "C2 crosses the contested air, so it suffers Gilbert–Elliott burst loss.",
     title: "QB→ACP-1 return link degraded (BAD)",
     summary:
       "QB→ACP-1 reply link dropped to a BAD burst — the C2 reply now risks loss over the air.",
@@ -218,6 +219,7 @@ const BEAT_DEFS: Record<
   },
   "queue-starved": {
     id: "queue-starved",
+    takeaway: "Queue discipline decides which message gets the link's scarce GOOD windows.",
     title: "Approval reply starved behind routine C2",
     summary:
       "Under FIFO the approval reply is stuck behind routine C2 — re-order so it goes first.",
@@ -230,6 +232,8 @@ const BEAT_DEFS: Record<
   },
   "missing-ack": {
     id: "missing-ack",
+    takeaway:
+      "Arrival ≠ approval — reroute around a BAD hop, and never mistake a reachable node for an authorised one.",
     title: "Reply FAIL_MISSING_ACK — sent, unconfirmed",
     summary:
       "Reply sent but never confirmed. Reroute around the BAD hop, re-request, or find another authority.",
@@ -244,6 +248,7 @@ const BEAT_DEFS: Record<
   },
   "cop-warning": {
     id: "cop-warning",
+    takeaway: "Don't starve the P2P COP picture while you fight the C2 reply.",
     title: "COP freshness approaching breach",
     summary: "The P2P COP picture is going stale — refresh it before it breaches.",
     concept:
@@ -262,6 +267,7 @@ export const phase6: ScenarioDef = {
   id: "phase6",
   phase: 6,
   title: "Threat Engagement at CAP",
+  principle: "authority is checked at the destination · arrival ≠ effect",
   defaultConfig: DEFAULT_CONFIG,
   tutorialSeed: TUTORIAL_SEED, // the clamped MVP seed (see test/tutorial-seed.test.ts)
   beats: BEAT_DEFS,
@@ -337,6 +343,7 @@ export const phase6: ScenarioDef = {
       failReason: null,
       pendingBeat: null,
       seenBeats: [],
+      playerMoves: [],
       log: [
         { tick: 0, text: "Phase 6 — Threat Engagement at CAP. COP flowing.", severity: "info" },
       ],
@@ -461,7 +468,21 @@ export const phase6: ScenarioDef = {
     if (!ixn) return;
     const reply = ixn.reply ? s.messages[ixn.reply] : null;
 
-    s.objective = reply && reply.state !== "SENT" ? "stalled" : "in_progress";
+    /**
+     * STALLED means *blocked*, not merely "not finished yet" (WP4 deferral → WP6.4).
+     *
+     * This used to read `reply.state !== "SENT"`, so a reply the player had correctly
+     * rerouted — moving happily down the clean relay path — still showed a red STALLED on
+     * the Objective card. The board had already gone calm (WP4 fixed the token); the card
+     * had not, so the reward for the right decision was an unchanged alarm.
+     *
+     * The test is the link the reply is currently sitting on, not its lifecycle state:
+     * `onLegFailed` re-queues a MISSING_ACK reply as PENDING within the same tick, so no
+     * FAIL_* state ever survives to be read here. A reply waiting on a BAD channel is
+     * genuinely going nowhere; the same reply on a GOOD relay hop is not.
+     */
+    const onLink = reply && reply.state !== "SENT" ? s.links[reply.route[reply.hop] ?? ""] : null;
+    s.objective = onLink?.channel === "BAD" ? "stalled" : "in_progress";
 
     if (reply && reply.state === "SENT") {
       if (reply.approval === "REJECTED" || !reply.authorityVerified) {

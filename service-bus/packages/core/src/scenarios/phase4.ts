@@ -149,11 +149,13 @@ export const phase4: ScenarioDef = {
   id: "phase4",
   phase: 4,
   title: "Transit",
+  principle: "bandwidth is finite · queue discipline decides what arrives in time",
   defaultConfig: DEFAULT_CONFIG,
   tutorialSeed: 1, // loss-free — FIFO starves, Class/EDF wins
   beats: {
     "bandwidth-cap": {
       id: "bandwidth-cap",
+      takeaway: "Bandwidth is finite — excess demand queues and waits.",
       title: "Demand exceeds the link's bandwidth",
       summary:
         "More messages want the air than the link can pass this tick — the excess queues and waits.",
@@ -168,6 +170,7 @@ export const phase4: ScenarioDef = {
     },
     "queue-discipline": {
       id: "queue-discipline",
+      takeaway: "Class/EDF float the critical flow ahead of routine traffic; FIFO starves it.",
       title: "FIFO is starving ACP-2's formation heartbeat",
       summary:
         "Under FIFO the heartbeat sits behind the older mission-plan backlog and never gets the air. Re-order the queue.",
@@ -235,6 +238,7 @@ export const phase4: ScenarioDef = {
       failReason: null,
       pendingBeat: null,
       seenBeats: [],
+      playerMoves: [],
       log: [
         {
           tick: 0,

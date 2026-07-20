@@ -115,11 +115,14 @@ export const phase1: ScenarioDef = {
   id: "phase1",
   phase: 1,
   title: "Launch",
+  principle: "on-platform interfaces are free · only the LRE link crosses the air",
   defaultConfig: DEFAULT_CONFIG,
   tutorialSeed: 1, // unloseable (clean links) — any seed teaches by observation
   beats: {
     lifecycle: {
       id: "lifecycle",
+      takeaway:
+        "Compliance is assessed on the whole round trip — a request without its status reply is only half an interaction.",
       title: "An interaction is a round trip",
       summary:
         "The takeoff request is in flight (EXECUTING). It will deliver (SENT), the LRE replies, and the round trip closes.",
@@ -132,6 +135,7 @@ export const phase1: ScenarioDef = {
     },
     "on-platform-free": {
       id: "on-platform-free",
+      takeaway: "VI is on-platform — free, and never crosses the contested air.",
       title: "VI and MS are on-platform — and free",
       summary:
         "The VI command to Flight Autonomy and the MS PNT exchange never cross the air: no burst loss, no bandwidth cost.",
@@ -181,6 +185,7 @@ export const phase1: ScenarioDef = {
       failReason: null,
       pendingBeat: null,
       seenBeats: [],
+      playerMoves: [],
       log: [
         { tick: 0, text: "Phase 1 — Launch. ACPs take off under LRE oversight.", severity: "info" },
       ],

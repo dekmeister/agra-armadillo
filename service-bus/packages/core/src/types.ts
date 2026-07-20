@@ -241,6 +241,17 @@ export interface Beat {
   summary: string;
   /** The single concept this beat teaches. */
   concept: string;
+  /**
+   * The distilled, past-tense takeaway for the debrief (WP6.4). Distinct from `summary`,
+   * which is written for the moment ("Retry it?") and reads wrong in a retrospective.
+   *
+   * Lives on the beat rather than in a lookup table in the view. The debrief used to keep
+   * two hand-maintained `Partial<Record<BeatId, string>>` maps, so a beat with no entry
+   * rendered a literal "undefined — undefined" and nothing stopped a lesson restating its
+   * own title (which is exactly what Phase 2's did). Resolving through the ScenarioDef
+   * makes both failures unrepresentable — `seenBeats` can only hold this level's own ids.
+   */
+  takeaway: string;
   /** What to highlight on the board so the player's eye lands on the right thing. */
   focus: { kind: "node" | "link" | "token"; id: string };
   /** Player affordances to surface as buttons (subset of Action types). */
@@ -268,6 +279,25 @@ export type Action =
   | { type: "handBack" } // L7: hand authority back QB -> LRE for RTB
   | { type: "mergeTeam" } // L7: command-merge a split package (never automatic)
   | { type: "acknowledgeBeat" }; // dismiss the current decision point (view resumes the clock)
+
+/**
+ * One player action that actually took effect, in order (WP6.3).
+ *
+ * The debrief used to reconstruct "Your moves" by regexing the event log, which reported
+ * the engine's own automatic "Re-attempting." line as a player move and silently dropped
+ * three real actions that log nothing or log different prose. Recording the action itself
+ * is the only way to know who did what.
+ *
+ * Kept in the pure core rather than the view store so headless replays see it too — the
+ * counterfactual harness renders its "what would have worked" sentence from these labels.
+ * Recorded in `apply`, touches no RNG, so a run stays byte-identical.
+ */
+export interface PlayerMove {
+  tick: number;
+  action: Action;
+  /** Human-readable rendering, from `describeAction` — the single source of move phrasing. */
+  label: string;
+}
 
 export interface GameState {
   /** Which scenario/level this state belongs to — the engine resolves its ScenarioDef from this. */
@@ -323,6 +353,8 @@ export interface GameState {
   pendingBeat: Beat | null;
   /** Beat ids already raised this run, so each fires at most once. */
   seenBeats: BeatId[];
+  /** Player actions that took effect, in order (WP6.3) — the debrief's "Your moves". */
+  playerMoves: PlayerMove[];
   log: LogEntry[];
   /** Monotonic counter for message ids/seq. */
   nextSeq: number;

@@ -24,6 +24,16 @@ export interface ScenarioDef {
   /** 1..8 OV-1 phase number (campaign order). */
   phase: number;
   title: string;
+  /**
+   * This level's teaching thesis in one line, shown on the Objective card (WP6.4).
+   *
+   * Every level used to display Phase 6's "authority is checked at the destination ·
+   * arrival ≠ effect" regardless of what it taught, so by Phase 3 it had become wallpaper
+   * the player's eye skipped. Lives here rather than in the game package's phase record
+   * because it is the same category of thing as `title` and the beats' `concept` — a
+   * property of the level, not of the picker.
+   */
+  principle: string;
   /** Scenario-level tunables; merged with `opts.config` at build time. */
   defaultConfig: ScenarioConfig;
   /**

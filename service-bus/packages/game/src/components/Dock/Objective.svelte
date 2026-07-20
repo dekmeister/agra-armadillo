@@ -28,7 +28,9 @@
     <span class="pill {meta.tone}">{meta.pill}</span>
   </div>
   <div class="title">{def.title}</div>
-  <div class="auth">authority is checked at the destination · arrival ≠ effect</div>
+  <!-- The level's own thesis (WP6.4). This used to be Phase 6's strapline hardcoded on all
+       eight levels, so by Phase 3 it read as wallpaper rather than as the point. -->
+  <div class="auth">{def.principle}</div>
   <div class="note {meta.tone}">{meta.note}</div>
 </div>
 
@@ -41,7 +43,6 @@
   .pill.amber { background: var(--amber); }
   .title { font-size: 17px; font-weight: 800; letter-spacing: -0.4px; margin: 4px 0 2px; }
   .auth { font-size: 11px; color: var(--sub); }
-  .key { color: var(--gold); font-weight: 800; }
   .note { margin-top: 8px; font-size: 11.5px; font-weight: 700; line-height: 1.35; }
   .note.good { color: var(--green); }
   .note.bad { color: var(--red); }

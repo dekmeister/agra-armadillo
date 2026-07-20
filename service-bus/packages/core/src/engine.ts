@@ -18,6 +18,7 @@
  */
 import { blockProb, dispatchOrder, stepChannel } from "./link.ts";
 import { dequeue } from "./message.ts";
+import { recordMove } from "./moves.ts";
 import { Rng } from "./rng.ts";
 import { clone, log } from "./runtime.ts";
 import { getScenario, type ScenarioOpts } from "./scenario.ts";
@@ -51,6 +52,7 @@ export function apply(state: GameState, action: Action): GameState {
       if (link) {
         link.policy = action.policy;
         log(s, `${action.linkId} queue policy -> ${action.policy.toUpperCase()}`, "info");
+        recordMove(s, action);
       }
       break;
     }
@@ -60,8 +62,10 @@ export function apply(state: GameState, action: Action): GameState {
       s.pendingBeat = null;
       break;
     default:
-      // Scenario-specific affordances (reroute, refreshCop, retry, …).
-      def.applyAction?.(s, action);
+      // Scenario-specific affordances (reroute, refreshCop, retry, …). `applyAction`
+      // reports whether the action actually did anything, so a move the level ignored
+      // (wrong phase, nothing to retry) never shows up in the debrief as one the player made.
+      if (def.applyAction?.(s, action)) recordMove(s, action);
       break;
   }
   return s;

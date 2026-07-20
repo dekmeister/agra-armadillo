@@ -5,8 +5,14 @@
  * takeaway), the moves they made, and — because the tutorial seed is clamped —
  * the deterministic counterfactual when they lose.
  */
-import type { BeatId, ElectionMethod } from "@service-bus/core";
-import { electionCounterfactual, getScenario } from "@service-bus/core";
+import type { ElectionMethod } from "@service-bus/core";
+import {
+  electionCounterfactual,
+  getScenario,
+  STRATEGY_WIN_RATES,
+  SWEEP_SEEDS,
+  taughtPathOutcome,
+} from "@service-bus/core";
 import { phaseByScenario } from "../lib/phases.ts";
 import { game } from "../lib/store.svelte.ts";
 import { SYNTHESIS, SYNTHESIS_CLOSER } from "../lib/synthesis.ts";
@@ -23,73 +29,63 @@ const nextId = $derived(game.nextScenarioId);
 const nextName = $derived(nextId ? (phaseByScenario(nextId)?.name ?? null) : null);
 const campaignComplete = $derived(won && nextId === null);
 
-/** One-line takeaway per decision point (the beat's lesson, distilled). */
-const LESSONS: Partial<Record<BeatId, string>> = {
-  "link-degraded": "C2 crosses the contested air, so it suffers Gilbert–Elliott burst loss.",
-  "queue-starved": "Queue discipline decides which message gets the link's scarce GOOD windows.",
-  "missing-ack":
-    "Arrival ≠ approval — reroute around a BAD hop, and never mistake a reachable node for an authorised one.",
-  "cop-warning": "Don't starve the P2P COP picture while you fight the C2 reply.",
-  lifecycle: "An interaction is a round trip: request + its required status reply.",
-  "on-platform-free": "VI is on-platform — free, never crosses the contested air.",
-  "burst-loss": "Tactical links fail in BURSTS (Gilbert–Elliott), not independent coin flips.",
-  "missing-ack-intro": "FAIL_MISSING_ACK — sent but unconfirmed; retry it (delivery ≠ confirmation).",
-  "election-cost": "Election method trades cost vs robustness (Static ~n, Raft ~2n + quorum).",
-  quorum: "Raft needs a majority and STALLS without one; Static declares locally.",
-  "bandwidth-cap": "Bandwidth is finite — excess demand queues and waits.",
-  "queue-discipline": "Class/EDF float the critical flow ahead of routine traffic; FIFO starves it.",
-  "cop-fanout": "COP is one-to-many; freshness is a per-follower budget.",
-  "cop-starvation":
-    "Shed low-priority bulk to protect the COP fan-out — triage, and it costs track completeness.",
-  "bulk-resume": "Restore the shed feed within budget once the pressure lifts; a shed never resumed is capability given away.",
-  "authority-handback": "Authority is contextual — RTB is the LRE's, not the QB's.",
-  "split-brain": "Orphan re-elects locally; halves merge ONLY on command (never auto).",
-  "campaign-debrief":
-    "The same C2 command type means different things at different destinations; landing is the LRE's.",
-};
-const beatTitle: Partial<Record<BeatId, string>> = {
-  "link-degraded": "Return link degraded",
-  "queue-starved": "Reply starved under FIFO",
-  "missing-ack": "FAIL_MISSING_ACK",
-  "cop-warning": "COP nearing breach",
-  lifecycle: "Round-trip lifecycle",
-  "on-platform-free": "VI is free",
-  "burst-loss": "Burst loss",
-  "missing-ack-intro": "FAIL_MISSING_ACK",
-  "election-cost": "Election cost",
-  quorum: "Quorum stall",
-  "bandwidth-cap": "Bandwidth cap",
-  "queue-discipline": "Queue discipline",
-  "cop-fanout": "COP fan-out",
-  "cop-starvation": "COP starvation",
-  "bulk-resume": "Sensor feed restored",
-  "authority-handback": "Authority hand-back",
-  "split-brain": "Split-brain",
-  "campaign-debrief": "Landing authority",
-};
+/**
+ * Decision points, resolved through the level's own ScenarioDef (WP6.4).
+ *
+ * This used to be two hand-maintained `Partial<Record<BeatId, string>>` maps here in the
+ * view: a beat with no entry rendered a literal "undefined — undefined", and nothing
+ * stopped a lesson restating its own title — which Phase 2's did, printing
+ * "FAIL_MISSING_ACK — FAIL_MISSING_ACK — …". Both are now unrepresentable: `takeaway` is a
+ * required field on `Beat`, and `seenBeats` can only ever hold this level's own beat ids.
+ */
+const beats = $derived.by(() => {
+  const defs = getScenario(gs.scenarioId).beats;
+  return gs.seenBeats.flatMap((id) => {
+    const b = defs[id];
+    return b ? [{ id, title: b.title, takeaway: b.takeaway }] : [];
+  });
+});
 
 const cause = $derived(
   won ? `Objective complete at T+${gs.tick}.` : (gs.failReason ?? "Mission failed."),
 );
 
-// Reconstruct the player's moves from the event log (the core doesn't track them per-beat).
-const moves = $derived(
-  gs.log
-    .filter((l) =>
-      /queue policy ->|rerouted|re-requested|COP refreshed|Re-attempting|declared leader|requesting votes|Shed |handed back|merged on command/.test(
-        l.text,
-      ),
-    )
-    .map((l) => `T+${l.tick} · ${l.text}`),
-);
+/**
+ * The player's moves, straight from the core (WP6.3). This used to regex the event log,
+ * which listed Phase 6's *automatic* "Re-attempting." line as a player action — so a run
+ * where the player did nothing at all still showed a move they never made — while missing
+ * `pickElection`, `resumeTraffic` and `requestVia`, none of which log matching prose.
+ */
+const moves = $derived(gs.playerMoves);
 
-// Deterministic counterfactual on Phase 6's clamped tutorial seed only.
-const tookReroute = $derived(gs.log.some((l) => /rerouted/.test(l.text)));
-const counterfactual = $derived(
-  gs.scenarioId === "phase6" && !won && !tookReroute
-    ? "On this seed, rerouting at the MISSING_ACK point (QB→ACP-2→ACP-1) delivers the reply in time."
-    : null,
-);
+/**
+ * The road not taken, computed rather than asserted (WP6.2).
+ *
+ * Phase 6 used to print a fixed sentence on every loss claiming rerouting would have got
+ * the reply through — without checking whether that held for the run being debriefed. Now
+ * every level with a taught path replays it on *this run's* seed and reports what actually
+ * happens; if the taught path does not win, we say nothing rather than promise a fix that
+ * would not have worked.
+ */
+const counterfactual = $derived.by(() => {
+  if (won) return null;
+  const alt = taughtPathOutcome(gs.scenarioId, gs.config.seed);
+  if (!alt?.won || !alt.moves.length) return null;
+  // Collapse consecutive repeats: L2's winning line is the same re-attempt four times over,
+  // and spelling it out four times reads as noise rather than as a lesson.
+  const runs: { label: string; n: number }[] = [];
+  for (const m of alt.moves) {
+    const last = runs[runs.length - 1];
+    if (last?.label === m.label) last.n += 1;
+    else runs.push({ label: m.label, n: 1 });
+  }
+  // Lower-case only the leading character — the labels carry real acronyms (DMS, COP, LRE)
+  // that a blanket toLowerCase would quietly destroy.
+  const what = runs
+    .map((r) => `${r.label.charAt(0).toLowerCase()}${r.label.slice(1)}${r.n > 1 ? ` ×${r.n}` : ""}`)
+    .join(", then ");
+  return `On this seed the winning line resolves at T+${alt.tick} — ${what}.`;
+});
 
 /**
  * L3's road not taken (WP5.4). The player picks Static or Raft and never sees the other,
@@ -99,11 +95,33 @@ const counterfactual = $derived(
  * Computed by replaying the other branch on this level's own seed, so the numbers are
  * exact and cannot go stale if the scenario is retuned.
  */
+/**
+ * The sweep's verdict on the level the player just fought (WP6.5).
+ *
+ * The headless harness has always been able to prove the game's central claim — routing
+ * and queue discipline get the reply through; retrying onto the same degraded link is worse
+ * than doing nothing — but the answer only ever reached a terminal. Phase 6 is where the
+ * player has just lived the choice, so it is the one place the numbers land.
+ *
+ * Shown on wins too: a player who rerouted deserves to see how much that was worth, and a
+ * player who scraped a win under FIFO deserves to know it was luck.
+ */
+const showSweep = $derived(gs.scenarioId === "phase6");
+/** Which row to mark as the path this run actually took. */
+const tookStrategy = $derived.by(() => {
+  const types = new Set(gs.playerMoves.map((m) => m.action.type));
+  if (types.has("reroute")) return "reroute";
+  if (types.has("rerequest") || types.has("requestVia")) return "rerequest";
+  if (gs.playerMoves.some((m) => m.action.type === "setPolicy")) return "class";
+  return "none";
+});
+
 const electionAlt = $derived.by(() => {
   const taken = gs.election?.method as ElectionMethod | undefined;
   if (gs.scenarioId !== "phase3" || !taken) return null;
-  const seed = getScenario(gs.scenarioId).tutorialSeed;
-  const alt = electionCounterfactual(gs.scenarioId, seed, taken);
+  // This run's seed, not the scenario's default — the store can load a level with an
+  // override, and comparing against a seed the player never played is worse than silence.
+  const alt = electionCounterfactual(gs.scenarioId, gs.config.seed, taken);
   if (!alt) return null;
   const name = alt.method === "raft" ? "Raft" : "Static Fitness Score";
   return alt.stalled
@@ -119,11 +137,11 @@ const electionAlt = $derived.by(() => {
   </div>
   <p class="cause">{cause}</p>
 
-  {#if gs.seenBeats.length}
+  {#if beats.length}
     <div class="caps">Decision points</div>
     <ul class="beats">
-      {#each gs.seenBeats as id (id)}
-        <li><b>{beatTitle[id]}</b> — {LESSONS[id]}</li>
+      {#each beats as b (b.id)}
+        <li><b>{b.title}</b> — {b.takeaway}</li>
       {/each}
     </ul>
   {/if}
@@ -131,7 +149,7 @@ const electionAlt = $derived.by(() => {
   {#if moves.length}
     <div class="caps">Your moves</div>
     <ul class="moves">
-      {#each moves as m (m)}<li>{m}</li>{/each}
+      {#each moves as m, i (i)}<li>T+{m.tick} · {m.label}</li>{/each}
     </ul>
   {/if}
 
@@ -142,6 +160,23 @@ const electionAlt = $derived.by(() => {
   {#if electionAlt}
     <div class="caps">The other method</div>
     <p class="counter">↳ {electionAlt}</p>
+  {/if}
+
+  {#if showSweep}
+    <div class="caps">Across {SWEEP_SEEDS} seeds</div>
+    <ul class="sweep">
+      {#each STRATEGY_WIN_RATES as row (row.strategy)}
+        <li class:took={row.strategy === tookStrategy}>
+          <span class="slabel">{row.label}</span>
+          <span class="bar"><i style="width: {(row.rate * 100).toFixed(0)}%"></i></span>
+          <span class="rate">{(row.rate * 100).toFixed(0)}%</span>
+        </li>
+      {/each}
+    </ul>
+    <p class="sweepnote">
+      Win rate in this simulation's link model, recovering at T+4 — not an A-GRA figure.
+      Reproduce with <code>npm run sweep -- scenarios/phase6.json --compare --seeds {SWEEP_SEEDS}</code>.
+    </p>
   {/if}
 
   {#if campaignComplete}
@@ -222,6 +257,20 @@ const electionAlt = $derived.by(() => {
     font-size: 13px; font-weight: 700; color: var(--green); background: var(--tint-green);
     border-radius: 10px; padding: 10px 12px; margin: 14px 0 0; line-height: 1.45;
   }
+  /* Strategy strip (WP6.5). Neutral ink bars — amber is reserved for degradation
+     (see lib/palette.ts + palette.test.ts), and these are outcomes, not warnings. */
+  .sweep { list-style: none; margin: 0; padding: 0; }
+  .sweep li {
+    display: grid; grid-template-columns: 1fr 84px 34px; align-items: center;
+    gap: 8px; font-size: 11.5px; color: var(--sub); padding: 2px 0;
+  }
+  .sweep li.took { color: var(--ink); font-weight: 700; }
+  .sweep .bar { display: block; height: 6px; border-radius: 3px; background: var(--seg-track); }
+  .sweep .bar i { display: block; height: 100%; border-radius: 3px; background: var(--sub); }
+  .sweep li.took .bar i { background: var(--ink); }
+  .sweep .rate { text-align: right; font-variant-numeric: tabular-nums; }
+  .sweepnote { font-size: 10.5px; line-height: 1.45; color: var(--sub); margin: 8px 0 0; }
+  .sweepnote code { font-size: 10px; }
   .actions { display: flex; gap: 10px; margin-top: 18px; }
   .btn {
     border: none; border-radius: 10px; padding: 12px; font-size: 14px; font-weight: 800;

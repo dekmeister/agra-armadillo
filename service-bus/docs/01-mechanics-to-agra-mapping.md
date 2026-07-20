@@ -232,5 +232,25 @@ real P2P links) — still limited to Raft + Static.
     assertion, not primary text — see VERIFY P1/P2. (No `[S]`; noted because the number looks
     authoritative and its provenance is the model, not the standard.)
 
+32. **Every level's counterfactual is computed, not authored (generalises item 31).** The debrief's
+    "on this seed the winning line resolves at T+n" line replays the level's taught path
+    (`TAUGHT_PATHS` in `packages/core/src/replay.ts`) rather than asserting a fixed sentence. This
+    replaced a real defect, not just a limitation: Phase 6's version was a hardcoded string printed
+    on *every* loss claiming rerouting would have delivered the reply, without the sim ever being
+    asked whether that held for the run in front of the player. Levels with no taught path (1 and 8,
+    the near-unloseable bookends) render nothing rather than invent one. (No `[S]`; provenance note.)
+33. **L7's partition fires at `contingencyTick` *or* the moment the RTB is authorised, whichever is
+    first.** Without the second clause a player who hands authority back quickly satisfies the win
+    condition before the scripted tick and never meets the split-brain lesson at all. The partition
+    is authored drama rather than modelled physics (see `docs/03`), so pulling it forward to
+    guarantee both lessons land makes no claim about when real packages partition. (`[S]`; game
+    pacing, no A-GRA claim.)
+34. **The debrief's strategy strip is a claim about *this simulation*, not about A-GRA.** The win
+    rates (`STRATEGY_WIN_RATES` in `packages/core/src/sweep.ts`, pinned exactly by
+    `test/sweep.test.ts`) are a property of the game's Gilbert–Elliott tuning and its Phase 6
+    balance. The on-screen caption says so explicitly. The *ordering* it teaches — rerouting beats
+    re-prioritising, both beat passivity, and re-requesting onto a degraded link is worse than doing
+    nothing — is the real lesson and is separately asserted. (`[S]`; measured game statistic.)
+
 **Nothing in this list alters topology, endpoints, interface assignment, or authority gating** — the
 four things the guard rail protects.

@@ -19,10 +19,14 @@ export {
   type ElectionOutcome,
   electionCounterfactual,
   electionOutcome,
+  levelsWithTaughtPath,
+  type TaughtOutcome,
+  taughtPathOutcome,
 } from "./counterfactual.ts";
 export { type ElectionStrategy, quorumOf, STRATEGIES } from "./election.ts";
 export { apply, createInitialState, tick } from "./engine.ts";
 export { blockProb, dispatchOrder, stepChannel } from "./link.ts";
+export { describeAction } from "./moves.ts";
 export { adjudicate, adjudicateApproval, isTargetAuthority } from "./rbac.ts";
 export {
   classesForLevel,
@@ -42,4 +46,17 @@ export {
   type ScenarioOpts,
   TUTORIAL_SEED,
 } from "./scenario.ts";
+export {
+  recoveryAction,
+  runOne,
+  STRATEGY_WIN_RATES,
+  type Strategy,
+  SWEEP_SEEDS,
+  SWEEP_STRATEGIES,
+  type SweepOpts,
+  type SweepResult,
+  strategyWinRate,
+  sweep,
+  winRate,
+} from "./sweep.ts";
 export type * from "./types.ts";

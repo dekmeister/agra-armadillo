@@ -52,11 +52,14 @@ export const phase8: ScenarioDef = {
   id: "phase8",
   phase: 8,
   title: "Land",
+  principle: "the same command type means different things at different destinations",
   defaultConfig: DEFAULT_CONFIG,
   tutorialSeed: 1, // unloseable capstone — clean LRE-authorised landing
   beats: {
     "campaign-debrief": {
       id: "campaign-debrief",
+      takeaway:
+        "The same C2 command type means different things at different destinations; landing is the LRE's.",
       title: "Landing clearance is the LRE's to give",
       summary:
         "The request has reached the LRE. Landing is its call, like takeoff (L1) and RTB (L7) — never the QB's.",
@@ -103,6 +106,7 @@ export const phase8: ScenarioDef = {
       failReason: null,
       pendingBeat: null,
       seenBeats: [],
+      playerMoves: [],
       log: [
         {
           tick: 0,

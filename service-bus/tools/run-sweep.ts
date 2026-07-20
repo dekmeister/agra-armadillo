@@ -1,11 +1,14 @@
 /**
  * Headless parameter-sweep harness — the "RF sandbox".
  *
- * Runs the deterministic core over a band of seeds under a chosen recovery
- * strategy and emits a CSV of {seed, outcome, completionTick, failReason}.
- * Because the sim is a pure function of (scenario, seed), the same invocation
- * reproduces byte-identically — so you can sweep p_loss / burstiness / policy and
- * plot outcome distributions without a browser in the loop.
+ * Runs the deterministic core over a band of seeds under a chosen recovery strategy and
+ * emits a CSV of {seed, outcome, completionTick, failReason}. Because the sim is a pure
+ * function of (scenario, seed), the same invocation reproduces byte-identically — so you
+ * can sweep p_loss / burstiness / policy and plot outcome distributions without a browser.
+ *
+ * This is now a thin CLI: the actual sweep lives in `@service-bus/core`'s `sweep.ts`, so
+ * the tool, the in-game strategy strip (WP6.5) and the regression test that pins the
+ * published win rates all run the same code.
  *
  * Usage:
  *   npm run sweep -- scenarios/phase6.json --seeds 1000 --strategy edf --at 4
@@ -16,11 +19,8 @@
  * CSV goes to stdout; a summary goes to stderr.
  */
 import { readFileSync } from "node:fs";
-import type { Action, GameState, QueuePolicy } from "@service-bus/core";
-import { apply, createInitialState, tick } from "@service-bus/core";
-
-type Strategy = "none" | "fifo" | "edf" | "class" | "reroute" | "rerequest";
-const STRATEGIES: Strategy[] = ["none", "edf", "class", "reroute", "rerequest"];
+import type { Strategy } from "@service-bus/core";
+import { SWEEP_STRATEGIES, sweep, winRate } from "@service-bus/core";
 
 interface Args {
   scenarioPath: string | null;
@@ -73,82 +73,24 @@ function loadConfig(path: string | null): Record<string, unknown> {
   return raw.config ?? {};
 }
 
-function recoveryAction(strategy: Strategy): Action | null {
-  switch (strategy) {
-    case "edf":
-      return { type: "setPolicy", linkId: "bad", policy: "edf" as QueuePolicy };
-    case "class":
-      return { type: "setPolicy", linkId: "bad", policy: "class" as QueuePolicy };
-    case "reroute":
-      return { type: "reroute" };
-    case "rerequest":
-      return { type: "rerequest" };
-    default:
-      return null;
-  }
-}
-
-interface Result {
-  seed: number;
-  outcome: GameState["outcome"];
-  completionTick: number;
-  failReason: string;
-}
-
-function runOne(
-  seed: number,
-  config: Record<string, unknown>,
-  strategy: Strategy,
-  at: number,
-  maxTicks: number,
-): Result {
-  let s = createInitialState(seed, { config });
-  s = apply(s, { type: "arm" });
-  const action = recoveryAction(strategy);
-
-  for (let t = 1; t <= maxTicks; t++) {
-    s = tick(s);
-    if (action && s.tick === at) s = apply(s, action);
-    if (s.outcome !== "pending") break;
-  }
-  return {
-    seed,
-    outcome: s.outcome,
-    completionTick: s.tick,
-    failReason: s.failReason ?? "",
-  };
-}
-
-function sweep(args: Args, config: Record<string, unknown>, strategy: Strategy): Result[] {
-  const out: Result[] = [];
-  for (let seed = args.seedLo; seed <= args.seedHi; seed++) {
-    out.push(runOne(seed, config, strategy, args.at, args.maxTicks));
-  }
-  return out;
-}
-
-function winRate(results: Result[]): number {
-  return results.filter((r) => r.outcome === "win").length / results.length;
-}
-
 function main(): void {
   const args = parseArgs(process.argv.slice(2));
-  const config = loadConfig(args.scenarioPath);
+  const opts = { config: loadConfig(args.scenarioPath), at: args.at, maxTicks: args.maxTicks };
 
   if (args.compare) {
     process.stderr.write(
       `Comparing strategies over seeds ${args.seedLo}..${args.seedHi} (recovery @ tick ${args.at}):\n`,
     );
     process.stdout.write("strategy,win_rate,wins,n\n");
-    for (const strat of STRATEGIES) {
-      const r = sweep(args, config, strat);
+    for (const strat of SWEEP_STRATEGIES) {
+      const r = sweep(strat, args.seedLo, args.seedHi, opts);
       const wins = r.filter((x) => x.outcome === "win").length;
       process.stdout.write(`${strat},${winRate(r).toFixed(3)},${wins},${r.length}\n`);
     }
     return;
   }
 
-  const results = sweep(args, config, args.strategy);
+  const results = sweep(args.strategy, args.seedLo, args.seedHi, opts);
   process.stdout.write("seed,outcome,completion_tick,fail_reason\n");
   for (const r of results) {
     process.stdout.write(`${r.seed},${r.outcome},${r.completionTick},"${r.failReason}"\n`);

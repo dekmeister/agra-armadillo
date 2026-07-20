@@ -49,8 +49,13 @@ npm run sweep -- scenarios/phase6.json --compare --seeds 500   # win-rate by rec
 npm run dev                                 # the playable console (http://localhost:5174/games/servicebus/)
 ```
 
-The emergent lesson (from the sweep): doing nothing (FIFO) wins ~28%; re-prioritising the BAD link
-(EDF/Class) ~90%; rerouting via a relay platform's DMS (QB→ACP-2→ACP-1) ~95%; **re-requesting onto the
-same BAD link ~22%** — i.e.
+The emergent lesson (from the sweep, over seeds 1..500 with recovery at T+4): doing nothing (FIFO)
+wins 29.4%; re-prioritising the BAD link (EDF/Class) 89.4%; rerouting via a relay platform's DMS
+(QB→ACP-2→ACP-1) 95.8%; **re-requesting onto the same BAD link 22.4%** — i.e.
 *delivery ≠ approval*, *authority is checked at the destination*, and routing/queue discipline — not
 retrying — is what gets the deadline-critical reply through.
+
+These figures are shown to the player after a Phase 6 outcome (the debrief's strategy strip) and are
+pinned by `packages/core/test/sweep.test.ts`, which re-runs the sweep and asserts them exactly — so
+they cannot drift when Phase 6 is retuned. They describe *this simulation's* Gilbert–Elliott model,
+not A-GRA. If the test fails, re-measure and update `STRATEGY_WIN_RATES` and this paragraph together.

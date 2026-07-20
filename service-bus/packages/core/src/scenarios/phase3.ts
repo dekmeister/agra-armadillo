@@ -96,11 +96,14 @@ export const phase3: ScenarioDef = {
   id: "phase3",
   phase: 3,
   title: "Team Formation",
+  principle: "choosing an election method is choosing a message cost and a failure mode",
   defaultConfig: DEFAULT_CONFIG,
   tutorialSeed: 1, // loss-free — doing nothing loses, picking a method wins
   beats: {
     "election-cost": {
       id: "election-cost",
+      takeaway:
+        "Election method trades cost against robustness (Static ~n messages, Raft ~2n plus a quorum).",
       title: "Forming the team — pick an election method",
       summary:
         "The package has no leader. Static Fitness is cheap (~n msgs); Raft is robust but costs ~2n and needs a quorum.",
@@ -114,6 +117,7 @@ export const phase3: ScenarioDef = {
     },
     quorum: {
       id: "quorum",
+      takeaway: "Raft needs a reachable majority and STALLS without one; Static declares locally.",
       title: "Raft is stalling — no quorum",
       summary:
         "Raft can't reach a majority of votes over the partitioned mesh, so no leader resolves. Static needs no quorum.",
@@ -164,6 +168,7 @@ export const phase3: ScenarioDef = {
       failReason: null,
       pendingBeat: null,
       seenBeats: [],
+      playerMoves: [],
       log: [
         {
           tick: 0,

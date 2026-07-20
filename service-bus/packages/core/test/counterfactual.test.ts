@@ -15,6 +15,8 @@ import {
   createInitialState,
   electionCounterfactual,
   electionOutcome,
+  levelsWithTaughtPath,
+  taughtPathOutcome,
   tick,
 } from "../src/index.ts";
 import { getScenario } from "../src/scenario.ts";
@@ -68,5 +70,42 @@ describe("election counterfactual", () => {
         electionOutcome("phase3", SEED, method),
       );
     }
+  });
+});
+
+/**
+ * Per-level counterfactuals (WP6.2).
+ *
+ * The debrief states "on this seed, <these moves> wins at T+n" after a loss. Phase 6's
+ * version of that line used to be a hardcoded string printed on every loss without ever
+ * checking whether rerouting would in fact have saved that run — a confident-sounding claim
+ * the sim had never been asked to confirm. Replaying the taught path is what makes it earned,
+ * so the guard here is that the replay really does win.
+ */
+describe("taughtPathOutcome", () => {
+  it("wins on its own tutorial seed for every level that has a taught path", () => {
+    const levels = levelsWithTaughtPath();
+    expect(levels.length).toBeGreaterThan(0);
+    for (const id of levels) {
+      const out = taughtPathOutcome(id, getScenario(id).tutorialSeed);
+      expect(out, id).not.toBeNull();
+      // If this ever fails, the debrief must render nothing rather than lie — but it also
+      // means the level's taught path no longer teaches what its Help text claims.
+      expect(out?.won, `${id} taught path must win on its tutorial seed`).toBe(true);
+      expect(out?.moves.length, `${id} taught path must actually do something`).toBeGreaterThan(0);
+    }
+  });
+
+  it("returns null for the levels with no taught path, rather than inventing one", () => {
+    // Phases 1 and 8 are near-unloseable bookends; a counterfactual for a level you cannot
+    // lose would be a fabricated lesson.
+    expect(taughtPathOutcome("phase1", 1)).toBeNull();
+    expect(taughtPathOutcome("phase8", 1)).toBeNull();
+  });
+
+  it("is pure — repeated calls on the same seed agree", () => {
+    expect(taughtPathOutcome("phase6", getScenario("phase6").tutorialSeed)).toEqual(
+      taughtPathOutcome("phase6", getScenario("phase6").tutorialSeed),
+    );
   });
 });

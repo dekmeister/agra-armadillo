@@ -38,7 +38,13 @@ const DEFAULT_CONFIG = {
   seed: 1,
   mode: "tutorial" as const,
   wezWindow: 20, // bingo-fuel window to complete the RTB + heal the split
-  contingencyTick: 3, // the package partitions here
+  /**
+   * The package partitions here. Moved 3 -> 6 with WP6.1: the `authority-handback` beat now
+   * waits for the REJECTED reply to get home (~T+4) instead of firing on the request's
+   * arrival (~T+2), and the partition must still land before the re-issued RTB is authorised
+   * (~T+7) or the level becomes winnable without the split-brain lesson ever firing.
+   */
+  contingencyTick: 6,
   copDecay: 0,
   copStart: 100,
   copThreshold: 0,
@@ -99,11 +105,13 @@ export const phase7: ScenarioDef = {
   id: "phase7",
   phase: 7,
   title: "RTB @ Bingo",
+  principle: "authority is contextual and transfers · split halves merge only on command",
   defaultConfig: DEFAULT_CONFIG,
   tutorialSeed: 1, // loss-free — passive loses, handBack + re-elect + merge wins
   beats: {
     "authority-handback": {
       id: "authority-handback",
+      takeaway: "Authority is contextual — RTB is the LRE's to grant, not the QB's.",
       title: "RTB REJECTED — wrong authority",
       summary:
         "RTB is an LRE action, not the QB's, so the QB rejected it. Hand authority back to the LRE.",
@@ -117,6 +125,7 @@ export const phase7: ScenarioDef = {
     },
     "split-brain": {
       id: "split-brain",
+      takeaway: "An orphan re-elects locally; halves merge ONLY on command, never automatically.",
       title: "Package partitioned — split-brain risk",
       summary:
         "The package split; the orphan half has no leader. Re-elect one, then MERGE ON COMMAND — never leave it split.",
@@ -170,6 +179,7 @@ export const phase7: ScenarioDef = {
       failReason: null,
       pendingBeat: null,
       seenBeats: [],
+      playerMoves: [],
       log: [
         {
           tick: 0,
@@ -188,7 +198,19 @@ export const phase7: ScenarioDef = {
   },
 
   fireContingency(s) {
-    if (s.tick !== s.config.contingencyTick || s.partition) return;
+    // Already split, or split once already and since healed — the partition is a one-shot.
+    // (`seenBeats` is the latch: `checkStandingBeats` records split-brain the moment the
+    // package divides, so this can only be true after a partition the player has met. Without
+    // it the authorisation clause below re-splits the package the tick after every merge.)
+    if (s.partition || s.seenBeats.includes("split-brain")) return;
+    /**
+     * Fire at the scripted tick, or the moment the RTB is authorised — whichever comes
+     * first. Without the second clause a player who takes the handback quickly can satisfy
+     * `authorised && healed` before `contingencyTick` and win having never met the
+     * split-brain lesson at all. The partition is scripted drama rather than physics
+     * (see docs/03), so pulling it forward to guarantee both lessons land is faithful.
+     */
+    if (s.tick !== s.config.contingencyTick && !rtbAuthorised(s)) return;
     s.partition = [["acp1"], [...ORPHAN]];
     for (const id of CROSSING) {
       const link = s.links[id];
@@ -201,7 +223,7 @@ export const phase7: ScenarioDef = {
       }
     }
     log(s, "Package partitioned — ACP-2/ACP-3 orphaned from the leader.", "degrade");
-    raiseBeat(s, phase7, "split-brain");
+    // The beat itself is raised by checkStandingBeats — see the note there.
   },
 
   applyAction(s, action) {
@@ -268,11 +290,36 @@ export const phase7: ScenarioDef = {
       ixn.status = status === "APPROVED" ? "approved" : "rejected";
       if (status === "REJECTED") {
         log(s, "RTB REJECTED at destination — arrival ≠ authority.", "fail");
-        raiseBeat(s, phase7, "authority-handback");
       } else {
         log(s, "LRE authorised RTB — MA_TaskStatusMT(APPROVED) en route → ACP-1.", "info");
       }
     }
+
+    /**
+     * The rejection got home (WP6.1). The beat used to be raised in the branch above, the
+     * instant the *request* reached the QB — which meant ACP-1 was prompted about a refusal
+     * its own status reply had not yet delivered. That leaked destination-side knowledge
+     * straight back to the requester, contradicting the exact thing this level teaches:
+     * authority is adjudicated at the destination and you learn the verdict by message.
+     *
+     * Raising it on the reply's arrival is both the fidelity fix and WP6.1's timing fix —
+     * the player has now watched a full round trip (request out, REJECTED back) rather than
+     * being interrupted at T+2 with nothing on the board to have learned it from.
+     */
+    if (msg.leg === "reply" && msg.approval === "REJECTED") {
+      raiseBeat(s, phase7, "authority-handback", { kind: "token", id: msg.id });
+    }
+  },
+
+  /**
+   * `split-brain` used to be raised inline in `fireContingency`, on the single exact tick
+   * the partition fires. `raiseBeat` silently drops a beat while another is pending
+   * (runtime.ts), so an unacknowledged beat on that one tick would have discarded the
+   * level's second lesson permanently. Raising it from a standing check instead means it
+   * lands as soon as the player is free to receive it.
+   */
+  checkStandingBeats(s) {
+    if (s.partition) raiseBeat(s, phase7, "split-brain");
   },
 
   evaluateOutcome(s) {

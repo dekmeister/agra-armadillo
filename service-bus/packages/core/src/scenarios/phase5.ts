@@ -158,11 +158,13 @@ export const phase5: ScenarioDef = {
   id: "phase5",
   phase: 5,
   title: "CAP",
+  principle: "protecting the shared picture costs something else · triage is not free",
   defaultConfig: DEFAULT_CONFIG,
   tutorialSeed: 1, // loss-free — bulk starves a follower, shedding wins
   beats: {
     "cop-fanout": {
       id: "cop-fanout",
+      takeaway: "COP is one-to-many; freshness is a per-follower budget, not a single number.",
       title: "COP (Common Operating Picture) is one-to-many — every follower needs feeding",
       summary:
         "The leader must sync the COP to all three followers; fan-out cost scales with the package size.",
@@ -176,6 +178,8 @@ export const phase5: ScenarioDef = {
     },
     "cop-starvation": {
       id: "cop-starvation",
+      takeaway:
+        "Shed low-priority bulk to protect the COP fan-out — triage, and it costs track completeness.",
       title: "Sensor bulk is starving the COP fan-out",
       summary:
         "MD observation reports are crowding the P2P links and a follower is going stale. Shed the bulk to protect COP.",
@@ -192,6 +196,8 @@ export const phase5: ScenarioDef = {
     },
     "bulk-resume": {
       id: "bulk-resume",
+      takeaway:
+        "Restore the shed feed once the pressure lifts; a shed never resumed is capability given away.",
       title: "Followers recovered — restore the sensor feed",
       summary:
         "Every follower's COP is clear of breach again, and your own track completeness has been decaying since you shed. Put the bulk back.",
@@ -248,6 +254,7 @@ export const phase5: ScenarioDef = {
       failReason: null,
       pendingBeat: null,
       seenBeats: [],
+      playerMoves: [],
       log: [{ tick: 0, text: "Phase 5 — CAP. Fanning COP to the package.", severity: "info" }],
       nextSeq: 0,
       config,

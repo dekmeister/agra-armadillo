@@ -85,3 +85,31 @@ describe("selection highlights", () => {
     expect(highlightFor(gs, null)).toBeNull();
   });
 });
+
+/**
+ * The Objective card's status pill (WP4 deferral → WP6.4).
+ *
+ * WP4 fixed the *token* so a rerouted reply stopped wearing the red MISSING-ACK treatment,
+ * but left the Objective card reading STALLED — same complaint, different surface, and it
+ * was explicitly handed to WP6. The pairing here is deliberate: both assertions must hold,
+ * or the board and the card are telling the player different stories again.
+ */
+describe("objective status", () => {
+  it("reads STALLED while the reply is stuck on the BAD link", () => {
+    const frames = run();
+    expect(
+      frames.some((f) => f.objective === "stalled"),
+      "STALLED never appears — the alarm has gone dead, not quiet",
+    ).toBe(true);
+  });
+
+  it("clears STALLED once the reply is rerouted onto the clean relay", () => {
+    const frames = run({ 13: [{ type: "reroute" }] });
+    const after = frames.slice(14).filter((f) => f.outcome === "pending");
+    expect(after.length).toBeGreaterThan(0);
+    expect(
+      after.every((f) => f.objective !== "stalled"),
+      "the card still says STALLED after the correct recovery",
+    ).toBe(true);
+  });
+});

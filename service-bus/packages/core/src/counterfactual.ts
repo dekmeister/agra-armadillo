@@ -16,7 +16,66 @@
  * absolutely would.
  */
 import { apply, createInitialState, tick } from "./engine.ts";
-import type { ElectionMethod, GameState } from "./types.ts";
+import { TAUGHT_PATHS } from "./replay.ts";
+import { getScenario } from "./scenario.ts";
+import type { ElectionMethod, GameState, PlayerMove } from "./types.ts";
+
+/**
+ * What the level's taught path does on this exact seed (WP6.2).
+ *
+ * Two different questions live in this module, and they must not be confused:
+ *  - `taughtPathOutcome` answers "what would have WON" — shown on a loss.
+ *  - `electionOutcome` / `electionCounterfactual` answer "what the other equally valid
+ *    choice would have COST" — shown on wins too, because it is a comparison rather than
+ *    a consolation.
+ */
+export interface TaughtOutcome {
+  /** Whether the taught path actually wins on this seed. */
+  won: boolean;
+  /** Tick the run resolved. */
+  tick: number;
+  /** The moves the taught path made, already phrased by `describeAction`. */
+  moves: PlayerMove[];
+}
+
+/**
+ * Replay a level down its taught path and report what happens.
+ *
+ * Phase 6's debrief used to assert, as a hardcoded string on every loss, that "rerouting at
+ * the MISSING_ACK point delivers the reply in time" — without ever checking whether that
+ * was true of the run in front of the player. Replaying it makes the claim earned rather
+ * than asserted, and generalises the game's single best teaching device to every level that
+ * has a taught path.
+ *
+ * Returns `null` for levels with no taught path (Phases 1 and 8 are near-unloseable, and
+ * inventing a counterfactual for a level you cannot lose would be teaching a fiction).
+ * Callers must honour `won: false` by rendering nothing — never state a counterfactual the
+ * sim did not produce.
+ */
+export function taughtPathOutcome(
+  scenarioId: string,
+  seed: number,
+  maxTicks = 60,
+): TaughtOutcome | null {
+  const taught = TAUGHT_PATHS[scenarioId];
+  if (!taught) return null;
+  const choose = taught();
+
+  let s: GameState = createInitialState(seed, { scenarioId });
+  s = apply(s, { type: "arm" });
+  for (let t = 1; t <= maxTicks && s.outcome === "pending"; t++) {
+    s = tick(s);
+    const a = choose(s);
+    if (a) s = apply(s, a);
+    if (s.pendingBeat) s = apply(s, { type: "acknowledgeBeat" });
+  }
+  return { won: s.outcome === "win", tick: s.tick, moves: s.playerMoves };
+}
+
+/** Every level that can state a counterfactual — used by the honesty guard in tests. */
+export function levelsWithTaughtPath(): string[] {
+  return Object.keys(TAUGHT_PATHS).filter((id) => getScenario(id).id === id);
+}
 
 export interface ElectionOutcome {
   method: ElectionMethod;

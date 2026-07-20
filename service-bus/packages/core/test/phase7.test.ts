@@ -52,6 +52,56 @@ describe("Phase 7 — RTB @ Bingo", () => {
     expect(sawReject).toBe(true);
   });
 
+  /**
+   * WP6.1. The beat used to fire the instant the *request* reached the QB, so ACP-1 was
+   * prompted about a refusal its own reply had not yet carried home — a timing complaint,
+   * but more importantly a fidelity leak in the one level whose whole subject is that you
+   * learn the destination's verdict by message. It must not come back.
+   */
+  it("the hand-back beat waits for the REJECTED reply to get home, not the request's arrival", () => {
+    let s = createInitialState(1, p7);
+    let beatTick: number | null = null;
+    let replyHomeTick: number | null = null;
+    for (let t = 1; t <= 10 && beatTick === null; t++) {
+      s = tick(s);
+      const reply = Object.values(s.messages).find(
+        (m) => m.leg === "reply" && m.approval === "REJECTED",
+      );
+      if (replyHomeTick === null && reply?.state === "SENT") replyHomeTick = s.tick;
+      if (s.pendingBeat?.id === "authority-handback") beatTick = s.tick;
+    }
+    expect(replyHomeTick).not.toBeNull();
+    expect(beatTick).toBe(replyHomeTick);
+    // A full round trip has been observed before the player is asked to decide.
+    expect(beatTick).toBeGreaterThanOrEqual(3);
+  });
+
+  /**
+   * `raiseBeat` drops a beat while another is pending, and `split-brain` used to be raised
+   * only on the single exact contingency tick — so a player sitting on an unacknowledged
+   * hand-back beat could lose the level's second lesson permanently.
+   */
+  it("split-brain still lands even if the hand-back beat is left unacknowledged", () => {
+    let s = createInitialState(1, p7);
+    for (let t = 1; t <= 12; t++) {
+      s = tick(s);
+      // Deliberately never acknowledge: hold the first beat open across the partition tick.
+      if (s.pendingBeat?.id === "authority-handback") continue;
+      if (s.pendingBeat) s = apply(s, { type: "acknowledgeBeat" });
+    }
+    expect(s.partition).toBeDefined();
+    s = apply(s, { type: "acknowledgeBeat" });
+    s = tick(s);
+    expect(s.seenBeats).toContain("split-brain");
+  });
+
+  /** The split must always precede the win, or the lesson is skippable by playing fast. */
+  it("the partition always fires before the RTB can be authorised", () => {
+    const s = playTaught();
+    expect(s.outcome).toBe("win");
+    expect(s.seenBeats).toContain("split-brain");
+  });
+
   it("passivity loses — RTB unauthorised and the package left split", () => {
     const s = playPassive();
     expect(s.outcome).toBe("loss");
