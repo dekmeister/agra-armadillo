@@ -105,8 +105,16 @@ describe("field guide", () => {
     expect(LIFECYCLE_STATES.some((s) => s.state === "SENT")).toBe(false);
   });
 
-  it("names all five election methods and marks the two that ship", () => {
-    expect(ELECTION_METHODS).toHaveLength(5);
+  it("names the four A-GRA election methods and marks the two that ship", () => {
+    // The XSD enumerates exactly these four as integers 0-3 on
+    // MA_LeadershipMetricsMDT.PackageLeaderElectionMethod. Pinned by name, not just
+    // by length, so a fifth cannot be reintroduced without this failing.
+    expect(ELECTION_METHODS.map((m) => m.name).sort()).toEqual([
+      "Bully",
+      "Maximum Consensus",
+      "Raft",
+      "Static Fitness Score",
+    ]);
     const shipped = ELECTION_METHODS.filter((m) => m.implemented).map((m) => m.name);
     expect(shipped.sort()).toEqual(["Raft", "Static Fitness Score"]);
   });

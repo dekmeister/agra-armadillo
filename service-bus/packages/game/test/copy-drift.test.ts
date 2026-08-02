@@ -30,14 +30,30 @@ function sourceFiles(dir: string): string[] {
 }
 
 /**
- * `MA_` followed by an identifier. Deliberately broad — it catches a name that is
- * merely misspelled as readily as one that is wholly invented.
+ * `MA_` or `GAME_` followed by an identifier. Deliberately broad — it catches a name
+ * that is merely misspelled as readily as one that is wholly invented. `GAME_` is in
+ * scope too so the one deliberately game-local message name is held to the same
+ * standard as the real ones, and so a stale `MA_SynchronizeGlobalCopToPeer` left in
+ * prose would still be caught by the `MA_` half.
  */
-const MA_TOKEN = /\bMA_[A-Za-z0-9_]+/g;
+const MA_TOKEN = /\b(?:MA|GAME)_[A-Za-z0-9_]+/g;
+
+/**
+ * Real A-GRA schema types the view *cites as provenance* but never sends. These are
+ * not messages — they are the XSD complexTypes a claim is sourced to, so they will
+ * never appear in `KNOWN_MESSAGE_NAMES`, and suppressing them by loosening the regex
+ * would blunt the guard. Keep this list short: an entry is a promise that the name was
+ * checked against `A-GRA_MessageDefinitions_v5_0_a.xsd`, not a way to quiet a failure.
+ */
+const CITED_SCHEMA_TYPES = new Set([
+  "MA_LeadershipMetricsMDT", // carries PackageLeaderElectionMethod (election methods 0-3)
+  "MA_OperatorRoleMDT", // shows a role is a ForeignKeyType + free text, not an enum (VERIFY C1)
+  "MA_AuthorityCriteriaType", // type of ROE's TargetAuthorityCriteria — the Target-Authority gate
+]);
 
 describe("UI copy does not name messages the game never sends", () => {
   it("resolves every MA_* token in the view source to a documented name", () => {
-    const known = new Set<string>(KNOWN_MESSAGE_NAMES);
+    const known = new Set<string>([...KNOWN_MESSAGE_NAMES, ...CITED_SCHEMA_TYPES]);
     const offenders: string[] = [];
 
     for (const file of sourceFiles(SRC)) {

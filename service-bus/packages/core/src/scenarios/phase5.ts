@@ -169,7 +169,7 @@ export const phase5: ScenarioDef = {
       summary:
         "The leader must sync the COP to all three followers; fan-out cost scales with the package size.",
       concept:
-        "COP (MA_SynchronizeGlobalCopToPeer) is a one-to-many P2P fan-out: the leader owes every " +
+        "COP (GAME_CopSyncToPeer) is a one-to-many P2P fan-out: the leader owes every " +
         "follower a fresh picture, so the messaging cost grows with the number of followers and each " +
         "follower carries its OWN freshness budget. Keep them all above threshold — a single stale " +
         "follower breaches the shared picture.",
@@ -272,7 +272,7 @@ export const phase5: ScenarioDef = {
     // Continuous COP fan-out to every follower.
     for (const f of FOLLOWERS) {
       spawn(s, {
-        type: "MA_SynchronizeGlobalCopToPeer",
+        type: "GAME_CopSyncToPeer",
         cls: "P2P",
         route: [f.link],
         leg: "oneway",
@@ -290,7 +290,7 @@ export const phase5: ScenarioDef = {
   },
 
   onDelivered(s, msg) {
-    if (msg.type === "MA_SynchronizeGlobalCopToPeer") {
+    if (msg.type === "GAME_CopSyncToPeer") {
       const link = s.links[msg.route[msg.hop] ?? ""];
       if (link) refreshFollower(s, link.to, COP_REFRESH);
       return;

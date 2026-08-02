@@ -163,7 +163,10 @@ function show(id: string) {
         <p class="lead">{@render prov("assert")} The five roles and their authorities come from
           this project's design set. The C2 Volume, which defines RBAC, is not available to this
           build — so treat the specifics as unconfirmed even though the code implements exactly
-          what is described here.</p>
+          what is described here. Note that no schema check can settle this one: A-GRA models an
+          operator role as <i>configured data</i> — an ID and a free-text description, referenced
+          by whatever gates on it — rather than as a fixed enumeration. The gate below is sourced;
+          this list of who stands behind it is not.</p>
         <div class="tablewrap">
           <table class="roles">
             <thead><tr><th>Role</th><th>May command</th><th>In this game</th></tr></thead>
@@ -183,9 +186,11 @@ function show(id: string) {
 
       <!-- §5 ------------------------------------------------------------ -->
       {:else if active === "election"}
-        <p class="lead">{@render prov("assert")} A-GRA names five election methods. None of the
-          five names appears in any source available to this build — the Peer Volume defines them —
-          so this whole section is design-set assertion.</p>
+        <p class="lead">{@render prov("ask")} A-GRA names <b>four</b> election methods, enumerated
+          as integers on <code>PackageLeaderElectionMethod</code> in the normative schema. The
+          <b>Message cost</b> and <b>Under stress</b> columns are a different matter
+          {@render prov("assert")} — the schema characterises the methods only in a sentence each,
+          so the numbers and failure modes below are this project's model, not A-GRA's.</p>
         <div class="tablewrap">
           <table class="elect">
             <thead>

@@ -10,13 +10,20 @@
  * Mission Systems Volume are named without it, and inventing one to make the table look
  * uniform would be exactly the kind of plausible-looking fiction the guard rail forbids.
  *
- * PROVENANCE. Every name below except `MA_SynchronizeGlobalCopToPeer` is confirmed
- * against `A-GRA_MessageDefinitions_v5_0_a.xsd` (the normative schema, in the sibling
+ * PROVENANCE. Every `MA_*` / subsystem name below is confirmed against
+ * `A-GRA_MessageDefinitions_v5_0_a.xsd` (the normative schema, in the sibling
  * brain-swap repo — see CLAUDE.md). That check is what caught the invented
- * `MA_VehicleCommandMT`, since renamed to the real `MA_FlightCommandMT`. Message
- * *names* being sourced does not mean their *sequences* are: the approval and
- * designation flows still need the C2 Volume, which is absent on this device.
- * Open items: `docs/VERIFY.md`.
+ * `MA_VehicleCommandMT`, since renamed to the real `MA_FlightCommandMT`.
+ *
+ * Exactly one entry, `GAME_CopSyncToPeer`, has no A-GRA counterpart, and its prefix says
+ * so at every call site. It was previously `MA_SynchronizeGlobalCopToPeer` — a name that
+ * looked A-GRA-shaped, was absent from the XSD, and even lacked the `MT` suffix every real
+ * type carries. Renaming rather than re-caveating it is the guard rail applied honestly:
+ * an `MA_` prefix is a provenance claim.
+ *
+ * Message *names* being sourced does not mean their *sequences* are, though the XSD's
+ * ROE annotations do source the designation flow and the Target-Authority gate. What
+ * still needs the absent C2 Volume is the RBAC role set. Open items: `docs/VERIFY.md`.
  */
 
 import type { InterfaceClass, MessageType } from "./types.ts";
@@ -93,7 +100,7 @@ export const MESSAGE_CODEX: Record<MessageType, CodexEntry> = {
     caveat:
       "Until WP5.2 L5 also spawned this at class MD to stand in for deferrable bulk — one message type flying as three different interface classes. L5 now uses the real ObservationMeasurementReportMT instead.",
   },
-  MA_SynchronizeGlobalCopToPeer: {
+  GAME_CopSyncToPeer: {
     cls: "P2P",
     direction: "Leader MA -> peer MA",
     role: "One unit of COP fan-out from the leader to a follower. Keeping every follower's COP under the freshness threshold is L5's and L6's background pressure.",
@@ -101,7 +108,7 @@ export const MESSAGE_CODEX: Record<MessageType, CodexEntry> = {
     status: "exercised",
     provenance: "unconfirmed",
     caveat:
-      "[S] The only game message NOT found in the XSD, and it lacks the MT suffix every real type carries — the name is probably wrong. The real COP-sync message is defined in the Peer Volume, which is absent on this device (VERIFY P6). The topology it represents (leader fans COP out to peers over P2P) is sound.",
+      "[S] The one message here that is NOT an A-GRA type, which is why it carries a GAME_ prefix rather than an MA_ one. It was called MA_SynchronizeGlobalCopToPeer until this pass; that name was absent from the XSD and lacked the MT suffix every real type carries. There is nothing to rename it to: no A-GRA message carries COP content. MS Vol §1.2.3 shows the COP is aggregated from ordinary typed status messages (SubsystemStatusMT, MA_AMTI_CapabilityMT, PO_ActivityMT, weapon status), and the real MA_COP_ConfigurationSettings* messages configure the COP rather than carry it. So this is a double simplification — an invented message standing for an aggregate — and the fan-out topology it represents (leader fans COP out to peers over P2P) is the part that is sound. VERIFY P6.",
   },
   MA_TaskCommandMT: {
     cls: "C2",
@@ -147,7 +154,7 @@ export const MESSAGE_CODEX: Record<MessageType, CodexEntry> = {
     status: "exercised",
     provenance: "xsd",
     caveat:
-      "Name is XSD-confirmed; the five election methods and their cost profiles are design-set assertions (VERIFY P1, P2).",
+      "Name is XSD-confirmed, as are the four election methods themselves (enumerated 0-3 on MA_LeadershipMetricsMDT.PackageLeaderElectionMethod). Their cost profiles remain design-set assertions (VERIFY P2).",
   },
   MA_CommAvailableEndpointsMT: {
     cls: "P2P",

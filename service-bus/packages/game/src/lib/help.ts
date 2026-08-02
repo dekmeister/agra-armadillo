@@ -121,7 +121,7 @@ export const MISSION_HELP: Record<string, MissionHelp> = {
   phase5: {
     situation:
       "Flying Combat Air Patrol, the leader must sync the global <b>COP</b> " +
-      "(<code>MA_SynchronizeGlobalCopToPeer</code>) to <b>every follower</b> — a one-to-many P2P " +
+      "(<code>GAME_CopSyncToPeer</code>) to <b>every follower</b> — a one-to-many P2P " +
       "fan-out whose cost grows with package size, and each follower carries its <b>own</b> " +
       "freshness budget. Low-priority bulk <b>MD/MP</b> updates are hogging the fan-out links, so " +
       "COP syncs can't get on the air and a follower's picture is aging toward breach.",

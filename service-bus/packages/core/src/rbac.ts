@@ -7,8 +7,23 @@
  * that arrives at any other role is REJECTED / CannotComply. This is the teaching
  * beat: routing a message to a node does not make that node authorised.
  *
+ * PROVENANCE. The *gate* is sourced, the *role set* is not — do not conflate them.
+ * Sourced (XSD): the Target Authority itself, via MA_RulesOfEngagementMDT's
+ * TargetAuthorityCriteria field, which "specifies who is authorized to approve or set
+ * something as a Target"; the approval request naming an Approver role "allowed to
+ * approve" plus a RespondBy deadline; ApprovalStatusEnum's APPROVED/REJECTED; and
+ * CannotComplyEnum's INELIGIBLE_CONTROL_SOURCE, whose annotation is precisely this
+ * rejection ("the source of the action isn't eligible and/or hasn't been granted
+ * permission to control"). Unsourced: that the five roles below are A-GRA's set, and
+ * that an AVC specifically may not hold release authority (VERIFY C1, C2, C7) — the
+ * XSD models roles as configured data, not an enum, so only the absent C2 Volume can
+ * settle it. TargetAuthorityCriteria says who *may* be authorised without excluding
+ * anyone, so it does not decide C7 either way.
+ *
  * [S] Full ROE / WEZ / Identity-Matrix / Target-Custody / geozone machinery is
- * collapsed to this single Target-Authority gate (see docs/01).
+ * collapsed to this single Target-Authority gate (see docs/01). Also omitted: the
+ * StrikeConsentRequestMT round trip that a real ROE with StrikeConsentRequired=TRUE
+ * would demand before each strike executes.
  */
 import type { ApprovalStatus, Role } from "./types.ts";
 

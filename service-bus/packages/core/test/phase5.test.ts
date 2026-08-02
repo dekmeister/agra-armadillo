@@ -108,11 +108,11 @@ describe("Phase 5 — CAP", () => {
     let s = createInitialState(1, p5);
     for (let t = 1; t <= 3; t++) s = tick(s);
     const copBefore = Object.values(s.messages).filter(
-      (m) => m.type === "MA_SynchronizeGlobalCopToPeer",
+      (m) => m.type === "GAME_CopSyncToPeer",
     ).length;
     s = apply(s, { type: "shedTraffic" });
     const copAfter = Object.values(s.messages).filter(
-      (m) => m.type === "MA_SynchronizeGlobalCopToPeer",
+      (m) => m.type === "GAME_CopSyncToPeer",
     ).length;
     expect(copAfter).toBe(copBefore);
     for (const l of Object.values(s.links)) {

@@ -1,9 +1,11 @@
 /**
  * Leader-election strategies (L3 Team Formation, reused for L7's orphan re-election).
  *
- * A-GRA names five methods (Bully / Maximum Consensus / Raft / Static Fitness Score /
- * Off-Nominal); the campaign ships **Raft + Static** (per MVP scope), each with a
- * distinct message-cost profile run over the same P2P links the package uses.
+ * A-GRA names **four** methods, enumerated as integers on
+ * `MA_LeadershipMetricsMDT.PackageLeaderElectionMethod` in the normative XSD:
+ * `0` Bully · `1` Static Fitness Score · `2` Maximum Consensus · `3` Raft. The campaign
+ * ships **Raft + Static** (per MVP scope), each with a distinct message-cost profile run
+ * over the same P2P links the package uses.
  *
  * This module is the pure strategy layer: cost model, candidate selection, and quorum
  * math. The *message flow* (emitting request-vote / declaration messages, tallying them

@@ -27,8 +27,8 @@ whom, over which interface, gated by what. Every simplification is flagged `[S]`
 - **Not all six interfaces cross the contested air** — VI (MA↔FA) is on-platform; corrects a topology error
   in the initial concept.
 - Five RBAC roles (Admin/QB/AVC/LRE/Observer) gate command authority at the destination.
-- Five named leader-election methods (Bully/Raft/Static-Fitness/Max-Consensus/Off-Nominal) modelled with
-  distinct message costs under burst (Gilbert–Elliott) link loss.
+- Four named leader-election methods (Bully/Static-Fitness/Max-Consensus/Raft — enumerated 0–3 in the
+  XSD) modelled with distinct message costs under burst (Gilbert–Elliott) link loss.
 
 ## MVP build (Phase 6 vertical slice)
 

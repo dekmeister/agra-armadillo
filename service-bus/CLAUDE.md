@@ -23,8 +23,11 @@ load them whole.** Present on this device:
 - `ASK 5.0a Vehicle Interface Volume.txt` — ~8.6k lines. VI control modes, FA responsibilities.
 
 **Not present on this device:** the **Command and Control** and **Peer** Interface Volumes. They hold
-the RBAC role definitions, the approval/designation weapon flow, and the five leader-election methods
-— so those parts of the game rest on design-set assertion, not primary text. Everything affected is
+the RBAC role definitions, the approval/designation weapon flow, and the leader-election methods — so
+those parts of the game rest on design-set assertion, not primary text. **But mine the XSD before
+assuming a claim is uncheckable:** it is normative for *enumerations and field semantics*, not just
+message-type names, and searching it for the underlying concept settled six VERIFY items that had
+been filed as "needs an absent volume". Everything still affected is
 listed in `docs/VERIFY.md`; if you are on a machine that *does* have those volumes, work that
 checklist. Do not silently upgrade an unverified claim to a sourced one.
 
@@ -52,8 +55,11 @@ there was.)
 - **Weapon employment is a distinct gated flow** through a Target Authority (the QB):
   `MA_ApprovalRequestMT → QB → MA_ApprovalRequestStatusMT(APPROVED)`, or
   `MA_DesignationRequestMT → MA_DesignationMT`.
-- **Leader election = five named methods** (Bully / Maximum Consensus / Raft / Static Fitness Score /
-  Off-Nominal), each with distinct message cost, run over the same degraded links that caused the loss.
+- **Leader election = four named methods** — enumerated `0`–`3` on
+  `MA_LeadershipMetricsMDT.PackageLeaderElectionMethod` in the XSD: Bully / Static Fitness Score /
+  Maximum Consensus / Raft. Each has a distinct message cost, run over the same degraded links that
+  caused the loss. (There is no fifth; an "Off-Nominal" method earlier revisions listed had no source
+  and was removed.)
 - **RF link model:** directional links; **Gilbert–Elliott two-state burst loss** (chosen over iid because
   tactical links fail in bursts); bandwidth, latency, intermittency all first-class and tunable.
 
@@ -78,13 +84,23 @@ fan-out, then view, then param-sweep CSV.
 
 ## Dev environment
 - **Browser for screenshots:** **check what is actually installed before trusting this line** — it
-  has now been wrong in both directions. As of 2026-07-19 on this machine:
-  `/usr/bin/google-chrome-stable` **is** installed and `chromium` is **not**.
-  Headless screenshot: `google-chrome-stable --headless --disable-gpu --screenshot=<path> --window-size=1280,900 <url>`
-  Any `vaInitialize failed: unknown libva error` warning is harmless — ignore it.
-- **Playwright:** `npx playwright` (v1.61.1) is available globally but has no cached browser bundles.
-  Point it at the system browser via `executablePath: "/usr/bin/google-chrome-stable"`
-  (`playwright-core` works), or fall back to the command above.
+  has now been wrong in both directions three times. Just run
+  `ls /usr/bin/google-chrome* /usr/bin/chromium*`. As of **2026-08-02**: `/usr/bin/chromium` **is**
+  installed and `google-chrome-stable` is **not** (the reverse of what this line said on 2026-07-19).
+  Headless screenshot: `chromium --headless --disable-gpu --hide-scrollbars --no-sandbox --virtual-time-budget=4000 --screenshot=<path> --window-size=1280,1500 <url>`
+  `--virtual-time-budget` matters: without it you screenshot before the Svelte app has mounted.
+  `vaInitialize failed: unknown libva error` and the `nss_util.cc … Root Certs` error are both
+  harmless — ignore them.
+- **Playwright:** `npx playwright` is available but has **no cached browser bundles and no
+  importable `playwright-core`** — `import { chromium } from 'playwright-core'` fails with
+  ERR_MODULE_NOT_FOUND. Use the headless command above instead.
+- **Claude-in-Chrome MCP** is *not* connected on this machine (no browser extension). Don't plan a
+  verification step around it.
+- **Deep-linking the UI for screenshots:** `App.svelte` reads query params, so you can land directly
+  on a view instead of scripting clicks — `?guide=<section-id>` opens the Field Guide at that
+  section (ids are in `SECTIONS`, e.g. `?guide=election`). The dev/preview server serves under the
+  base path `/games/servicebus/`, so the full URL is
+  `http://localhost:<port>/games/servicebus/?guide=election`.
 
 ## Working conventions
 - Keep the sim deterministic and headless-testable; no rendering coupling. Seeded RNG only.

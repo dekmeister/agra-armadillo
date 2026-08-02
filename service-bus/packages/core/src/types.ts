@@ -34,9 +34,12 @@ export type Lifecycle = "PENDING" | "EXECUTING" | "SENT" | "FAIL_UNSENT" | "FAIL
 export type Role = "Admin" | "QB" | "AVC" | "LRE" | "Observer";
 
 /**
- * Leader-election methods. A-GRA names five (Bully / Maximum Consensus / Raft /
- * Static Fitness Score / Off-Nominal); the campaign ships Raft + Static (per MVP
- * scope), each with a distinct message-cost profile.
+ * Leader-election methods. A-GRA names **four**, enumerated as integers on
+ * `MA_LeadershipMetricsMDT.PackageLeaderElectionMethod` (and on
+ * `MA_PackageManagementCommandMDT`) in the normative XSD:
+ * `0` Bully · `1` Static Fitness Score · `2` Maximum Consensus · `3` Raft.
+ * The campaign ships Raft + Static (per MVP scope), each with a distinct
+ * message-cost profile.
  */
 export type ElectionMethod = "raft" | "static";
 
@@ -64,13 +67,21 @@ export interface ElectionState {
   startTick: number;
 }
 
-/** Real A-GRA message types used across the campaign. */
+/**
+ * Message types used across the campaign. Every one is a real A-GRA type except the
+ * single `GAME_`-prefixed entry, which is deliberately named so it cannot be mistaken
+ * for one — see its comment below and `codex.ts`.
+ */
 export type MessageType =
   | "MA_ApprovalRequestMT" // strike approval request (C2)
   | "MA_ApprovalRequestStatusMT" // approval status reply (C2): APPROVED / REJECTED
   | "MA_RulesOfEngagementCommandMT" // routine C2 background traffic
   | "MA_CommTeamReportMT" // link-health / status report (C2/P2P)
-  | "MA_SynchronizeGlobalCopToPeer" // [S] COP fan-out unit (P2P)
+  // [S] Game-local, NOT an A-GRA type — hence the GAME_ prefix. One unit of COP fan-out
+  // from leader to follower (P2P). A-GRA has no message that carries COP *content*: the
+  // COP is aggregated from ordinary typed status messages (MS Vol §1.2.3), and the real
+  // MA_COP_Configuration* messages configure it rather than carry it. See VERIFY P6.
+  | "GAME_CopSyncToPeer"
   | "MA_TaskCommandMT" // command leg of a task round trip (takeoff/landing/RTB) (C2)
   | "MA_TaskStatusMT" // status reply of a task round trip (C2)
   | "MA_TaskMT" // formation/teaming task, e.g. FollowFormation heartbeat (P2P)

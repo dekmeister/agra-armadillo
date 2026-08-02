@@ -409,13 +409,13 @@ export const phase6: ScenarioDef = {
   generateDemand(s) {
     if (s.tick % s.config.copSyncPeriod === 0) {
       spawn(s, {
-        type: "MA_SynchronizeGlobalCopToPeer",
+        type: "GAME_CopSyncToPeer",
         cls: "P2P",
         route: ["p2p"],
         leg: "oneway",
       });
       spawn(s, {
-        type: "MA_SynchronizeGlobalCopToPeer",
+        type: "GAME_CopSyncToPeer",
         cls: "P2P",
         route: ["p2p3"],
         leg: "oneway",
@@ -434,7 +434,7 @@ export const phase6: ScenarioDef = {
   },
 
   onDelivered(s, msg) {
-    if (msg.type === "MA_SynchronizeGlobalCopToPeer") {
+    if (msg.type === "GAME_CopSyncToPeer") {
       s.cop = Math.max(s.cop, COP_REFRESH);
       return;
     }

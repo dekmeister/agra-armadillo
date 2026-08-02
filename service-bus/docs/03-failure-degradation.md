@@ -74,12 +74,24 @@ distributed-systems behaviour — exactly the A-GRA-under-contested-comms questi
 | **Bully** | higher-ID nodes challenged; loser yields | ~O(n²) chatter | robust but **expensive**; can thrash if links flap | cost of strong consistency |
 | **Raft** | term + heartbeat + vote; needs majority | low steady heartbeat, vote burst on timeout | clean **majority** semantics; **stalls without quorum** (good split-brain lesson) | quorum & terms |
 | **Static Fitness Score** | pre-loaded scores; consensus then highest declares | very low — no negotiation of scores in-flight | **deterministic & cheap**, but **inflexible** if the fittest node is the one you lost | pre-planning vs. adaptivity |
-| **Maximum Consensus** | exchange + agree on max fitness; ties → highest tail number | moderate consensus block | adapts via **dynamic** fitness (e.g. Comms Health) | dynamic fitness keyed on link health |
-| **Off-Nominal** | degraded-mode election when normal preconditions fail | situational | the explicit "things are broken" path | graceful degradation |
+| **Maximum Consensus** | exchange + agree on max fitness | moderate consensus block | adapts via **dynamic** fitness (e.g. Comms Health) | dynamic fitness keyed on link health |
 
-**Dynamic Leadership Fitness Score keyed on Comms Health** is the killer interaction: the node with the
-best links *should* lead, but measuring "best links" requires the links you're trying to assess. The game
-lets you watch that feedback loop under Gilbert–Elliott bursts.
+These are the **four** methods A-GRA names, enumerated as integers `0`–`3` on
+`MA_LeadershipMetricsMDT.PackageLeaderElectionMethod` in the normative XSD (Bully `0`, Static Fitness
+Score `1`, Maximum Consensus `2`, Raft `3`). Earlier revisions of this table carried a fifth,
+"Off-Nominal"; it appears in no A-GRA source and has been removed. The **names** are sourced; the
+**cost and stress columns are our model** (VERIFY P2) — the XSD characterises the methods only in a
+sentence each, though those sentences do back the direction of travel: Maximum Consensus is chosen
+"while preserving communication bandwidth", Raft is "distributed and fault-tolerant", Bully suits
+"cases where Leadership Fitness Scores need to be shared as part of an election process".
+
+**Dynamic Leadership Fitness Score keyed on Comms Health** is the killer interaction, and it is real:
+`MA_DynamicFitnessScoreChoiceType` offers exactly two dynamic determination methods, both comms
+measurements — `C2_CommsBinary` (0 = poor/no connection with C2, 1 = healthy) and `P2P_CommsCount`
+(count of peers with a healthy connection to the reporting ACP). So the node with the best links
+*should* lead, but measuring "best links" requires the links you're trying to assess. The game lets
+you watch that feedback loop under Gilbert–Elliott bursts. `[S]` A-GRA states no tiebreak rule; the
+sim breaks ties by node id so replays stay byte-identical.
 
 ## 5. Scoring degradation (maps to interaction-level compliance)
 - **Hard fail (0 for that interaction):** required status reply never completes within deadline; or a

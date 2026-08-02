@@ -74,7 +74,7 @@ export const SECTIONS: GuideSection[] = [
   {
     id: "election",
     title: "Leader election",
-    standfirst: "Five named methods, and what each costs in messages.",
+    standfirst: "Four named methods, and what each costs in messages.",
   },
   {
     id: "codex",
@@ -309,6 +309,15 @@ export interface RoleRow {
  * [VERIFY C1–C3] The five roles and their authorities come from the design set
  * (docs/01 L44), not from primary text: the C2 Volume, which defines RBAC, is not
  * available on this device. The Start Here Guide confirms only that RBAC exists.
+ *
+ * The XSD sharpens *what is still missing*. It does not enumerate operator roles at
+ * all: `MA_OperatorRoleMDT.Role` is a `ForeignKeyType` with a free-text
+ * `RoleDescription`, and the places that gate on a role
+ * (`ApproverRoleType.ApproverRole`, `MA_AuthorityCriteriaType.AuthorizedOperatorRoles`)
+ * take `OperatorRoleType` *references*. So roles are deployment-configured data, not a
+ * schema enum — and no schema check can ever confirm or refute this list. The open
+ * question for the C2 Volume is therefore narrower than "are these the five": it is
+ * whether A-GRA names a *standard* role set at all, and if so whether it is this one.
  */
 export const ROLES: RoleRow[] = [
   {
@@ -351,6 +360,12 @@ export const AUTHORITY_HTML = `
   the required authority the command is ignored and the status reply comes back
   <code>REJECTED</code> (<code>CannotComply</code>). This is the single idea the campaign returns
   to most often, and the reason a green "delivered" token can still mean nothing happened.</p>
+<p class="thin-note">Both halves of that reply are real schema values. <code>ApprovalStatusEnum</code>
+  is <code>APPROVED</code> / <code>REJECTED</code> / <code>PENDING</code> / <code>CANCELED</code>,
+  and <code>CannotComplyEnum</code> carries a reason that fits this case exactly —
+  <code>INELIGIBLE_CONTROL_SOURCE</code>, for when an action is rejected "because the source of the
+  action isn't eligible and/or hasn't been granted permission to control … the associated System or
+  Capability". What the game collapses is the <i>role set</i> doing the gating, not the gate.</p>
 <p><b>Arrival ≠ effect.</b> It is worth separating three things that a player tends to conflate:
   a message <i>arriving</i>, a message being <i>acted on</i>, and you <i>knowing</i> either. The
   DMS lifecycle governs the first and third; RBAC governs the second.</p>
@@ -363,6 +378,22 @@ export const AUTHORITY_HTML = `
   <li><b>Designation:</b> <code>MA_DesignationRequestMT</code> → <code>MA_DesignationMT</code>.
     The QB designates rather than approves. Real, and not implemented here.</li>
 </ul>
+<p>The <b>Target Authority</b> is not the game's coinage. The Rules of Engagement message carries a
+  <code>TargetAuthorityCriteria</code> field, and the schema describes the designation route in
+  almost the game's words: criteria that can confirm an entity is a Target, "meaning that a
+  <code>MA_DesignationRequestMT</code> can be created, and sent to be approved by the related
+  <b>Target Authority</b> who would then send a <code>MA_DesignationMT</code>". The field itself
+  "specifies who is authorized to approve or set something as a Target". Two rules stated there that
+  the game does not model: an MA may not send a <code>MA_DesignationMT</code> for itself, and a
+  package Lead may send one to a follower once C2 has already approved the Target.</p>
+<p>The approval route is sourced the same way. <code>MA_ApprovalRequestMT</code> carries an
+  <code>Approver</code> — an operator role "allowed to approve" — an approval policy, and a
+  <code>RespondBy</code> time. That deadline field is the real thing standing behind L6's WEZ clock,
+  though A-GRA is more forgiving than the game: if no response arrives by <code>RespondBy</code>,
+  "the approval policy's default response will be used", where the game simply lets the window
+  close. A further real gate the campaign leaves out entirely: when a package's ROE sets
+  <code>StrikeConsentRequired</code>, each strike must also clear a
+  <code>StrikeConsentRequestMT</code> round trip with an authorised operator before it can execute.</p>
 `;
 
 export const AVC_CAVEAT =
@@ -380,9 +411,18 @@ export interface ElectionRow {
 }
 
 /**
- * [VERIFY P1, P2] Every row here is a design-set assertion. Greps across all ASK
- * 5.0a material on this device find none of the five method names — the Peer
- * Volume, which defines them, is absent. Source: docs/03 §4.
+ * [VERIFY P1 resolved, P2 open] The four **method names** are primary-sourced: the
+ * normative XSD enumerates them as integers on
+ * `MA_LeadershipMetricsMDT.PackageLeaderElectionMethod` — `0` Bully, `1` Static
+ * Fitness Score, `2` Maximum Consensus, `3` Raft. There is no fifth; an "Off-Nominal"
+ * method the design set once listed here has been removed, having zero hits in the XSD
+ * or any volume on this device.
+ *
+ * What is *not* sourced is the `cost` and `underStress` columns (VERIFY P2). The XSD's
+ * own annotation supports three of them qualitatively — Maximum Consensus "preserv[es]
+ * communication bandwidth", Raft is "distributed and fault-tolerant", Bully "supports
+ * Dynamic Fitness Scores and cases where Leadership Fitness Scores need to be shared" —
+ * but the quantitative shapes (O(n²), ~2n) are this project's model. Source: docs/03 §4.
  */
 export const ELECTION_METHODS: ElectionRow[] = [
   {
@@ -404,7 +444,8 @@ export const ELECTION_METHODS: ElectionRow[] = [
   {
     name: "Bully",
     implemented: false,
-    pattern: "Higher-ID nodes are challenged; the loser yields.",
+    pattern:
+      "Higher-ID nodes are challenged; the loser yields. A-GRA notes it suits cases where fitness scores must be shared as part of the election.",
     cost: "About O(n²) chatter.",
     underStress: "Robust but expensive, and can thrash if links flap.",
     teaches: "The cost of strong consistency.",
@@ -412,33 +453,35 @@ export const ELECTION_METHODS: ElectionRow[] = [
   {
     name: "Maximum Consensus",
     implemented: false,
-    pattern: "Exchange fitness, agree on the maximum; ties to the highest tail number.",
+    pattern:
+      "Exchange fitness, agree on the maximum. A-GRA's stated reason to pick it is that consensus preserves bandwidth.",
     cost: "A moderate consensus block.",
     underStress: "Adapts, because fitness can be dynamic — e.g. keyed on comms health.",
     teaches: "Dynamic fitness, and its circularity.",
   },
-  {
-    name: "Off-Nominal",
-    implemented: false,
-    pattern: "A degraded-mode election for when the normal preconditions do not hold.",
-    cost: "Situational.",
-    underStress: "The explicit “things are broken” path.",
-    teaches: "Graceful degradation.",
-  },
 ];
 
 export const ELECTION_NOTE_HTML = `
-<p>The reason A-GRA names five methods rather than one is that <b>the right choice depends on the
+<p>The reason A-GRA names four methods rather than one is that <b>the right choice depends on the
   state of the links you are about to run the election over</b> — and an election is triggered
   precisely when something has gone wrong with those links. Method choice is a decision made under
-  the conditions it is meant to survive.</p>
-<p>The sharpest case is the one the design set singles out: a <b>dynamic leadership fitness score
-  keyed on comms health</b>. The node with the best links ought to lead — but measuring "best
-  links" requires the very links you are trying to assess.</p>
-<p class="thin-note">This game ships <b>Static</b> and <b>Raft</b> only; the other three are
+  the conditions it is meant to survive. The schema treats it as a pre-mission setting: a package
+  carries a <code>PackageLeaderElectionMethod</code>, and implementors are expected to define a
+  default.</p>
+<p>The sharpest case is a <b>dynamic leadership fitness score keyed on comms health</b>, and it is
+  real rather than ours. A-GRA lets a package determine fitness statically, by a user-defined rule,
+  or <b>dynamically</b> — and it names exactly two dynamic determination methods, both of which are
+  comms measurements: <code>C2_CommsBinary</code> (0 for poor or no connection with C2, 1 for
+  healthy) and <code>P2P_CommsCount</code> (how many peers the reporting ACP has a healthy
+  connection to). So the node with the best links ought to lead — but measuring "best links"
+  requires the very links you are trying to assess. That circularity is the observation this game
+  adds; the mechanism is the standard's.</p>
+<p class="thin-note">This game ships <b>Static</b> and <b>Raft</b> only; the other two are
   reference. One further simplification: real Raft picks a candidate on a randomised election
   timeout, whereas here the fittest node stands as a deterministic stand-in candidate, so that
-  replays stay byte-identical.</p>
+  replays stay byte-identical. Ties go to the lower node id for the same reason — A-GRA scores
+  partners with <code>StaticLeadershipFitnessScore</code> and
+  <code>DynamicLeadershipFitnessScore</code> but does not state a tiebreak.</p>
 `;
 
 /* ------------------------------------------------------------------ §7 */
